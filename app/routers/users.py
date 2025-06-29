@@ -1,0 +1,50 @@
+"""Маршруты аутентификации пользователей."""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+from .. import crud, schemas, database, models, security
+from ..security import verify_password, create_access_token
+from jose import JWTError, jwt
+
+router = APIRouter(prefix="/пользователи", tags=["Пользователи"])
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/пользователи/token")
+
+
+async def get_current_user(token: str = Depends(oauth2_scheme), session: AsyncSession = Depends(database.get_session)) -> models.User:
+    """Получить текущего пользователя по JWT-токену."""
+    try:
+        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        email: str = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный токен")
+    user = await crud.get_user_by_email(session, email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Пользователь не найден")
+    return user
+
+
+@router.post("/", response_model=schemas.User)
+async def create_user(user: schemas.UserCreate, session: AsyncSession = Depends(database.get_session)):
+    """Регистрация нового пользователя."""
+    db_user = await crud.get_user_by_email(session, user.email)
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    return await crud.create_user(session, user)
+
+
+@router.post("/token", response_model=schemas.Token)
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(database.get_session)):
+    """Получение JWT-токена."""
+    user = await crud.get_user_by_email(session, form_data.username)
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
+    access_token = create_access_token({"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=schemas.User)
+async def read_users_me(current_user: models.User = Depends(get_current_user)):
+    """Получить данные текущего пользователя."""
+    return current_user
