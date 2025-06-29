@@ -34,6 +34,7 @@ class TransactionBase(BaseModel):
 
 class TransactionCreate(TransactionBase):
     created_at: datetime | None = None
+    pass
 
 class TransactionUpdate(BaseModel):
     """Параметры для обновления операции."""
@@ -138,4 +139,3 @@ class GoalProgress(BaseModel):
     current_amount: float = Field(..., description="Уже накоплено")
     progress: float = Field(..., description="Выполнение цели в процентах")
     due_date: datetime | None = Field(None, description="Желаемая дата достижения")
-

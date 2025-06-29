@@ -32,6 +32,9 @@ class Transaction(Base):
     category = relationship("Category", back_populates="transactions")
     user = relationship("User", back_populates="transactions")
 
+
+    category = relationship("Category", back_populates="transactions")
+
 class Goal(Base):
     """Цель накоплений."""
     __tablename__ = "goals"
