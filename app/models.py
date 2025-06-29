@@ -9,6 +9,7 @@ from sqlalchemy import (
     Numeric,
     Boolean,
 )
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -36,6 +37,9 @@ class Category(Base):
     account_id = Column(Integer, ForeignKey("accounts.id"))
     account = relationship("Account", back_populates="categories")
 
+    name = Column(String, unique=True, index=True, nullable=False)
+    monthly_limit = Column(Numeric(10, 2), nullable=True)
+
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="categories")
 
@@ -58,6 +62,14 @@ class Transaction(Base):
     account = relationship("Account", back_populates="transactions")
     user = relationship("User", back_populates="transactions")
 
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    category = relationship("Category", back_populates="transactions")
+    user = relationship("User", back_populates="transactions")
+
+
+    category = relationship("Category", back_populates="transactions")
+
 class Goal(Base):
     """Цель накоплений."""
     __tablename__ = "goals"
@@ -70,6 +82,8 @@ class Goal(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     account = relationship("Account", back_populates="goals")
+    user_id = Column(Integer, ForeignKey("users.id"))
+
     user = relationship("User", back_populates="goals")
 
 class User(Base):

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from .. import crud, schemas, database, models
 from .users import get_current_user
+from .. import crud, schemas, database
 
 router = APIRouter(prefix="/категории", tags=["Категории"])
 
@@ -14,6 +15,7 @@ async def read_categories(
 ):
     """Получить все категории."""
     return await crud.get_categories(session, current_user.account_id)
+    return await crud.get_categories(session, current_user.id)
 
 @router.post("/", response_model=schemas.Category)
 async def create_category(
@@ -28,6 +30,7 @@ async def create_category(
         current_user.account_id,
         current_user.id,
     )
+    return await crud.create_category(session, category, current_user.id)
 
 
 @router.get("/{category_id}", response_model=schemas.Category)
@@ -40,6 +43,21 @@ async def read_category(
     category = await crud.get_category(
         session, category_id, current_user.account_id
     )
+    category = await crud.get_category(session, category_id, current_user.id)
+async def read_categories(session: AsyncSession = Depends(database.get_session)):
+    """Получить все категории."""
+    return await crud.get_categories(session)
+
+@router.post("/", response_model=schemas.Category)
+async def create_category(category: schemas.CategoryCreate, session: AsyncSession = Depends(database.get_session)):
+    """Создать категорию."""
+    return await crud.create_category(session, category)
+
+
+@router.get("/{category_id}", response_model=schemas.Category)
+async def read_category(category_id: int, session: AsyncSession = Depends(database.get_session)):
+    """Получить категорию по ID."""
+    category = await crud.get_category(session, category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Категория не найдена")
     return category
@@ -59,6 +77,10 @@ async def update_category(
         data,
         current_user.account_id,
     )
+    category = await crud.update_category(session, category_id, data, current_user.id)
+async def update_category(category_id: int, data: schemas.CategoryUpdate, session: AsyncSession = Depends(database.get_session)):
+    """Обновить выбранную категорию."""
+    category = await crud.update_category(session, category_id, data)
     if not category:
         raise HTTPException(status_code=404, detail="Категория не найдена")
     return category
@@ -72,4 +94,8 @@ async def delete_category(
 ):
     """Удалить категорию."""
     await crud.delete_category(session, category_id, current_user.account_id)
+    await crud.delete_category(session, category_id, current_user.id)
+async def delete_category(category_id: int, session: AsyncSession = Depends(database.get_session)):
+    """Удалить категорию."""
+    await crud.delete_category(session, category_id)
     return None

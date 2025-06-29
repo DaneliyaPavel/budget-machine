@@ -7,6 +7,7 @@ from passlib.context import CryptContext
 
 # секретный ключ может быть переопределён через переменную окружения
 SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

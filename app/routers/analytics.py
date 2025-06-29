@@ -6,6 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import crud, database, schemas, models, notifications
 from .users import get_current_user
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from .. import crud, database, schemas
 
 router = APIRouter(prefix="/аналитика", tags=["Аналитика"])
 
@@ -16,6 +20,11 @@ async def summary_by_category(
     month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
+    year: int = Query(datetime.utcnow().year,
+                      description="Год, за который строится отчёт"),
+    month: int = Query(datetime.utcnow().month,
+                       description="Месяц (1-12)"),
+    session: AsyncSession = Depends(database.get_session),
 ):
     """Вернуть сумму операций по категориям за выбранный месяц."""
     start = datetime(year, month, 1)
@@ -27,6 +36,8 @@ async def summary_by_category(
     rows = await crud.transactions_summary_by_category(
         session, start, end, current_user.account_id
     )
+    rows = await crud.transactions_summary_by_category(session, start, end, current_user.id)
+    rows = await crud.transactions_summary_by_category(session, start, end)
     return [schemas.CategorySummary(category=row[0], total=float(row[1] or 0)) for row in rows]
 
 
@@ -38,6 +49,13 @@ async def limits_check(
     notify: bool = Query(False, description="Отправить уведомление в Telegram"),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
+    year: int = Query(datetime.utcnow().year, description="Год"),
+    month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
+    notify: bool = Query(False, description="Отправить уведомление в Telegram"),
+    background_tasks: BackgroundTasks | None = None,
+    session: AsyncSession = Depends(database.get_session),
+    current_user: models.User = Depends(get_current_user),
+    session: AsyncSession = Depends(database.get_session),
 ):
     """Показать категории, где траты превысили установленный лимит."""
     start = datetime(year, month, 1)
@@ -48,11 +66,13 @@ async def limits_check(
     rows = await crud.categories_over_limit(
         session, start, end, current_user.account_id
     )
+    rows = await crud.categories_over_limit(session, start, end, current_user.id)
     result = [
         schemas.LimitExceed(category=r[0], limit=float(r[1]), spent=float(r[2]))
         for r in rows
     ]
     if notify and result:
+    if notify and result and background_tasks is not None:
         text_lines = [
             "Превышение лимитов:",
             *[
@@ -83,6 +103,7 @@ async def forecast(
     rows = await crud.forecast_by_category(
         session, start, end, current_user.account_id
     )
+    rows = await crud.forecast_by_category(session, start, end, current_user.id)
     return [
         schemas.ForecastItem(category=r[0], spent=float(r[1]), forecast=float(r[2]))
         for r in rows
@@ -103,6 +124,7 @@ async def summary_by_day(
     rows = await crud.daily_expenses(
         session, start, end, current_user.account_id
     )
+    rows = await crud.daily_expenses(session, start, end, current_user.id)
     return [
         schemas.DailySummary(date=row[0], total=float(row[1] or 0))
         for row in rows
@@ -123,6 +145,7 @@ async def balance_overview(
     spent, forecast = await crud.monthly_overview(
         session, start, end, current_user.account_id
     )
+    spent, forecast = await crud.monthly_overview(session, start, end, current_user.id)
     return schemas.MonthlySummary(spent=spent, forecast=forecast)
 
 
@@ -134,6 +157,7 @@ async def goals_progress(
     """Показать прогресс по всем целям пользователя."""
 
     goals = await crud.get_goals(session, current_user.account_id)
+    goals = await crud.get_goals(session, current_user.id)
     result: list[schemas.GoalProgress] = []
     for g in goals:
         progress = float(g.current_amount) / float(g.target_amount) * 100 if g.target_amount else 0
@@ -148,3 +172,8 @@ async def goals_progress(
             )
         )
     return result
+    rows = await crud.categories_over_limit(session, start, end)
+    return [
+        schemas.LimitExceed(category=r[0], limit=float(r[1]), spent=float(r[2]))
+        for r in rows
+    ]

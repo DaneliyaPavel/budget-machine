@@ -14,6 +14,7 @@ class Account(BaseModel):
     class Config:
         orm_mode = True
 
+
 class CategoryBase(BaseModel):
     """Базовые поля категории."""
     name: str
@@ -45,6 +46,7 @@ class TransactionBase(BaseModel):
 
 class TransactionCreate(TransactionBase):
     created_at: datetime | None = None
+    pass
 
 class TransactionUpdate(BaseModel):
     """Параметры для обновления операции."""
@@ -106,6 +108,7 @@ class User(UserBase):
     id: int
     is_active: bool
     account_id: int
+      
 
     class Config:
         orm_mode = True
@@ -158,4 +161,3 @@ class GoalProgress(BaseModel):
     current_amount: float = Field(..., description="Уже накоплено")
     progress: float = Field(..., description="Выполнение цели в процентах")
     due_date: datetime | None = Field(None, description="Желаемая дата достижения")
-

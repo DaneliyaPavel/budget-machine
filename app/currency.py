@@ -28,4 +28,12 @@ async def get_rate(code: str) -> float:
             for k, v in data["Valute"].items():
                 _rates[k] = float(v["Value"])
             _last_update = now
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(_CBR_URL, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+        _rates = {"RUB": 1.0}
+        for k, v in data["Valute"].items():
+            _rates[k] = float(v["Value"])
+        _last_update = now
     return _rates.get(code, 1.0)

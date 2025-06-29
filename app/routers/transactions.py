@@ -1,11 +1,13 @@
 """Маршруты для операций."""
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Query
+
 from sqlalchemy.ext.asyncio import AsyncSession
 import csv
 from datetime import datetime
 from .. import crud, schemas, database, models
 from .users import get_current_user
+
 
 router = APIRouter(prefix="/операции", tags=["Операции"])
 
@@ -16,6 +18,21 @@ async def read_transactions(
 ):
     """Получить список операций."""
     return await crud.get_transactions(session, current_user.account_id)
+    start: datetime | None = Query(None, description="Начало периода"),
+    end: datetime | None = Query(None, description="Конец периода"),
+    category_id: int | None = Query(None, description="Категория"),
+):
+    """Получить список операций с фильтрами по дате и категории."""
+    return await crud.get_transactions(
+        session,
+        current_user.id,
+        start=start,
+        end=end,
+        category_id=category_id,
+    )
+):
+    """Получить список операций."""
+    return await crud.get_transactions(session, current_user.id)
 
 @router.post("/", response_model=schemas.Transaction)
 async def create_transaction(
@@ -30,6 +47,15 @@ async def create_transaction(
         current_user.account_id,
         current_user.id,
     )
+    return await crud.create_transaction(session, tx, current_user.id)
+async def read_transactions(session: AsyncSession = Depends(database.get_session)):
+    """Получить список операций."""
+    return await crud.get_transactions(session)
+
+@router.post("/", response_model=schemas.Transaction)
+async def create_transaction(tx: schemas.TransactionCreate, session: AsyncSession = Depends(database.get_session)):
+    """Создать новую операцию."""
+    return await crud.create_transaction(session, tx)
 
 
 @router.post("/импорт", status_code=status.HTTP_201_CREATED)
@@ -63,6 +89,8 @@ async def import_transactions(
     await crud.create_transactions_bulk(
         session, created, current_user.account_id, current_user.id
     )
+    await crud.create_transactions_bulk(session, created, current_user.id)
+    await crud.create_transactions_bulk(session, created)
     return {"created": len(created)}
 
 
@@ -74,6 +102,7 @@ async def read_transaction(
 ):
     """Получить одну операцию."""
     tx = await crud.get_transaction(session, tx_id, current_user.account_id)
+async def read_transaction(tx_id: int, session: AsyncSession = Depends(database.get_session)):
     if not tx:
         raise HTTPException(status_code=404, detail="Операция не найдена")
     return tx
