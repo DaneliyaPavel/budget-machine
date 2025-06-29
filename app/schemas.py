@@ -19,6 +19,7 @@ class CategoryUpdate(BaseModel):
 
 class Category(CategoryBase):
     id: int
+    user_id: int
 
     class Config:
         orm_mode = True
@@ -47,6 +48,7 @@ class Transaction(TransactionBase):
     id: int
     created_at: datetime
     amount_rub: float
+    user_id: int
 
     class Config:
         orm_mode = True
@@ -70,6 +72,7 @@ class GoalUpdate(BaseModel):
 
 class Goal(GoalBase):
     id: int
+    user_id: int
 
     class Config:
         orm_mode = True
@@ -104,3 +107,10 @@ class LimitExceed(BaseModel):
     category: str = Field(..., description="Название категории")
     limit: float = Field(..., description="Установленный лимит")
     spent: float = Field(..., description="Фактические траты")
+
+
+class ForecastItem(BaseModel):
+    """Прогноз трат по категории на месяц."""
+    category: str = Field(..., description="Название категории")
+    spent: float = Field(..., description="Уже потрачено")
+    forecast: float = Field(..., description="Ожидаемые траты к концу месяца")

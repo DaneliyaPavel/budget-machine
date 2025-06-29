@@ -12,6 +12,9 @@ class Category(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     monthly_limit = Column(Numeric(10, 2), nullable=True)
 
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="categories")
+
     transactions = relationship("Transaction", back_populates="category")
 
 class Transaction(Base):
@@ -24,6 +27,10 @@ class Transaction(Base):
     description = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     category_id = Column(Integer, ForeignKey("categories.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    category = relationship("Category", back_populates="transactions")
+    user = relationship("User", back_populates="transactions")
 
     category = relationship("Category", back_populates="transactions")
 
@@ -35,6 +42,9 @@ class Goal(Base):
     target_amount = Column(Numeric(10, 2), nullable=False)
     current_amount = Column(Numeric(10, 2), default=0)
     due_date = Column(DateTime, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User", back_populates="goals")
 
 class User(Base):
     """Пользователь системы."""
@@ -43,3 +53,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+
+    categories = relationship("Category", back_populates="user")
+    transactions = relationship("Transaction", back_populates="user")
+    goals = relationship("Goal", back_populates="user")

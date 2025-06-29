@@ -1,6 +1,16 @@
 """Точка входа FastAPI-приложения."""
 
 from fastapi import FastAPI
+from .routers import (
+    transactions,
+    categories,
+    goals,
+    users,
+    analytics,
+    tinkoff,
+    banks,
+)
+from .database import engine, Base
 from .routers import transactions, categories, goals, users, analytics
 from .database import engine, Base
 from .routers import transactions, categories, goals, users
@@ -13,6 +23,8 @@ tags_metadata = [
     {"name": "Цели", "description": "Накопления и цели"},
     {"name": "Пользователи", "description": "Регистрация и авторизация"},
     {"name": "Аналитика", "description": "Сводные отчёты"},
+    {"name": "Тинькофф", "description": "Импорт операций из банка"},
+    {"name": "Банки", "description": "Импорт операций из разных банков"},
 ]
 
 app = FastAPI(
@@ -32,3 +44,5 @@ app.include_router(transactions.router)
 app.include_router(goals.router)
 app.include_router(users.router)
 app.include_router(analytics.router)
+app.include_router(tinkoff.router)
+app.include_router(banks.router)
