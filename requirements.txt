@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy>=1.4
+asyncpg
+pydantic
+alembic
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
+httpx
