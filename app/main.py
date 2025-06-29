@@ -3,7 +3,6 @@
 from fastapi import FastAPI
 from .routers import transactions, categories, goals, users, analytics
 from .database import engine, Base
-import asyncio
 
 tags_metadata = [
     {"name": "Категории", "description": "Управление категориями операций"},

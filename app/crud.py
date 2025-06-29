@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from . import models, schemas, currency
+from .security import get_password_hash
 
 async def get_categories(db: AsyncSession):
     """Получить все категории."""
@@ -122,8 +123,6 @@ async def delete_goal(db: AsyncSession, goal_id: int):
     """Удалить цель."""
     await db.execute(delete(models.Goal).where(models.Goal.id == goal_id))
     await db.commit()
-
-from .security import get_password_hash
 
 async def get_user_by_email(db: AsyncSession, email: str):
     """Найти пользователя по email."""
