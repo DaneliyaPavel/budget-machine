@@ -1,5 +1,6 @@
 """Маршруты для операций."""
 
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Query
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import csv
@@ -16,6 +17,18 @@ router = APIRouter(prefix="/операции", tags=["Операции"])
 async def read_transactions(
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
+    start: datetime | None = Query(None, description="Начало периода"),
+    end: datetime | None = Query(None, description="Конец периода"),
+    category_id: int | None = Query(None, description="Категория"),
+):
+    """Получить список операций с фильтрами по дате и категории."""
+    return await crud.get_transactions(
+        session,
+        current_user.id,
+        start=start,
+        end=end,
+        category_id=category_id,
+    )
 ):
     """Получить список операций."""
     return await crud.get_transactions(session, current_user.id)
@@ -95,7 +108,7 @@ async def update_transaction(
     current_user: models.User = Depends(get_current_user),
 ):
     """Изменить операцию."""
-    tx = await crud.update_transaction(session, tx_id, data, current_user.id)
+    tx = await crud.update_transaction(session, tx_id, data, current_user.id
 async def update_transaction(tx_id: int, data: schemas.TransactionUpdate, session: AsyncSession = Depends(database.get_session)):
     """Изменить операцию."""
     tx = await crud.update_transaction(session, tx_id, data)

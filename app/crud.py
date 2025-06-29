@@ -28,6 +28,7 @@ async def create_category(db: AsyncSession, category: schemas.CategoryCreate, us
     db_obj = models.Category(
         name=category.name, monthly_limit=category.monthly_limit, user_id=user_id
     )
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
 from . import models, schemas
@@ -77,6 +78,25 @@ async def delete_category(db: AsyncSession, category_id: int, user_id: int):
     )
     await db.commit()
 
+async def get_transactions(
+    db: AsyncSession,
+    user_id: int,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    category_id: int | None = None,
+):
+    """Получить операции пользователя с возможностью фильтрации.
+
+    Можно указать начало и конец периода, а также идентификатор категории.
+    """
+    stmt = select(models.Transaction).where(models.Transaction.user_id == user_id)
+    if start:
+        stmt = stmt.where(models.Transaction.created_at >= start)
+    if end:
+        stmt = stmt.where(models.Transaction.created_at < end)
+    if category_id:
+        stmt = stmt.where(models.Transaction.category_id == category_id)
+    result = await db.execute(stmt)
 async def get_transactions(db: AsyncSession, user_id: int):
     """Получить список всех операций пользователя."""
     result = await db.execute(
@@ -353,3 +373,47 @@ async def forecast_by_category(
         proj = float(spent or 0) / elapsed_days * total_days
         forecast.append((name, float(spent or 0), proj))
     return forecast
+
+
+async def daily_expenses(
+    db: AsyncSession, start: datetime, end: datetime, user_id: int
+):
+    """Суммы трат по дням за указанный период."""
+
+    day = func.date_trunc("day", models.Transaction.created_at)
+    stmt = (
+        select(day.label("day"), func.sum(models.Transaction.amount_rub))
+        .where(
+            models.Transaction.created_at >= start,
+            models.Transaction.created_at < end,
+            models.Transaction.user_id == user_id,
+        )
+        .group_by(day)
+        .order_by(day)
+    )
+    result = await db.execute(stmt)
+    return result.all()
+
+
+async def monthly_overview(
+    db: AsyncSession, start: datetime, end: datetime, user_id: int
+):
+    """Текущие траты и прогноз до конца месяца."""
+
+    now = datetime.utcnow()
+    cutoff = min(now, end)
+    stmt = (
+        select(func.sum(models.Transaction.amount_rub))
+        .where(
+            models.Transaction.created_at >= start,
+            models.Transaction.created_at < cutoff,
+            models.Transaction.user_id == user_id,
+        )
+    )
+    result = await db.execute(stmt)
+    spent = float(result.scalar() or 0)
+
+    elapsed_days = (cutoff - start).days + 1
+    total_days = (end - start).days
+    forecast = spent / elapsed_days * total_days if elapsed_days else 0
+    return spent, forecast

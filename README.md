@@ -84,10 +84,40 @@ curl -X POST "http://127.0.0.1:8000/операции/импорт" \
      -F "file=@transactions.csv"
 ```
 
+### Получить операции за период
+
+```bash
+curl "http://127.0.0.1:8000/операции/?start=2025-06-01T00:00:00&end=2025-06-30T23:59:59" \
+     -H "Authorization: Bearer <token>"
+```
+При необходимости можно указать `category_id`, чтобы вывести операции только по конкретной категории.
+
+
 ### Прогноз расходов на месяц
 
 ```bash
 curl "http://127.0.0.1:8000/аналитика/прогноз?year=2025&month=6" \
+     -H "Authorization: Bearer <token>"
+```
+
+### Расходы по дням
+
+```bash
+curl "http://127.0.0.1:8000/аналитика/дни?year=2025&month=6" \
+     -H "Authorization: Bearer <token>"
+```
+
+### Баланс месяца
+
+```bash
+curl "http://127.0.0.1:8000/аналитика/баланс?year=2025&month=6" \
+     -H "Authorization: Bearer <token>"
+```
+
+### Прогресс по целям
+
+```bash
+curl "http://127.0.0.1:8000/аналитика/цели" \
      -H "Authorization: Bearer <token>"
 ```
 

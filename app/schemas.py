@@ -114,3 +114,28 @@ class ForecastItem(BaseModel):
     category: str = Field(..., description="Название категории")
     spent: float = Field(..., description="Уже потрачено")
     forecast: float = Field(..., description="Ожидаемые траты к концу месяца")
+
+
+class DailySummary(BaseModel):
+    """Сумма расходов за конкретный день."""
+
+    date: datetime = Field(..., description="Дата")
+    total: float = Field(..., description="Потрачено за день")
+
+
+class MonthlySummary(BaseModel):
+    """Итог и прогноз расходов за месяц."""
+
+    spent: float = Field(..., description="Потрачено на текущий момент")
+    forecast: float = Field(..., description="Ожидаемые траты к концу месяца")
+
+
+class GoalProgress(BaseModel):
+    """Текущий прогресс по цели накоплений."""
+
+    id: int = Field(..., description="Идентификатор цели")
+    name: str = Field(..., description="Название цели")
+    target_amount: float = Field(..., description="Сумма, которую нужно накопить")
+    current_amount: float = Field(..., description="Уже накоплено")
+    progress: float = Field(..., description="Выполнение цели в процентах")
+    due_date: datetime | None = Field(None, description="Желаемая дата достижения")
