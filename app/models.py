@@ -10,6 +10,7 @@ class Category(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
+    monthly_limit = Column(Numeric(10, 2), nullable=True)
 
     transactions = relationship("Transaction", back_populates="category")
 
@@ -19,6 +20,7 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     amount = Column(Numeric(10, 2), nullable=False)
     currency = Column(String, default="RUB")
+    amount_rub = Column(Numeric(10, 2), nullable=False)
     description = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     category_id = Column(Integer, ForeignKey("categories.id"))

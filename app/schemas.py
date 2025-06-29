@@ -7,6 +7,7 @@ from typing import Optional
 class CategoryBase(BaseModel):
     """Базовые поля категории."""
     name: str
+    monthly_limit: float | None = None
 
 class CategoryCreate(CategoryBase):
     pass
@@ -14,6 +15,7 @@ class CategoryCreate(CategoryBase):
 class CategoryUpdate(BaseModel):
     """Поля для обновления категории."""
     name: str | None = None
+    monthly_limit: float | None = None
 
 class Category(CategoryBase):
     id: int
@@ -25,10 +27,12 @@ class TransactionBase(BaseModel):
     """Общие поля финансовой операции."""
     amount: float
     currency: str = "RUB"
+    amount_rub: float | None = None
     description: Optional[str] = None
     category_id: int
 
 class TransactionCreate(TransactionBase):
+    created_at: datetime | None = None
     pass
 
 class TransactionUpdate(BaseModel):
@@ -37,10 +41,12 @@ class TransactionUpdate(BaseModel):
     currency: str | None = None
     description: str | None = None
     category_id: int | None = None
+    created_at: datetime | None = None
 
 class Transaction(TransactionBase):
     id: int
     created_at: datetime
+    amount_rub: float
 
     class Config:
         orm_mode = True
@@ -85,3 +91,16 @@ class User(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+class CategorySummary(BaseModel):
+    """Сводные данные по категории расходов."""
+    category: str = Field(..., description="Название категории")
+    total: float = Field(..., description="Сумма операций")
+
+
+class LimitExceed(BaseModel):
+    """Категория, в которой превышен месячный лимит."""
+    category: str = Field(..., description="Название категории")
+    limit: float = Field(..., description="Установленный лимит")
+    spent: float = Field(..., description="Фактические траты")

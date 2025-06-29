@@ -1,6 +1,7 @@
 """Вспомогательные функции для безопасности и JWT."""
 
 from datetime import datetime, timedelta
+from jose import jwt
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
