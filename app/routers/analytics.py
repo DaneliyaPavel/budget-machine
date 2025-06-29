@@ -6,10 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import crud, database, schemas, models, notifications
 from .users import get_current_user
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from .. import crud, database, schemas
 
 router = APIRouter(prefix="/аналитика", tags=["Аналитика"])
 
@@ -20,11 +16,6 @@ async def summary_by_category(
     month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
-    year: int = Query(datetime.utcnow().year,
-                      description="Год, за который строится отчёт"),
-    month: int = Query(datetime.utcnow().month,
-                       description="Месяц (1-12)"),
-    session: AsyncSession = Depends(database.get_session),
 ):
     """Вернуть сумму операций по категориям за выбранный месяц."""
     start = datetime(year, month, 1)
@@ -49,13 +40,6 @@ async def limits_check(
     notify: bool = Query(False, description="Отправить уведомление в Telegram"),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
-    year: int = Query(datetime.utcnow().year, description="Год"),
-    month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
-    notify: bool = Query(False, description="Отправить уведомление в Telegram"),
-    background_tasks: BackgroundTasks | None = None,
-    session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
-    session: AsyncSession = Depends(database.get_session),
 ):
     """Показать категории, где траты превысили установленный лимит."""
     start = datetime(year, month, 1)
@@ -71,7 +55,6 @@ async def limits_check(
         schemas.LimitExceed(category=r[0], limit=float(r[1]), spent=float(r[2]))
         for r in rows
     ]
-    if notify and result:
     if notify and result and background_tasks is not None:
         text_lines = [
             "Превышение лимитов:",
