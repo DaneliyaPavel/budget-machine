@@ -1,10 +1,14 @@
 """Функции для взаимодействия с базой данных."""
 
+
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from . import models, schemas, currency
 from .security import get_password_hash
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update, delete
+from . import models, schemas
 
 async def get_categories(db: AsyncSession):
     """Получить все категории."""
@@ -19,6 +23,7 @@ async def get_category(db: AsyncSession, category_id: int):
 async def create_category(db: AsyncSession, category: schemas.CategoryCreate):
     """Создать новую категорию."""
     db_obj = models.Category(name=category.name, monthly_limit=category.monthly_limit)
+    db_obj = models.Category(name=category.name)
     db.add(db_obj)
     await db.commit()
     await db.refresh(db_obj)
@@ -52,6 +57,7 @@ async def create_transaction(db: AsyncSession, tx: schemas.TransactionCreate):
     db_obj = models.Transaction(
         **tx.dict(exclude_unset=True), amount_rub=tx.amount * rate
     )
+    db_obj = models.Transaction(**tx.dict())
     db.add(db_obj)
     await db.commit()
     await db.refresh(db_obj)
@@ -88,6 +94,12 @@ async def update_transaction(db: AsyncSession, tx_id: int, data: schemas.Transac
     await db.commit()
     await db.refresh(tx_obj)
     return tx_obj
+async def update_transaction(db: AsyncSession, tx_id: int, data: schemas.TransactionUpdate):
+    """Обновить данные операции."""
+    stmt = update(models.Transaction).where(models.Transaction.id == tx_id).values(**data.dict(exclude_unset=True)).returning(models.Transaction)
+    result = await db.execute(stmt)
+    await db.commit()
+    return result.scalar_one_or_none()
 
 async def delete_transaction(db: AsyncSession, tx_id: int):
     """Удалить операцию."""
@@ -123,6 +135,8 @@ async def delete_goal(db: AsyncSession, goal_id: int):
     """Удалить цель."""
     await db.execute(delete(models.Goal).where(models.Goal.id == goal_id))
     await db.commit()
+
+from .security import get_password_hash
 
 async def get_user_by_email(db: AsyncSession, email: str):
     """Найти пользователя по email."""
