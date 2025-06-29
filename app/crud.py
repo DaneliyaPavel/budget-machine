@@ -1,12 +1,23 @@
 """Функции для взаимодействия с базой данных."""
 
-
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from . import models, schemas, currency
 from .security import get_password_hash
 
+async def get_categories(db: AsyncSession, account_id: int):
+    """Получить все категории счёта."""
+    result = await db.execute(
+        select(models.Category).where(models.Category.account_id == account_id)
+    )
+    return result.scalars().all()
+
+async def get_category(db: AsyncSession, category_id: int, account_id: int):
+    """Найти категорию счёта по идентификатору."""
+    result = await db.execute(
+        select(models.Category).where(
+            models.Category.id == category_id, models.Category.account_id == account_id
 async def get_categories(db: AsyncSession, user_id: int):
     """Получить все категории пользователя."""
     result = await db.execute(
@@ -23,6 +34,19 @@ async def get_category(db: AsyncSession, category_id: int, user_id: int):
     )
     return result.scalar_one_or_none()
 
+async def create_category(
+    db: AsyncSession,
+    category: schemas.CategoryCreate,
+    account_id: int,
+    user_id: int,
+):
+    """Создать новую категорию в счёте."""
+    db_obj = models.Category(
+        name=category.name,
+        monthly_limit=category.monthly_limit,
+        account_id=account_id,
+        user_id=user_id,
+    )
 async def create_category(db: AsyncSession, category: schemas.CategoryCreate, user_id: int):
     """Создать новую категорию пользователя."""
     db_obj = models.Category(
@@ -53,6 +77,18 @@ async def create_category(db: AsyncSession, category: schemas.CategoryCreate):
     return db_obj
 
 async def update_category(
+    db: AsyncSession,
+    category_id: int,
+    data: schemas.CategoryUpdate,
+    account_id: int,
+) -> models.Category | None:
+    """Обновить данные категории пользователя."""
+    stmt = (
+        update(models.Category)
+        .where(models.Category.id == category_id, models.Category.account_id == account_id)
+        .values(**data.dict(exclude_unset=True))
+        .returning(models.Category)
+    )
     db: AsyncSession, category_id: int, data: schemas.CategoryUpdate, user_id: int
 ):
     """Обновить данные категории пользователя."""
@@ -69,6 +105,11 @@ async def update_category(db: AsyncSession, category_id: int, data: schemas.Cate
     await db.commit()
     return result.scalar_one_or_none()
 
+async def delete_category(db: AsyncSession, category_id: int, account_id: int):
+    """Удалить категорию счёта."""
+    await db.execute(
+        delete(models.Category).where(
+            models.Category.id == category_id, models.Category.account_id == account_id
 async def delete_category(db: AsyncSession, category_id: int, user_id: int):
     """Удалить категорию пользователя."""
     await db.execute(
@@ -78,6 +119,19 @@ async def delete_category(db: AsyncSession, category_id: int, user_id: int):
     )
     await db.commit()
 
+async def get_transactions(db: AsyncSession, account_id: int):
+    """Получить список всех операций счёта."""
+    result = await db.execute(
+        select(models.Transaction).where(models.Transaction.account_id == account_id)
+    )
+    return result.scalars().all()
+
+async def get_transaction(db: AsyncSession, tx_id: int, account_id: int):
+    """Получить операцию счёта по идентификатору."""
+    result = await db.execute(
+        select(models.Transaction).where(
+            models.Transaction.id == tx_id,
+            models.Transaction.account_id == account_id,
 async def get_transactions(
     db: AsyncSession,
     user_id: int,
@@ -114,6 +168,19 @@ async def get_transaction(db: AsyncSession, tx_id: int, user_id: int):
     return result.scalar_one_or_none()
 
 async def create_transaction(
+    db: AsyncSession,
+    tx: schemas.TransactionCreate,
+    account_id: int,
+    user_id: int,
+):
+    """Создать финансовую операцию."""
+    rate = await currency.get_rate(tx.currency)
+    db_obj = models.Transaction(
+        **tx.dict(exclude_unset=True),
+        amount_rub=tx.amount * rate,
+        account_id=account_id,
+        user_id=user_id,
+    )
     db: AsyncSession, tx: schemas.TransactionCreate, user_id: int
 ):
     """Создать финансовую операцию пользователя."""
@@ -150,6 +217,12 @@ async def create_transaction(db: AsyncSession, tx: schemas.TransactionCreate):
 
 
 async def create_transactions_bulk(
+    db: AsyncSession,
+    txs: list[schemas.TransactionCreate],
+    account_id: int,
+    user_id: int,
+):
+    """Создать сразу несколько операций пользователя."""
     db: AsyncSession, txs: list[schemas.TransactionCreate], user_id: int
 ):
     """Создать сразу несколько операций пользователя."""
@@ -160,6 +233,11 @@ async def create_transactions_bulk(db: AsyncSession, txs: list[schemas.Transacti
         rate = await currency.get_rate(tx.currency)
         objects.append(
             models.Transaction(
+                **tx.dict(exclude_unset=True),
+                amount_rub=tx.amount * rate,
+                account_id=account_id,
+                user_id=user_id,
+            )
                 **tx.dict(exclude_unset=True), amount_rub=tx.amount * rate, user_id=user_id
             )
             models.Transaction(**tx.dict(exclude_unset=True), amount_rub=tx.amount * rate)
@@ -171,6 +249,14 @@ async def create_transactions_bulk(db: AsyncSession, txs: list[schemas.Transacti
     return objects
 
 async def update_transaction(
+    db: AsyncSession,
+    tx_id: int,
+    data: schemas.TransactionUpdate,
+    account_id: int,
+    user_id: int,
+) -> models.Transaction | None:
+    """Обновить данные операции пользователя."""
+    tx_obj = await get_transaction(db, tx_id, account_id)
     db: AsyncSession, tx_id: int, data: schemas.TransactionUpdate, user_id: int
 ):
     """Обновить данные операции пользователя."""
@@ -192,6 +278,12 @@ async def update_transaction(db: AsyncSession, tx_id: int, data: schemas.Transac
     await db.refresh(tx_obj)
     return tx_obj
 
+async def delete_transaction(db: AsyncSession, tx_id: int, account_id: int):
+    """Удалить операцию."""
+    await db.execute(
+        delete(models.Transaction).where(
+            models.Transaction.id == tx_id,
+            models.Transaction.account_id == account_id,
 async def delete_transaction(db: AsyncSession, tx_id: int, user_id: int):
     """Удалить операцию пользователя."""
     await db.execute(
@@ -201,6 +293,33 @@ async def delete_transaction(db: AsyncSession, tx_id: int, user_id: int):
     )
     await db.commit()
 
+async def get_goals(db: AsyncSession, account_id: int):
+    """Получить все цели счёта."""
+    result = await db.execute(
+        select(models.Goal).where(models.Goal.account_id == account_id)
+    )
+    return result.scalars().all()
+
+async def get_goal(db: AsyncSession, goal_id: int, account_id: int):
+    """Найти цель счёта по идентификатору."""
+    result = await db.execute(
+        select(models.Goal).where(
+            models.Goal.id == goal_id,
+            models.Goal.account_id == account_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+async def create_goal(
+    db: AsyncSession,
+    goal: schemas.GoalCreate,
+    account_id: int,
+    user_id: int,
+) -> models.Goal:
+    """Создать новую цель пользователя."""
+    db_obj = models.Goal(
+        **goal.dict(), account_id=account_id, user_id=user_id
+    )
 async def get_goals(db: AsyncSession, user_id: int):
     """Получить все цели пользователя."""
     result = await db.execute(
@@ -249,6 +368,18 @@ async def create_goal(db: AsyncSession, goal: schemas.GoalCreate):
     return db_obj
 
 async def update_goal(
+    db: AsyncSession,
+    goal_id: int,
+    data: schemas.GoalUpdate,
+    account_id: int,
+) -> models.Goal | None:
+    """Обновить цель пользователя."""
+    stmt = (
+        update(models.Goal)
+        .where(models.Goal.id == goal_id, models.Goal.account_id == account_id)
+        .values(**data.dict(exclude_unset=True))
+        .returning(models.Goal)
+    )
     db: AsyncSession, goal_id: int, data: schemas.GoalUpdate, user_id: int
 ):
     """Обновить цель пользователя."""
@@ -264,6 +395,15 @@ async def update_goal(db: AsyncSession, goal_id: int, data: schemas.GoalUpdate):
     result = await db.execute(stmt)
     await db.commit()
     return result.scalar_one_or_none()
+
+async def delete_goal(db: AsyncSession, goal_id: int, account_id: int):
+    """Удалить цель пользователя."""
+    await db.execute(
+        delete(models.Goal).where(
+            models.Goal.id == goal_id, models.Goal.account_id == account_id
+        )
+    )
+    await db.commit()
 
 async def delete_goal(db: AsyncSession, goal_id: int, user_id: int):
     """Удалить цель пользователя."""
@@ -287,6 +427,10 @@ async def get_user_by_email(db: AsyncSession, email: str):
 async def create_user(db: AsyncSession, user: schemas.UserCreate):
     """Создать пользователя с хешированным паролем."""
     hashed = get_password_hash(user.password)
+    account = models.Account(name="Личный бюджет")
+    db.add(account)
+    await db.flush()
+    db_obj = models.User(email=user.email, hashed_password=hashed, account=account)
     db_obj = models.User(email=user.email, hashed_password=hashed)
     db.add(db_obj)
     await db.commit()
@@ -294,6 +438,19 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate):
     return db_obj
 
 
+async def join_account(db: AsyncSession, user: models.User, account_id: int) -> models.User | None:
+    """Присоединить пользователя к существующему счёту."""
+    account = await db.get(models.Account, account_id)
+    if not account:
+        return None
+    user.account_id = account_id
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def transactions_summary_by_category(
+    db: AsyncSession, start: datetime, end: datetime, account_id: int
 async def transactions_summary_by_category(
     db: AsyncSession, start: datetime, end: datetime, user_id: int
 ):
@@ -304,6 +461,8 @@ async def transactions_summary_by_category(
         .where(
             models.Transaction.created_at >= start,
             models.Transaction.created_at < end,
+            models.Transaction.account_id == account_id,
+        )
             models.Transaction.user_id == user_id,
         )
 async def transactions_summary_by_category(db: AsyncSession, start: datetime, end: datetime):
@@ -319,6 +478,9 @@ async def transactions_summary_by_category(db: AsyncSession, start: datetime, en
 
 
 async def categories_over_limit(
+    db: AsyncSession, start: datetime, end: datetime, account_id: int
+):
+    """Список категорий пользователя, где траты превысили лимит."""
     db: AsyncSession, start: datetime, end: datetime, user_id: int
 ):
     """Список категорий пользователя, где траты превысили лимит."""
@@ -335,6 +497,7 @@ async def categories_over_limit(db: AsyncSession, start: datetime, end: datetime
             models.Transaction.created_at >= start,
             models.Transaction.created_at < end,
             models.Category.monthly_limit.isnot(None),
+            models.Transaction.account_id == account_id,
             models.Transaction.user_id == user_id,
         )
         .group_by(models.Category.id)
@@ -345,6 +508,7 @@ async def categories_over_limit(db: AsyncSession, start: datetime, end: datetime
 
 
 async def forecast_by_category(
+    db: AsyncSession, start: datetime, end: datetime, account_id: int
     db: AsyncSession, start: datetime, end: datetime, user_id: int
 ):
     """Прогноз трат пользователя до конца периода."""
@@ -362,6 +526,7 @@ async def forecast_by_category(
         .where(
             models.Transaction.created_at >= start,
             models.Transaction.created_at < now,
+            models.Transaction.account_id == account_id,
             models.Transaction.user_id == user_id,
         )
         .group_by(models.Category.name)
@@ -376,6 +541,7 @@ async def forecast_by_category(
 
 
 async def daily_expenses(
+    db: AsyncSession, start: datetime, end: datetime, account_id: int
     db: AsyncSession, start: datetime, end: datetime, user_id: int
 ):
     """Суммы трат по дням за указанный период."""
@@ -386,6 +552,7 @@ async def daily_expenses(
         .where(
             models.Transaction.created_at >= start,
             models.Transaction.created_at < end,
+            models.Transaction.account_id == account_id,
             models.Transaction.user_id == user_id,
         )
         .group_by(day)
@@ -396,6 +563,7 @@ async def daily_expenses(
 
 
 async def monthly_overview(
+    db: AsyncSession, start: datetime, end: datetime, account_id: int
     db: AsyncSession, start: datetime, end: datetime, user_id: int
 ):
     """Текущие траты и прогноз до конца месяца."""
@@ -407,6 +575,7 @@ async def monthly_overview(
         .where(
             models.Transaction.created_at >= start,
             models.Transaction.created_at < cutoff,
+            models.Transaction.account_id == account_id,
             models.Transaction.user_id == user_id,
         )
     )

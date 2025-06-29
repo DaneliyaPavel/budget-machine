@@ -1,14 +1,42 @@
 """Описание моделей базы данных."""
 
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Numeric,
+    Boolean,
+)
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 
+class Account(Base):
+    """Общий счёт (семейный бюджет)."""
+
+    __tablename__ = "accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+
+    users = relationship("User", back_populates="account")
+    categories = relationship("Category", back_populates="account")
+    transactions = relationship("Transaction", back_populates="account")
+    goals = relationship("Goal", back_populates="account")
+
 class Category(Base):
     """Категория расходов или доходов."""
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    monthly_limit = Column(Numeric(10, 2), nullable=True)
+
+    account_id = Column(Integer, ForeignKey("accounts.id"))
+    account = relationship("Account", back_populates="categories")
+
     name = Column(String, unique=True, index=True, nullable=False)
     monthly_limit = Column(Numeric(10, 2), nullable=True)
 
@@ -27,6 +55,13 @@ class Transaction(Base):
     description = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     category_id = Column(Integer, ForeignKey("categories.id"))
+    account_id = Column(Integer, ForeignKey("accounts.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    category = relationship("Category", back_populates="transactions")
+    account = relationship("Account", back_populates="transactions")
+    user = relationship("User", back_populates="transactions")
+
     user_id = Column(Integer, ForeignKey("users.id"))
 
     category = relationship("Category", back_populates="transactions")
@@ -43,6 +78,10 @@ class Goal(Base):
     target_amount = Column(Numeric(10, 2), nullable=False)
     current_amount = Column(Numeric(10, 2), default=0)
     due_date = Column(DateTime, nullable=True)
+    account_id = Column(Integer, ForeignKey("accounts.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    account = relationship("Account", back_populates="goals")
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="goals")
@@ -54,6 +93,9 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+
+    account_id = Column(Integer, ForeignKey("accounts.id"))
+    account = relationship("Account", back_populates="users")
 
     categories = relationship("Category", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")

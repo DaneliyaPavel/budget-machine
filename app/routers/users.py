@@ -34,6 +34,20 @@ async def create_user(user: schemas.UserCreate, session: AsyncSession = Depends(
     return await crud.create_user(session, user)
 
 
+@router.post("/join", response_model=schemas.User)
+async def join_account(
+    data: schemas.JoinAccount,
+    current_user: models.User = Depends(get_current_user),
+    session: AsyncSession = Depends(database.get_session),
+):
+    """Присоединиться к существующему счёту."""
+    user = await crud.join_account(session, current_user, data.account_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Счёт не найден")
+    return user
+
+
+
 @router.post("/token", response_model=schemas.Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(database.get_session)):
     """Получение JWT-токена."""

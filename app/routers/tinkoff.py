@@ -25,5 +25,7 @@ async def import_tinkoff(
     transactions = await connector.fetch_transactions(start, end)
     if not transactions:
         raise HTTPException(status_code=400, detail="Не удалось получить операции")
-    await crud.create_transactions_bulk(session, transactions, current_user.id)
+    await crud.create_transactions_bulk(
+        session, transactions, current_user.account_id, current_user.id
+    )
     return {"created": len(transactions)}

@@ -4,6 +4,17 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import Optional
 
+
+class Account(BaseModel):
+    """Информация об общем счёте."""
+
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
+
 class CategoryBase(BaseModel):
     """Базовые поля категории."""
     name: str
@@ -19,6 +30,7 @@ class CategoryUpdate(BaseModel):
 
 class Category(CategoryBase):
     id: int
+    account_id: int
     user_id: int
 
     class Config:
@@ -48,6 +60,7 @@ class Transaction(TransactionBase):
     id: int
     created_at: datetime
     amount_rub: float
+    account_id: int
     user_id: int
 
     class Config:
@@ -72,6 +85,7 @@ class GoalUpdate(BaseModel):
 
 class Goal(GoalBase):
     id: int
+    account_id: int
     user_id: int
 
     class Config:
@@ -84,9 +98,17 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+
+class JoinAccount(BaseModel):
+    """Параметры для присоединения к существующему счёту."""
+
+    account_id: int
+
 class User(UserBase):
     id: int
     is_active: bool
+    account_id: int
+      
 
     class Config:
         orm_mode = True

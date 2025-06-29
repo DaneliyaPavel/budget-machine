@@ -1,12 +1,13 @@
 """Вспомогательные функции для безопасности и JWT."""
 
 from datetime import datetime, timedelta
+import os
 from jose import jwt
-from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-# секрет можно переопределить через переменные окружения
-SECRET_KEY = "secret"
+# секретный ключ может быть переопределён через переменную окружения
+SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
