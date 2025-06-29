@@ -34,6 +34,7 @@ class TransactionBase(BaseModel):
 
 class TransactionCreate(TransactionBase):
     created_at: datetime | None = None
+    pass
 
 class TransactionUpdate(BaseModel):
     """Параметры для обновления операции."""

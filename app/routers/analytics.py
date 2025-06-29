@@ -6,6 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import crud, database, schemas, models, notifications
 from .users import get_current_user
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from .. import crud, database, schemas
 
 router = APIRouter(prefix="/аналитика", tags=["Аналитика"])
 
@@ -16,6 +20,11 @@ async def summary_by_category(
     month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
+    year: int = Query(datetime.utcnow().year,
+                      description="Год, за который строится отчёт"),
+    month: int = Query(datetime.utcnow().month,
+                       description="Месяц (1-12)"),
+    session: AsyncSession = Depends(database.get_session),
 ):
     """Вернуть сумму операций по категориям за выбранный месяц."""
     start = datetime(year, month, 1)
@@ -25,6 +34,7 @@ async def summary_by_category(
         end = datetime(year, month + 1, 1)
 
     rows = await crud.transactions_summary_by_category(session, start, end, current_user.id)
+    rows = await crud.transactions_summary_by_category(session, start, end)
     return [schemas.CategorySummary(category=row[0], total=float(row[1] or 0)) for row in rows]
 
 
@@ -36,6 +46,7 @@ async def limits_check(
     background_tasks: BackgroundTasks | None = None,
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
+    session: AsyncSession = Depends(database.get_session),
 ):
     """Показать категории, где траты превысили установленный лимит."""
     start = datetime(year, month, 1)
@@ -79,5 +90,8 @@ async def forecast(
     rows = await crud.forecast_by_category(session, start, end, current_user.id)
     return [
         schemas.ForecastItem(category=r[0], spent=float(r[1]), forecast=float(r[2]))
+    rows = await crud.categories_over_limit(session, start, end)
+    return [
+        schemas.LimitExceed(category=r[0], limit=float(r[1]), spent=float(r[2]))
         for r in rows
     ]

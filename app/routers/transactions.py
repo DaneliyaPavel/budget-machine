@@ -6,6 +6,9 @@ import csv
 from datetime import datetime
 from .. import crud, schemas, database, models
 from .users import get_current_user
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from .. import crud, schemas, database
 
 router = APIRouter(prefix="/операции", tags=["Операции"])
 
@@ -25,6 +28,14 @@ async def create_transaction(
 ):
     """Создать новую операцию."""
     return await crud.create_transaction(session, tx, current_user.id)
+async def read_transactions(session: AsyncSession = Depends(database.get_session)):
+    """Получить список операций."""
+    return await crud.get_transactions(session)
+
+@router.post("/", response_model=schemas.Transaction)
+async def create_transaction(tx: schemas.TransactionCreate, session: AsyncSession = Depends(database.get_session)):
+    """Создать новую операцию."""
+    return await crud.create_transaction(session, tx)
 
 
 @router.post("/импорт", status_code=status.HTTP_201_CREATED)
@@ -56,6 +67,7 @@ async def import_transactions(
         )
         created.append(tx)
     await crud.create_transactions_bulk(session, created, current_user.id)
+    await crud.create_transactions_bulk(session, created)
     return {"created": len(created)}
 
 
@@ -67,6 +79,9 @@ async def read_transaction(
 ):
     """Получить одну операцию."""
     tx = await crud.get_transaction(session, tx_id, current_user.id)
+async def read_transaction(tx_id: int, session: AsyncSession = Depends(database.get_session)):
+    """Получить одну операцию."""
+    tx = await crud.get_transaction(session, tx_id)
     if not tx:
         raise HTTPException(status_code=404, detail="Операция не найдена")
     return tx
@@ -81,6 +96,9 @@ async def update_transaction(
 ):
     """Изменить операцию."""
     tx = await crud.update_transaction(session, tx_id, data, current_user.id)
+async def update_transaction(tx_id: int, data: schemas.TransactionUpdate, session: AsyncSession = Depends(database.get_session)):
+    """Изменить операцию."""
+    tx = await crud.update_transaction(session, tx_id, data)
     if not tx:
         raise HTTPException(status_code=404, detail="Операция не найдена")
     return tx
@@ -94,4 +112,7 @@ async def delete_transaction(
 ):
     """Удалить операцию."""
     await crud.delete_transaction(session, tx_id, current_user.id)
+async def delete_transaction(tx_id: int, session: AsyncSession = Depends(database.get_session)):
+    """Удалить операцию."""
+    await crud.delete_transaction(session, tx_id)
     return None
