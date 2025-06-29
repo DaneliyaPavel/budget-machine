@@ -11,11 +11,6 @@ from .routers import (
     banks,
 )
 from .database import engine, Base
-from .routers import transactions, categories, goals, users, analytics
-from .database import engine, Base
-from .routers import transactions, categories, goals, users
-from .database import engine, Base
-import asyncio
 
 tags_metadata = [
     {"name": "Категории", "description": "Управление категориями операций"},
@@ -33,11 +28,13 @@ app = FastAPI(
     openapi_tags=tags_metadata,
 )
 
+
 @app.on_event("startup")
 async def on_startup():
     """Создаём таблицы при запуске приложения."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 app.include_router(categories.router)
 app.include_router(transactions.router)
