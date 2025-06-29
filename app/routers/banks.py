@@ -33,5 +33,4 @@ async def import_from_bank(
     await crud.create_transactions_bulk(
         session, transactions, current_user.account_id, current_user.id
     )
-    await crud.create_transactions_bulk(session, transactions, current_user.id)
     return {"created": len(transactions)}

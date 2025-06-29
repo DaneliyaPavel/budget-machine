@@ -147,3 +147,13 @@ curl -X POST "http://127.0.0.1:8000/пользователи/join" \
      -H "Content-Type: application/json" \
      -d '{"account_id": 1}'
 ```
+
+## Запуск в Docker
+
+Для удобного запуска окружения используйте `docker-compose`. Оно поднимает PostgreSQL, Redis и приложение вместе с Celery-воркером.
+
+```bash
+docker-compose up --build
+```
+
+API будет доступно по адресу `http://localhost:8000`.

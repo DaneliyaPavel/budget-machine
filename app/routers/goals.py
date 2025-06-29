@@ -2,17 +2,19 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from .. import crud, schemas, database, models
 from .users import get_current_user
 
 router = APIRouter(prefix="/цели", tags=["Цели"])
+
 
 @router.get("/", response_model=list[schemas.Goal])
 async def read_goals(
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Получить список целей."""
+    """Получить список целей пользователя."""
     return await crud.get_goals(session, current_user.account_id)
 
 
@@ -27,6 +29,7 @@ async def create_goal(
         session, goal, current_user.account_id, current_user.id
     )
 
+
 @router.get("/{goal_id}", response_model=schemas.Goal)
 async def read_goal(
     goal_id: int,
@@ -35,21 +38,6 @@ async def read_goal(
 ):
     """Получить цель по ID."""
     goal = await crud.get_goal(session, goal_id, current_user.account_id)
-    goal = await crud.get_goal(session, goal_id, current_user.id)
-async def read_goals(session: AsyncSession = Depends(database.get_session)):
-    """Получить список целей."""
-    return await crud.get_goals(session)
-
-@router.post("/", response_model=schemas.Goal)
-async def create_goal(goal: schemas.GoalCreate, session: AsyncSession = Depends(database.get_session)):
-    """Создать новую цель."""
-    return await crud.create_goal(session, goal)
-
-
-@router.get("/{goal_id}", response_model=schemas.Goal)
-async def read_goal(goal_id: int, session: AsyncSession = Depends(database.get_session)):
-    """Получить цель по ID."""
-    goal = await crud.get_goal(session, goal_id)
     if not goal:
         raise HTTPException(status_code=404, detail="Цель не найдена")
     return goal
@@ -62,14 +50,8 @@ async def update_goal(
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Изменить цель."""
-    goal = await crud.update_goal(
-        session, goal_id, data, current_user.account_id
-    )
-    goal = await crud.update_goal(session, goal_id, data, current_user.id)
-async def update_goal(goal_id: int, data: schemas.GoalUpdate, session: AsyncSession = Depends(database.get_session)):
-    """Изменить цель."""
-    goal = await crud.update_goal(session, goal_id, data)
+    """Изменить параметры цели."""
+    goal = await crud.update_goal(session, goal_id, data, current_user.account_id)
     if not goal:
         raise HTTPException(status_code=404, detail="Цель не найдена")
     return goal
@@ -83,8 +65,4 @@ async def delete_goal(
 ):
     """Удалить цель."""
     await crud.delete_goal(session, goal_id, current_user.account_id)
-    await crud.delete_goal(session, goal_id, current_user.id)
-async def delete_goal(goal_id: int, session: AsyncSession = Depends(database.get_session)):
-    """Удалить цель."""
-    await crud.delete_goal(session, goal_id)
     return None
