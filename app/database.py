@@ -11,9 +11,11 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
 engine = create_async_engine(DATABASE_URL, echo=True)
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
+
 class Base(DeclarativeBase):
     """Базовый класс для всех моделей ORM."""
     pass
+
 
 async def get_session() -> AsyncSession:
     """Асинхронный генератор сессий БД."""

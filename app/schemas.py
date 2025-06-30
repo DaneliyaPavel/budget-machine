@@ -20,13 +20,16 @@ class CategoryBase(BaseModel):
     name: str
     monthly_limit: float | None = None
 
+
 class CategoryCreate(CategoryBase):
     pass
+
 
 class CategoryUpdate(BaseModel):
     """Поля для обновления категории."""
     name: str | None = None
     monthly_limit: float | None = None
+
 
 class Category(CategoryBase):
     id: int
@@ -36,6 +39,7 @@ class Category(CategoryBase):
     class Config:
         orm_mode = True
 
+
 class TransactionBase(BaseModel):
     """Общие поля финансовой операции."""
     amount: float
@@ -44,9 +48,11 @@ class TransactionBase(BaseModel):
     description: Optional[str] = None
     category_id: int
 
+
 class TransactionCreate(TransactionBase):
     created_at: datetime | None = None
     pass
+
 
 class TransactionUpdate(BaseModel):
     """Параметры для обновления операции."""
@@ -55,6 +61,7 @@ class TransactionUpdate(BaseModel):
     description: str | None = None
     category_id: int | None = None
     created_at: datetime | None = None
+
 
 class Transaction(TransactionBase):
     id: int
@@ -66,6 +73,7 @@ class Transaction(TransactionBase):
     class Config:
         orm_mode = True
 
+
 class GoalBase(BaseModel):
     """Основные поля цели накоплений."""
     name: str
@@ -73,8 +81,10 @@ class GoalBase(BaseModel):
     current_amount: float = 0
     due_date: Optional[datetime] = None
 
+
 class GoalCreate(GoalBase):
     pass
+
 
 class GoalUpdate(BaseModel):
     """Параметры для изменения цели."""
@@ -88,6 +98,7 @@ class GoalDeposit(BaseModel):
     """Сумма пополнения цели."""
 
     amount: float
+
 
 class Goal(GoalBase):
     id: int
@@ -132,9 +143,11 @@ class RecurringPayment(RecurringPaymentBase):
     class Config:
         orm_mode = True
 
+
 class UserBase(BaseModel):
     """Данные пользователя."""
     email: str
+
 
 class UserCreate(UserBase):
     password: str
@@ -150,15 +163,16 @@ class JoinAccount(BaseModel):
 
     account_id: int
 
+
 class User(UserBase):
     id: int
     is_active: bool
     account_id: int
     role: str
-      
 
     class Config:
         orm_mode = True
+
 
 class Token(BaseModel):
     access_token: str
