@@ -4,7 +4,9 @@ import redis.asyncio as redis
 
 from .. import notifications, crud, database
 
-REDIS_URL = os.getenv("REDIS_URL", os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"))
+REDIS_URL = os.getenv(
+    "REDIS_URL", os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+)
 
 
 async def main() -> None:

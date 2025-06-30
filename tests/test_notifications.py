@@ -30,11 +30,15 @@ def _login(client):
 
 
 def test_notification_stream():
-    proc = subprocess.Popen([
-        "redis-server",
-        "--port",
-        "6379",
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    proc = subprocess.Popen(
+        [
+            "redis-server",
+            "--port",
+            "6379",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     rds = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
     # wait for server to be ready
     for _ in range(10):
@@ -71,7 +75,9 @@ def test_notification_stream():
             )
             assert r.status_code == 200
             time.sleep(0.5)
-            rds = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True)
+            rds = redis.Redis.from_url(
+                "redis://localhost:6379/0", decode_responses=True
+            )
             messages = rds.xrange("notifications")
             assert len(messages) == 1
             assert "Превышение лимитов" in messages[0][1]["text"]

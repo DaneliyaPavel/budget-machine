@@ -80,4 +80,3 @@ def process_recurring_task(date: str) -> int:
             return created
 
     return asyncio.run(_run())
-
