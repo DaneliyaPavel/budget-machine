@@ -1,6 +1,6 @@
 """Маршруты аналитики расходов и целей."""
 
-from datetime import datetime
+from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -108,7 +108,15 @@ async def summary_by_day(
     start = datetime(year, month, 1)
     end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
     rows = await crud.daily_expenses(session, start, end, current_user.account_id)
-    return [schemas.DailySummary(date=r[0], total=float(r[1] or 0)) for r in rows]
+    result: list[schemas.DailySummary] = []
+    for r in rows:
+        day = r[0]
+        if isinstance(day, str):
+            day = date.fromisoformat(day)
+        elif isinstance(day, datetime):
+            day = day.date()
+        result.append(schemas.DailySummary(date=day, total=float(r[1] or 0)))
+    return result
 
 
 @router.get("/баланс", response_model=schemas.MonthlySummary)
