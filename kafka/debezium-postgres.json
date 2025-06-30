@@ -1,0 +1,15 @@
+{
+  "name": "budget-postgres",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "db",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "postgres",
+    "database.dbname": "budget",
+    "database.server.name": "postgres",
+    "plugin.name": "pgoutput",
+    "slot.name": "budget_slot",
+    "tombstones.on.delete": "false"
+  }
+}

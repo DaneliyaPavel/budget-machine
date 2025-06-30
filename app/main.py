@@ -19,6 +19,7 @@ from .routers import (
     push,
 )
 from .database import engine, Base
+from .kafka_producer import close as close_producer
 
 tags_metadata = [
     {"name": "Категории", "description": "Управление категориями операций"},
@@ -54,6 +55,11 @@ async def on_startup():
     except RuntimeError:
         # Если приложение уже стартовало, игнорируем ошибку добавления middleware
         pass
+
+
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    await close_producer()
 
 
 app.include_router(categories.router)
