@@ -1,6 +1,6 @@
 """Получение курсов валют через ЦБ РФ."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 
 import httpx
@@ -14,7 +14,7 @@ _last_update: datetime | None = None
 async def get_rate(code: str) -> float:
     """Вернуть курс валюты к рублю."""
     global _rates, _last_update
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if not _last_update or (now - _last_update).seconds > 3600:
         try:
             async with httpx.AsyncClient() as client:

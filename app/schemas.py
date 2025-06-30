@@ -24,6 +24,7 @@ class CategoryBase(BaseModel):
     parent_id: int | None = None
 
 
+
 class CategoryCreate(CategoryBase):
     pass
 
@@ -34,6 +35,7 @@ class CategoryUpdate(BaseModel):
     name: str | None = None
     monthly_limit: float | None = None
     parent_id: int | None = None
+
 
 
 class Category(CategoryBase):

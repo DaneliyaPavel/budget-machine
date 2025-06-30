@@ -8,6 +8,7 @@ from sqlalchemy import select, update, delete, func
 from . import models, schemas, currency
 from .security import get_password_hash
 
+
 # ----------------------------------------------------------------------------
 # Пользователи
 # ----------------------------------------------------------------------------
@@ -87,9 +88,9 @@ async def delete_user(db: AsyncSession, user_id: int, account_id: int) -> bool:
 
 
 async def update_user(
-    db: AsyncSession,
-    user: models.User,
-    data: schemas.UserUpdate,
+        db: AsyncSession,
+        user: models.User,
+        data: schemas.UserUpdate,
 ) -> models.User:
     """Обновить данные пользователя."""
     if data.email is not None:
@@ -159,10 +160,10 @@ async def get_category(db: AsyncSession, category_id: int, account_id: int):
 
 
 async def create_category(
-    db: AsyncSession,
-    category: schemas.CategoryCreate,
-    account_id: int,
-    user_id: int,
+        db: AsyncSession,
+        category: schemas.CategoryCreate,
+        account_id: int,
+        user_id: int,
 ) -> models.Category:
     db_obj = models.Category(
         name=category.name,
@@ -178,10 +179,10 @@ async def create_category(
 
 
 async def update_category(
-    db: AsyncSession,
-    category_id: int,
-    data: schemas.CategoryUpdate,
-    account_id: int,
+        db: AsyncSession,
+        category_id: int,
+        data: schemas.CategoryUpdate,
+        account_id: int,
 ) -> models.Category | None:
     stmt = (
         update(models.Category)
@@ -218,6 +219,7 @@ async def get_transactions(
     end: datetime | None = None,
     category_id: int | None = None,
     limit: int | None = None,
+
 ):
     stmt = select(models.Transaction).where(models.Transaction.account_id == account_id)
     if start:
@@ -246,10 +248,10 @@ async def get_transaction(db: AsyncSession, tx_id: int, account_id: int):
 
 
 async def create_transaction(
-    db: AsyncSession,
-    tx: schemas.TransactionCreate,
-    account_id: int,
-    user_id: int,
+        db: AsyncSession,
+        tx: schemas.TransactionCreate,
+        account_id: int,
+        user_id: int,
 ) -> models.Transaction:
     rate = await currency.get_rate(tx.currency)
     db_obj = models.Transaction(
@@ -265,10 +267,10 @@ async def create_transaction(
 
 
 async def create_transactions_bulk(
-    db: AsyncSession,
-    txs: list[schemas.TransactionCreate],
-    account_id: int,
-    user_id: int,
+        db: AsyncSession,
+        txs: list[schemas.TransactionCreate],
+        account_id: int,
+        user_id: int,
 ):
     objects = []
     for tx in txs:
@@ -289,10 +291,10 @@ async def create_transactions_bulk(
 
 
 async def update_transaction(
-    db: AsyncSession,
-    tx_id: int,
-    data: schemas.TransactionUpdate,
-    account_id: int,
+        db: AsyncSession,
+        tx_id: int,
+        data: schemas.TransactionUpdate,
+        account_id: int,
 ) -> models.Transaction | None:
     tx_obj = await get_transaction(db, tx_id, account_id)
     if not tx_obj:
@@ -343,10 +345,10 @@ async def get_goal(db: AsyncSession, goal_id: int, account_id: int):
 
 
 async def create_goal(
-    db: AsyncSession,
-    goal: schemas.GoalCreate,
-    account_id: int,
-    user_id: int,
+        db: AsyncSession,
+        goal: schemas.GoalCreate,
+        account_id: int,
+        user_id: int,
 ) -> models.Goal:
     db_obj = models.Goal(**goal.dict(), account_id=account_id, user_id=user_id)
     db.add(db_obj)
@@ -356,10 +358,10 @@ async def create_goal(
 
 
 async def update_goal(
-    db: AsyncSession,
-    goal_id: int,
-    data: schemas.GoalUpdate,
-    account_id: int,
+        db: AsyncSession,
+        goal_id: int,
+        data: schemas.GoalUpdate,
+        account_id: int,
 ) -> models.Goal | None:
     stmt = (
         update(models.Goal)
@@ -373,10 +375,10 @@ async def update_goal(
 
 
 async def add_to_goal(
-    db: AsyncSession,
-    goal_id: int,
-    amount: float,
-    account_id: int,
+        db: AsyncSession,
+        goal_id: int,
+        amount: float,
+        account_id: int,
 ) -> models.Goal | None:
     """Увеличить накопленную сумму цели."""
     goal = await get_goal(db, goal_id, account_id)
@@ -406,7 +408,7 @@ async def delete_goal(db: AsyncSession, goal_id: int, account_id: int) -> None:
 
 
 async def transactions_summary_by_category(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+        db: AsyncSession, start: datetime, end: datetime, account_id: int
 ):
     stmt = (
         select(models.Category.name, func.sum(models.Transaction.amount_rub))
@@ -423,7 +425,7 @@ async def transactions_summary_by_category(
 
 
 async def categories_over_limit(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+        db: AsyncSession, start: datetime, end: datetime, account_id: int
 ):
     stmt = (
         select(
@@ -446,7 +448,7 @@ async def categories_over_limit(
 
 
 async def forecast_by_category(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+        db: AsyncSession, start: datetime, end: datetime, account_id: int
 ):
     now = datetime.utcnow()
     if now < start:
@@ -476,7 +478,7 @@ async def forecast_by_category(
 
 
 async def daily_expenses(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+        db: AsyncSession, start: datetime, end: datetime, account_id: int
 ):
     day = func.date(models.Transaction.created_at)
     stmt = (
@@ -494,7 +496,7 @@ async def daily_expenses(
 
 
 async def monthly_overview(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+        db: AsyncSession, start: datetime, end: datetime, account_id: int
 ):
     now = datetime.utcnow()
     cutoff = min(now, end)
@@ -537,10 +539,10 @@ async def get_recurring_payment(db: AsyncSession, rp_id: int, account_id: int):
 
 
 async def create_recurring_payment(
-    db: AsyncSession,
-    rp: schemas.RecurringPaymentCreate,
-    account_id: int,
-    user_id: int,
+        db: AsyncSession,
+        rp: schemas.RecurringPaymentCreate,
+        account_id: int,
+        user_id: int,
 ) -> models.RecurringPayment:
     db_obj = models.RecurringPayment(
         **rp.dict(), account_id=account_id, user_id=user_id
@@ -552,10 +554,10 @@ async def create_recurring_payment(
 
 
 async def update_recurring_payment(
-    db: AsyncSession,
-    rp_id: int,
-    data: schemas.RecurringPaymentUpdate,
-    account_id: int,
+        db: AsyncSession,
+        rp_id: int,
+        data: schemas.RecurringPaymentUpdate,
+        account_id: int,
 ) -> models.RecurringPayment | None:
     stmt = (
         update(models.RecurringPayment)
