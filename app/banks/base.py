@@ -3,6 +3,7 @@ from typing import List
 
 from .. import schemas
 
+
 class BankConnector:
     """Базовый интерфейс коннектора банка."""
 

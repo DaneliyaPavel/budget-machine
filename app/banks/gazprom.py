@@ -4,6 +4,7 @@ from typing import List
 from .. import schemas
 from .base import BankConnector
 
+
 class GazpromConnector(BankConnector):
     """Заглушка коннектора Газпромбанка."""
 
