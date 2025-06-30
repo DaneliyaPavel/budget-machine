@@ -13,8 +13,14 @@ router = APIRouter(prefix="/аналитика", tags=["Аналитика"])
 
 @router.get("/категории", response_model=list[schemas.CategorySummary])
 async def summary_by_category(
-    year: int = Query(datetime.utcnow().year, description="Год"),
-    month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
+    year: int = Query(
+        default_factory=lambda: datetime.utcnow().year,
+        description="Год",
+    ),
+    month: int = Query(
+        default_factory=lambda: datetime.utcnow().month,
+        description="Месяц (1-12)",
+    ),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -32,8 +38,14 @@ async def summary_by_category(
 @router.get("/лимиты", response_model=list[schemas.LimitExceed])
 async def limits_check(
     background_tasks: BackgroundTasks,
-    year: int = Query(datetime.utcnow().year, description="Год"),
-    month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
+    year: int = Query(
+        default_factory=lambda: datetime.utcnow().year,
+        description="Год",
+    ),
+    month: int = Query(
+        default_factory=lambda: datetime.utcnow().month,
+        description="Месяц (1-12)",
+    ),
     notify: bool = Query(False, description="Отправить уведомление"),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
@@ -58,8 +70,14 @@ async def limits_check(
 
 @router.get("/прогноз", response_model=list[schemas.ForecastItem])
 async def forecast(
-    year: int = Query(datetime.utcnow().year, description="Год"),
-    month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
+    year: int = Query(
+        default_factory=lambda: datetime.utcnow().year,
+        description="Год",
+    ),
+    month: int = Query(
+        default_factory=lambda: datetime.utcnow().month,
+        description="Месяц (1-12)",
+    ),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -75,8 +93,14 @@ async def forecast(
 
 @router.get("/дни", response_model=list[schemas.DailySummary])
 async def summary_by_day(
-    year: int = Query(datetime.utcnow().year, description="Год"),
-    month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
+    year: int = Query(
+        default_factory=lambda: datetime.utcnow().year,
+        description="Год",
+    ),
+    month: int = Query(
+        default_factory=lambda: datetime.utcnow().month,
+        description="Месяц (1-12)",
+    ),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -89,8 +113,14 @@ async def summary_by_day(
 
 @router.get("/баланс", response_model=schemas.MonthlySummary)
 async def balance_overview(
-    year: int = Query(datetime.utcnow().year, description="Год"),
-    month: int = Query(datetime.utcnow().month, description="Месяц (1-12)"),
+    year: int = Query(
+        default_factory=lambda: datetime.utcnow().year,
+        description="Год",
+    ),
+    month: int = Query(
+        default_factory=lambda: datetime.utcnow().month,
+        description="Месяц (1-12)",
+    ),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
