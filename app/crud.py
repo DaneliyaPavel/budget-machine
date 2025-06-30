@@ -1,6 +1,7 @@
 """Функции для взаимодействия с базой данных."""
 
 from datetime import datetime
+import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 
@@ -12,6 +13,7 @@ from .security import get_password_hash
 # Пользователи
 # ----------------------------------------------------------------------------
 
+
 async def get_user_by_email(db: AsyncSession, email: str) -> models.User | None:
     """Найти пользователя по email."""
     result = await db.execute(select(models.User).where(models.User.email == email))
@@ -21,7 +23,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> models.User | None:
 async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User:
     """Создать пользователя и счёт."""
     hashed = get_password_hash(user.password)
-    account = models.Account(name="Личный бюджет")
+    account = models.Account(name="Личный бюджет", base_currency="RUB")
     db.add(account)
     await db.flush()
     db_obj = models.User(
@@ -36,7 +38,24 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User
     return db_obj
 
 
-async def join_account(db: AsyncSession, user: models.User, account_id: int) -> models.User | None:
+async def create_user_oauth(db: AsyncSession, email: str) -> models.User:
+    """Создать пользователя через OAuth."""
+    hashed = get_password_hash(secrets.token_hex(8))
+    account = models.Account(name="Личный бюджет", base_currency="RUB")
+    db.add(account)
+    await db.flush()
+    user = models.User(
+        email=email, hashed_password=hashed, account=account, role="owner"
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def join_account(
+    db: AsyncSession, user: models.User, account_id: int
+) -> models.User | None:
     """Присоединить пользователя к существующему счёту."""
     account = await db.get(models.Account, account_id)
     if not account:
@@ -94,13 +113,23 @@ async def get_account(db: AsyncSession, account_id: int) -> models.Account | Non
 
 
 async def update_account(
-        db: AsyncSession, account_id: int, name: str
+    db: AsyncSession,
+    account_id: int,
+    name: str | None = None,
+    base_currency: str | None = None,
 ) -> models.Account | None:
-    """Изменить название счёта."""
+    """Изменить параметры счёта."""
+    values = {}
+    if name is not None:
+        values["name"] = name
+    if base_currency is not None:
+        values["base_currency"] = base_currency
+    if not values:
+        return await get_account(db, account_id)
     stmt = (
         update(models.Account)
         .where(models.Account.id == account_id)
-        .values(name=name)
+        .values(**values)
         .returning(models.Account)
     )
     result = await db.execute(stmt)
@@ -111,6 +140,7 @@ async def update_account(
 # ----------------------------------------------------------------------------
 # Категории
 # ----------------------------------------------------------------------------
+
 
 async def get_categories(db: AsyncSession, account_id: int):
     result = await db.execute(
@@ -138,6 +168,7 @@ async def create_category(
     db_obj = models.Category(
         name=category.name,
         monthly_limit=category.monthly_limit,
+        parent_id=category.parent_id,
         account_id=account_id,
         user_id=user_id,
     )
@@ -155,7 +186,9 @@ async def update_category(
 ) -> models.Category | None:
     stmt = (
         update(models.Category)
-        .where(models.Category.id == category_id, models.Category.account_id == account_id)
+        .where(
+            models.Category.id == category_id, models.Category.account_id == account_id
+        )
         .values(**data.dict(exclude_unset=True))
         .returning(models.Category)
     )
@@ -178,12 +211,15 @@ async def delete_category(db: AsyncSession, category_id: int, account_id: int) -
 # Операции
 # ----------------------------------------------------------------------------
 
+
 async def get_transactions(
-        db: AsyncSession,
-        account_id: int,
-        start: datetime | None = None,
-        end: datetime | None = None,
-        category_id: int | None = None,
+    db: AsyncSession,
+    account_id: int,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    category_id: int | None = None,
+    limit: int | None = None,
+
 ):
     stmt = select(models.Transaction).where(models.Transaction.account_id == account_id)
     if start:
@@ -192,7 +228,12 @@ async def get_transactions(
         stmt = stmt.where(models.Transaction.created_at < end)
     if category_id:
         stmt = stmt.where(models.Transaction.category_id == category_id)
-    result = await db.execute(stmt.order_by(models.Transaction.created_at))
+    stmt = stmt.order_by(
+        models.Transaction.created_at.desc() if limit else models.Transaction.created_at
+    )
+    if limit:
+        stmt = stmt.limit(limit)
+    result = await db.execute(stmt)
     return result.scalars().all()
 
 
@@ -285,6 +326,7 @@ async def delete_transaction(db: AsyncSession, tx_id: int, account_id: int) -> N
 # Цели
 # ----------------------------------------------------------------------------
 
+
 async def get_goals(db: AsyncSession, account_id: int):
     result = await db.execute(
         select(models.Goal).where(models.Goal.account_id == account_id)
@@ -363,6 +405,7 @@ async def delete_goal(db: AsyncSession, goal_id: int, account_id: int) -> None:
 # ----------------------------------------------------------------------------
 # Аналитика
 # ----------------------------------------------------------------------------
+
 
 async def transactions_summary_by_category(
         db: AsyncSession, start: datetime, end: datetime, account_id: int
@@ -457,13 +500,10 @@ async def monthly_overview(
 ):
     now = datetime.utcnow()
     cutoff = min(now, end)
-    stmt = (
-        select(func.sum(models.Transaction.amount_rub))
-        .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < cutoff,
-            models.Transaction.account_id == account_id,
-        )
+    stmt = select(func.sum(models.Transaction.amount_rub)).where(
+        models.Transaction.created_at >= start,
+        models.Transaction.created_at < cutoff,
+        models.Transaction.account_id == account_id,
     )
     result = await db.execute(stmt)
     spent = float(result.scalar() or 0)
@@ -481,7 +521,9 @@ async def monthly_overview(
 
 async def get_recurring_payments(db: AsyncSession, account_id: int):
     result = await db.execute(
-        select(models.RecurringPayment).where(models.RecurringPayment.account_id == account_id)
+        select(models.RecurringPayment).where(
+            models.RecurringPayment.account_id == account_id
+        )
     )
     return result.scalars().all()
 
@@ -519,7 +561,10 @@ async def update_recurring_payment(
 ) -> models.RecurringPayment | None:
     stmt = (
         update(models.RecurringPayment)
-        .where(models.RecurringPayment.id == rp_id, models.RecurringPayment.account_id == account_id)
+        .where(
+            models.RecurringPayment.id == rp_id,
+            models.RecurringPayment.account_id == account_id,
+        )
         .values(**data.dict(exclude_unset=True))
         .returning(models.RecurringPayment)
     )
@@ -528,7 +573,9 @@ async def update_recurring_payment(
     return result.scalar_one_or_none()
 
 
-async def delete_recurring_payment(db: AsyncSession, rp_id: int, account_id: int) -> None:
+async def delete_recurring_payment(
+    db: AsyncSession, rp_id: int, account_id: int
+) -> None:
     await db.execute(
         delete(models.RecurringPayment).where(
             models.RecurringPayment.id == rp_id,
@@ -542,7 +589,104 @@ async def get_recurring_by_day(db: AsyncSession, day: int):
     result = await db.execute(
         select(models.RecurringPayment).where(
             models.RecurringPayment.day == day,
-            models.RecurringPayment.active == True,
+            models.RecurringPayment.active.is_(True),
         )
     )
     return result.scalars().all()
+
+
+# ----------------------------------------------------------------------------
+# Банковские токены
+# ----------------------------------------------------------------------------
+
+
+async def get_bank_tokens(db: AsyncSession, account_id: int):
+    result = await db.execute(
+        select(models.BankToken).where(models.BankToken.account_id == account_id)
+    )
+    return result.scalars().all()
+
+
+async def get_bank_token(
+    db: AsyncSession, bank: str, account_id: int
+) -> models.BankToken | None:
+    """Получить токен конкретного банка."""
+    result = await db.execute(
+        select(models.BankToken).where(
+            models.BankToken.account_id == account_id,
+            models.BankToken.bank == bank,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def set_bank_token(
+    db: AsyncSession, bank: str, token: str, account_id: int, user_id: int
+) -> models.BankToken:
+    stmt = select(models.BankToken).where(
+        models.BankToken.account_id == account_id,
+        models.BankToken.bank == bank,
+    )
+    result = await db.execute(stmt)
+    obj = result.scalar_one_or_none()
+    if obj:
+        obj.token = token
+    else:
+        obj = models.BankToken(
+            bank=bank, token=token, account_id=account_id, user_id=user_id
+        )
+        db.add(obj)
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+async def delete_bank_token(db: AsyncSession, bank: str, account_id: int) -> None:
+    await db.execute(
+        delete(models.BankToken).where(
+            models.BankToken.bank == bank,
+            models.BankToken.account_id == account_id,
+        )
+    )
+    await db.commit()
+
+
+# ----------------------------------------------------------------------------
+# Push subscriptions
+# ----------------------------------------------------------------------------
+
+
+async def get_push_subscriptions(db: AsyncSession, account_id: int):
+    result = await db.execute(
+        select(models.PushSubscription).where(
+            models.PushSubscription.account_id == account_id
+        )
+    )
+    return result.scalars().all()
+
+
+async def add_push_subscription(
+    db: AsyncSession,
+    subscription: schemas.PushSubscriptionCreate,
+    account_id: int,
+    user_id: int,
+) -> models.PushSubscription:
+    db_obj = models.PushSubscription(
+        **subscription.dict(), account_id=account_id, user_id=user_id
+    )
+    db.add(db_obj)
+    await db.commit()
+    await db.refresh(db_obj)
+    return db_obj
+
+
+async def delete_push_subscription(
+    db: AsyncSession, sub_id: int, account_id: int
+) -> None:
+    await db.execute(
+        delete(models.PushSubscription).where(
+            models.PushSubscription.account_id == account_id,
+            models.PushSubscription.id == sub_id,
+        )
+    )
+    await db.commit()

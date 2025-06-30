@@ -1,7 +1,16 @@
 """Описание моделей базы данных."""
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Boolean
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Numeric,
+    Boolean,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -14,14 +23,15 @@ class Account(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    base_currency = Column(String, nullable=False, default="RUB")
 
     users = relationship("User", back_populates="account")
     categories = relationship("Category", back_populates="account")
     transactions = relationship("Transaction", back_populates="account")
     goals = relationship("Goal", back_populates="account")
-    recurring_payments = relationship(
-        "RecurringPayment", back_populates="account"
-    )
+    recurring_payments = relationship("RecurringPayment", back_populates="account")
+    tokens = relationship("BankToken", back_populates="account")
+    push_subscriptions = relationship("PushSubscription", back_populates="account")
 
 
 class User(Base):
@@ -41,9 +51,9 @@ class User(Base):
     categories = relationship("Category", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
     goals = relationship("Goal", back_populates="user")
-    recurring_payments = relationship(
-        "RecurringPayment", back_populates="user"
-    )
+    recurring_payments = relationship("RecurringPayment", back_populates="user")
+    tokens = relationship("BankToken", back_populates="user")
+    push_subscriptions = relationship("PushSubscription", back_populates="user")
 
 
 class Category(Base):
@@ -54,6 +64,7 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     monthly_limit = Column(Numeric(10, 2), nullable=True)
+    parent_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
 
     account_id = Column(Integer, ForeignKey("accounts.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
@@ -61,9 +72,9 @@ class Category(Base):
     account = relationship("Account", back_populates="categories")
     user = relationship("User", back_populates="categories")
     transactions = relationship("Transaction", back_populates="category")
-    recurring_payments = relationship(
-        "RecurringPayment", back_populates="category"
-    )
+    recurring_payments = relationship("RecurringPayment", back_populates="category")
+    parent = relationship("Category", remote_side=[id], back_populates="children")
+    children = relationship("Category", back_populates="parent")
 
 
 class Transaction(Base):
@@ -126,3 +137,38 @@ class RecurringPayment(Base):
     category = relationship("Category", back_populates="recurring_payments")
     account = relationship("Account", back_populates="recurring_payments")
     user = relationship("User", back_populates="recurring_payments")
+
+
+class BankToken(Base):
+    """OAuth-токен банка."""
+
+    __tablename__ = "bank_tokens"
+    __table_args__ = (UniqueConstraint("account_id", "bank"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    bank = Column(String, nullable=False)
+    token = Column(String, nullable=False)
+
+    account_id = Column(Integer, ForeignKey("accounts.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    account = relationship("Account", back_populates="tokens")
+    user = relationship("User", back_populates="tokens")
+
+
+class PushSubscription(Base):
+    """Web Push подписка."""
+
+    __tablename__ = "push_subscriptions"
+    __table_args__ = (UniqueConstraint("account_id", "endpoint"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    endpoint = Column(String, nullable=False)
+    p256dh = Column(String, nullable=False)
+    auth = Column(String, nullable=False)
+
+    account_id = Column(Integer, ForeignKey("accounts.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    account = relationship("Account", back_populates="push_subscriptions")
+    user = relationship("User", back_populates="push_subscriptions")

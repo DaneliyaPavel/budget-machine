@@ -10,6 +10,7 @@ class Account(BaseModel):
 
     id: int
     name: str
+    base_currency: str = "RUB"
 
     class Config:
         orm_mode = True
@@ -17,8 +18,11 @@ class Account(BaseModel):
 
 class CategoryBase(BaseModel):
     """Базовые поля категории."""
+
     name: str
     monthly_limit: float | None = None
+    parent_id: int | None = None
+
 
 
 class CategoryCreate(CategoryBase):
@@ -27,8 +31,11 @@ class CategoryCreate(CategoryBase):
 
 class CategoryUpdate(BaseModel):
     """Поля для обновления категории."""
+
     name: str | None = None
     monthly_limit: float | None = None
+    parent_id: int | None = None
+
 
 
 class Category(CategoryBase):
@@ -42,6 +49,7 @@ class Category(CategoryBase):
 
 class TransactionBase(BaseModel):
     """Общие поля финансовой операции."""
+
     amount: float
     currency: str = "RUB"
     amount_rub: float | None = None
@@ -56,6 +64,7 @@ class TransactionCreate(TransactionBase):
 
 class TransactionUpdate(BaseModel):
     """Параметры для обновления операции."""
+
     amount: float | None = None
     currency: str | None = None
     description: str | None = None
@@ -76,6 +85,7 @@ class Transaction(TransactionBase):
 
 class GoalBase(BaseModel):
     """Основные поля цели накоплений."""
+
     name: str
     target_amount: float
     current_amount: float = 0
@@ -88,6 +98,7 @@ class GoalCreate(GoalBase):
 
 class GoalUpdate(BaseModel):
     """Параметры для изменения цели."""
+
     name: str | None = None
     target_amount: float | None = None
     current_amount: float | None = None
@@ -144,8 +155,29 @@ class RecurringPayment(RecurringPaymentBase):
         orm_mode = True
 
 
+class BankTokenBase(BaseModel):
+    """Основа токена банка."""
+
+    bank: str
+
+
+class BankTokenCreate(BankTokenBase):
+    token: str
+
+
+class BankToken(BankTokenBase):
+    id: int
+    token: str
+    account_id: int
+    user_id: int
+
+    class Config:
+        orm_mode = True
+
+
 class UserBase(BaseModel):
     """Данные пользователя."""
+
     email: str
 
 
@@ -181,12 +213,14 @@ class Token(BaseModel):
 
 class CategorySummary(BaseModel):
     """Сводные данные по категории расходов."""
+
     category: str = Field(..., description="Название категории")
     total: float = Field(..., description="Сумма операций")
 
 
 class LimitExceed(BaseModel):
     """Категория, в которой превышен месячный лимит."""
+
     category: str = Field(..., description="Название категории")
     limit: float = Field(..., description="Установленный лимит")
     spent: float = Field(..., description="Фактические траты")
@@ -194,6 +228,7 @@ class LimitExceed(BaseModel):
 
 class ForecastItem(BaseModel):
     """Прогноз трат по категории на месяц."""
+
     category: str = Field(..., description="Название категории")
     spent: float = Field(..., description="Уже потрачено")
     forecast: float = Field(..., description="Ожидаемые траты к концу месяца")
@@ -222,3 +257,20 @@ class GoalProgress(BaseModel):
     current_amount: float = Field(..., description="Уже накоплено")
     progress: float = Field(..., description="Выполнение цели в процентах")
     due_date: datetime | None = Field(None, description="Желаемая дата достижения")
+
+
+class PushSubscriptionBase(BaseModel):
+    endpoint: str
+    p256dh: str
+    auth: str
+
+
+class PushSubscriptionCreate(PushSubscriptionBase):
+    pass
+
+
+class PushSubscription(PushSubscriptionBase):
+    id: int
+
+    class Config:
+        orm_mode = True

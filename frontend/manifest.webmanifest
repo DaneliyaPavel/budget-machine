@@ -1,0 +1,10 @@
+{
+  "name": "Budget App",
+  "short_name": "Budget",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "description": "Приложение учета бюджета",
+  "icons": []
+}

@@ -11,7 +11,7 @@ if db_path.exists():
     db_path.unlink()
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from app.main import app
+from app.main import app  # noqa: E402
 
 
 def _create_user(client):
@@ -67,3 +67,29 @@ def test_category_crud():
         r = client.get("/категории/", headers=headers)
         assert r.status_code == 200
         assert r.json() == []
+
+
+def test_subcategory_creation():
+    with TestClient(app) as client:
+        user = {"email": "cat2@example.com", "password": "pass"}
+        r = client.post("/пользователи/", json=user)
+        assert r.status_code == 200
+        token = _login(client, user)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        r = client.post("/категории/", json={"name": "Быт"}, headers=headers)
+        parent_id = r.json()["id"]
+
+        r = client.post(
+            "/категории/",
+            json={"name": "Химия", "parent_id": parent_id},
+            headers=headers,
+        )
+        assert r.status_code == 200
+        sub_id = r.json()["id"]
+        assert r.json()["parent_id"] == parent_id
+
+        r = client.get("/категории/", headers=headers)
+        data = {c["id"]: c for c in r.json()}
+        assert parent_id in data and sub_id in data
+        assert data[sub_id]["parent_id"] == parent_id
