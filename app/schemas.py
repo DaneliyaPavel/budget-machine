@@ -1,6 +1,6 @@
 """Pydantic-схемы для API."""
 
-from datetime import datetime
+from datetime import datetime, date as date_
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -24,7 +24,6 @@ class CategoryBase(BaseModel):
     parent_id: int | None = None
 
 
-
 class CategoryCreate(CategoryBase):
     pass
 
@@ -35,7 +34,6 @@ class CategoryUpdate(BaseModel):
     name: str | None = None
     monthly_limit: float | None = None
     parent_id: int | None = None
-
 
 
 class Category(CategoryBase):
@@ -237,7 +235,7 @@ class ForecastItem(BaseModel):
 class DailySummary(BaseModel):
     """Сумма расходов за конкретный день."""
 
-    date: datetime = Field(..., description="Дата")
+    date: date_ = Field(..., description="Дата")
     total: float = Field(..., description="Потрачено за день")
 
 
