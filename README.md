@@ -1,5 +1,7 @@
 # Учет бюджета
 
+[![CI](https://github.com/DaneliyaPavel/budget-machine/actions/workflows/ci.yml/badge.svg)](https://github.com/DaneliyaPavel/budget-machine/actions/workflows/ci.yml)
+
 Простой FastAPI-бекенд для учета доходов, расходов и целей накоплений.
 
 Все тексты интерфейса и комментарии написаны на русском языке.
