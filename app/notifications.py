@@ -8,11 +8,14 @@ from pywebpush import webpush
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-REDIS_URL = os.getenv("REDIS_URL", os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"))
+REDIS_URL = os.getenv(
+    "REDIS_URL", os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+)
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
 VAPID_CLAIMS = {"sub": os.getenv("VAPID_SUB", "mailto:admin@example.com")}
 
 redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+
 
 async def send_message(text: str, account_id: int | None = None) -> None:
     """Добавить сообщение в стрим Redis."""
