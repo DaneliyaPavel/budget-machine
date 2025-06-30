@@ -3,6 +3,8 @@ import sys
 import time
 import subprocess
 from pathlib import Path
+import shutil
+import pytest
 import redis
 from fastapi.testclient import TestClient
 
@@ -14,6 +16,12 @@ if DB_PATH.exists():
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
 from app.main import app  # noqa: E402
+
+
+pytestmark = pytest.mark.skipif(
+    shutil.which("redis-server") is None,
+    reason="redis-server binary is not available",
+)
 
 
 def _login(client):
