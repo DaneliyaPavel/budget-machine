@@ -10,7 +10,7 @@ if db_path.exists():
     db_path.unlink()
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from app.main import app
+from app.main import app  # noqa: E402
 
 
 def _login(client, email="ana@example.com", password="pass"):
@@ -32,7 +32,9 @@ def test_analytics_endpoints():
         headers = {"Authorization": f"Bearer {token}"}
 
         # create category
-        r = client.post("/категории/", json={"name": "Еда", "monthly_limit": 200}, headers=headers)
+        r = client.post(
+            "/категории/", json={"name": "Еда", "monthly_limit": 200}, headers=headers
+        )
         assert r.status_code == 200
         cat_id = r.json()["id"]
 
@@ -55,7 +57,9 @@ def test_analytics_endpoints():
         client.post("/операции/", json=tx2, headers=headers)
 
         # create goal and deposit
-        r = client.post("/цели/", json={"name": "Отпуск", "target_amount": 500}, headers=headers)
+        r = client.post(
+            "/цели/", json={"name": "Отпуск", "target_amount": 500}, headers=headers
+        )
         goal_id = r.json()["id"]
         client.post(f"/цели/{goal_id}/пополнить", json={"amount": 150}, headers=headers)
 

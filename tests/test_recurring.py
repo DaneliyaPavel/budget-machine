@@ -10,7 +10,7 @@ if db_path.exists():
     db_path.unlink()
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from app.main import app
+from app.main import app  # noqa: E402
 
 
 def _login(client, email="test@example.com", password="pass"):

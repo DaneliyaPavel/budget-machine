@@ -147,6 +147,11 @@ curl -X POST "http://127.0.0.1:8000/пользователи/join" \
      -H "Content-Type: application/json" \
      -d '{"account_id": 1}'
 ```
+## Проверка качества кода
+
+Перед коммитом выполните `pre-commit run --all-files`.
+Все тесты запускаются командой `pytest`.
+
 
 ## Запуск в Docker
 
@@ -157,3 +162,56 @@ docker-compose up --build
 ```
 
 API будет доступно по адресу `http://localhost:8000`.
+
+## Миграции
+
+Для управления схемой БД используется Alembic. URL базы берётся из
+переменной окружения `DATABASE_URL`.
+
+Применить все миграции:
+
+```bash
+alembic upgrade head
+```
+
+Создать новую миграцию после изменения моделей:
+
+```bash
+alembic revision --autogenerate -m "comment"
+```
+
+## Telegram-бот
+
+Для уведомлений и получения кратких отчётов можно запустить простого Telegram-бота.
+Нужен токен бота в переменной `TELEGRAM_TOKEN` и идентификатор пользователя
+в `BOT_USER_ID` (по умолчанию `1`).
+
+```bash
+export TELEGRAM_TOKEN=<token>
+export BOT_USER_ID=1
+python -m app.telegram_bot
+```
+
+Доступны команды `/summary` для отчёта по категориям и `/limits` для проверки
+превышения лимитов.
+
+## Веб-клиент
+
+В каталоге `frontend` находится минимальное приложение на React + TypeScript.
+Для разработки необходим Node.js. После установки зависимостей запустите:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Для сборки PWA выполните:
+
+```bash
+npm run build
+```
+
+Готовая сборка появится в каталоге `frontend/dist`.
+
+Приложение откроется на `http://localhost:3000` и будет проксировать запросы к API.

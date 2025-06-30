@@ -27,8 +27,13 @@ async def update_account(
     current_user: models.User = Depends(get_current_user),
     session: AsyncSession = Depends(database.get_session),
 ):
-    """Изменить название счёта."""
-    account = await crud.update_account(session, current_user.account_id, data.name)
+    """Изменить параметры счёта."""
+    account = await crud.update_account(
+        session,
+        current_user.account_id,
+        name=data.name,
+        base_currency=data.base_currency,
+    )
     if not account:
         raise HTTPException(status_code=404, detail="Счёт не найден")
     return account

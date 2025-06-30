@@ -11,6 +11,11 @@ from .routers import (
     banks,
     recurring,
     accounts,
+    tokens,
+    jobs,
+    oauth,
+    currency,
+    push,
 )
 from .database import engine, Base
 
@@ -24,6 +29,11 @@ tags_metadata = [
     {"name": "Банки", "description": "Импорт операций из разных банков"},
     {"name": "Регулярные платежи", "description": "Повторяющиеся операции"},
     {"name": "Счёт", "description": "Управление общим счётом"},
+    {"name": "Токены", "description": "OAuth-токены банков"},
+    {"name": "Задания", "description": "Фоновые задачи"},
+    {"name": "OAuth", "description": "Авторизация через Тинькофф ID"},
+    {"name": "Валюты", "description": "Курсы и конвертация"},
+    {"name": "Уведомления", "description": "Web Push подписки"},
 ]
 
 app = FastAPI(
@@ -49,3 +59,8 @@ app.include_router(tinkoff.router)
 app.include_router(banks.router)
 app.include_router(recurring.router)
 app.include_router(accounts.router)
+app.include_router(tokens.router)
+app.include_router(jobs.router)
+app.include_router(oauth.router)
+app.include_router(currency.router)
+app.include_router(push.router)
