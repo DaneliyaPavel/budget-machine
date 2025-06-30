@@ -18,6 +18,7 @@ def _create_user(client):
     user = {"email": "cat@example.com", "password": "pass"}
     r = client.post("/пользователи/", json=user)
     assert r.status_code == 200
+    assert r.json()["role"] == "owner"
     return user
 
 

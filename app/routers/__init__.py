@@ -1,6 +1,6 @@
 """Регистрация модулей маршрутов."""
 
-from . import analytics, banks, categories, goals, tinkoff, transactions, users
+from . import analytics, banks, categories, goals, tinkoff, transactions, users, recurring, accounts
 
 __all__ = [
     "categories",
@@ -10,4 +10,6 @@ __all__ = [
     "analytics",
     "tinkoff",
     "banks",
+    "recurring",
+    "accounts",
 ]

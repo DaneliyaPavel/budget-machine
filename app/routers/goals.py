@@ -57,6 +57,22 @@ async def update_goal(
     return goal
 
 
+@router.post("/{goal_id}/пополнить", response_model=schemas.Goal)
+async def deposit_goal(
+    goal_id: int,
+    data: schemas.GoalDeposit,
+    session: AsyncSession = Depends(database.get_session),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Пополнить текущую цель на заданную сумму."""
+    goal = await crud.add_to_goal(
+        session, goal_id, data.amount, current_user.account_id
+    )
+    if not goal:
+        raise HTTPException(status_code=404, detail="Цель не найдена")
+    return goal
+
+
 @router.delete("/{goal_id}", status_code=204)
 async def delete_goal(
     goal_id: int,

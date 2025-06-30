@@ -9,6 +9,8 @@ from .routers import (
     analytics,
     tinkoff,
     banks,
+    recurring,
+    accounts,
 )
 from .database import engine, Base
 
@@ -20,6 +22,8 @@ tags_metadata = [
     {"name": "Аналитика", "description": "Сводные отчёты"},
     {"name": "Тинькофф", "description": "Импорт операций из банка"},
     {"name": "Банки", "description": "Импорт операций из разных банков"},
+    {"name": "Регулярные платежи", "description": "Повторяющиеся операции"},
+    {"name": "Счёт", "description": "Управление общим счётом"},
 ]
 
 app = FastAPI(
@@ -43,3 +47,5 @@ app.include_router(users.router)
 app.include_router(analytics.router)
 app.include_router(tinkoff.router)
 app.include_router(banks.router)
+app.include_router(recurring.router)
+app.include_router(accounts.router)
