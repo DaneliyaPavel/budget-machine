@@ -1,8 +1,8 @@
 from datetime import datetime
 import asyncio
 
-from .celery_app import celery_app
-from . import notifications, banks, crud, database, schemas
+from ..celery_app import celery_app
+from .. import notifications, banks, crud, database, schemas
 
 
 @celery_app.task
@@ -52,11 +52,7 @@ def check_limits_task(account_id: int, year: int, month: int) -> int:
             f"{r[0]}: {float(r[2])} из {float(r[1])}" for r in rows
         ]
         message = "\n".join(lines)
-        await notifications.send_message(message)
-        async with database.async_session() as session:
-            subs = await crud.get_push_subscriptions(session, account_id)
-        for s in subs:
-            notifications.send_push(s.endpoint, s.p256dh, s.auth, message)
+        await notifications.send_message(message, account_id)
         return len(rows)
 
     return asyncio.run(_run())
@@ -84,3 +80,4 @@ def process_recurring_task(date: str) -> int:
             return created
 
     return asyncio.run(_run())
+

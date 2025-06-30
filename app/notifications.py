@@ -1,24 +1,34 @@
-"""Уведомления через Telegram."""
+"""Уведомления через Telegram и Web Push."""
 
 from typing import Optional
 import os
 import httpx
+import redis.asyncio as redis
 from pywebpush import webpush
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+REDIS_URL = os.getenv("REDIS_URL", os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"))
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
 VAPID_CLAIMS = {"sub": os.getenv("VAPID_SUB", "mailto:admin@example.com")}
 
+redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
-async def send_message(
+async def send_message(text: str, account_id: int | None = None) -> None:
+    """Добавить сообщение в стрим Redis."""
+    data = {"text": text}
+    if account_id is not None:
+        data["account_id"] = str(account_id)
+    await redis_client.xadd("notifications", data)
+
+
+async def send_telegram(
     text: str, token: Optional[str] = None, chat_id: Optional[str] = None
 ) -> None:
-    """Отправить сообщение в Telegram."""
+    """Отправить сообщение в Telegram непосредственно."""
     token = token or TOKEN
     chat_id = chat_id or CHAT_ID
     if not token or not chat_id:
-        # Если данные не заданы, просто ничего не делаем
         return
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     async with httpx.AsyncClient() as client:

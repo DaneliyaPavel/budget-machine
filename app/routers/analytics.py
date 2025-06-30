@@ -64,7 +64,11 @@ async def limits_check(
         lines = ["Превышение лимитов:"] + [
             f"{r.category}: {r.spent} из {r.limit}" for r in result
         ]
-        background_tasks.add_task(notifications.send_message, "\n".join(lines))
+        background_tasks.add_task(
+            notifications.send_message,
+            "\n".join(lines),
+            current_user.account_id,
+        )
     return result
 
 
