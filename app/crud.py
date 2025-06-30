@@ -23,7 +23,12 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User
     account = models.Account(name="Личный бюджет")
     db.add(account)
     await db.flush()
-    db_obj = models.User(email=user.email, hashed_password=hashed, account=account)
+    db_obj = models.User(
+        email=user.email,
+        hashed_password=hashed,
+        account=account,
+        role="owner",
+    )
     db.add(db_obj)
     await db.commit()
     await db.refresh(db_obj)
@@ -36,9 +41,69 @@ async def join_account(db: AsyncSession, user: models.User, account_id: int) -> 
     if not account:
         return None
     user.account_id = account_id
+    user.role = "member"
     await db.commit()
     await db.refresh(user)
     return user
+
+
+async def get_account_users(db: AsyncSession, account_id: int):
+    """Получить всех пользователей счёта."""
+    result = await db.execute(
+        select(models.User).where(models.User.account_id == account_id)
+    )
+    return result.scalars().all()
+
+
+async def delete_user(db: AsyncSession, user_id: int, account_id: int) -> bool:
+    """Удалить пользователя из счёта."""
+    result = await db.execute(
+        delete(models.User).where(
+            models.User.id == user_id,
+            models.User.account_id == account_id,
+        )
+    )
+    await db.commit()
+    return result.rowcount > 0
+
+
+async def update_user(
+    db: AsyncSession,
+    user: models.User,
+    data: schemas.UserUpdate,
+) -> models.User:
+    """Обновить данные пользователя."""
+    if data.email is not None:
+        user.email = data.email
+    if data.password is not None:
+        user.hashed_password = get_password_hash(data.password)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+# ----------------------------------------------------------------------------
+# Аккаунты
+# ----------------------------------------------------------------------------
+
+
+async def get_account(db: AsyncSession, account_id: int) -> models.Account | None:
+    """Получить счёт по идентификатору."""
+    return await db.get(models.Account, account_id)
+
+
+async def update_account(
+    db: AsyncSession, account_id: int, name: str
+) -> models.Account | None:
+    """Изменить название счёта."""
+    stmt = (
+        update(models.Account)
+        .where(models.Account.id == account_id)
+        .values(name=name)
+        .returning(models.Account)
+    )
+    result = await db.execute(stmt)
+    await db.commit()
+    return result.scalar_one_or_none()
 
 # ----------------------------------------------------------------------------
 # Категории
@@ -262,6 +327,24 @@ async def update_goal(
     return result.scalar_one_or_none()
 
 
+async def add_to_goal(
+    db: AsyncSession,
+    goal_id: int,
+    amount: float,
+    account_id: int,
+) -> models.Goal | None:
+    """Увеличить накопленную сумму цели."""
+    goal = await get_goal(db, goal_id, account_id)
+    if not goal:
+        return None
+    from decimal import Decimal
+
+    goal.current_amount += Decimal(str(amount))
+    await db.commit()
+    await db.refresh(goal)
+    return goal
+
+
 async def delete_goal(db: AsyncSession, goal_id: int, account_id: int) -> None:
     await db.execute(
         delete(models.Goal).where(
@@ -348,7 +431,7 @@ async def forecast_by_category(
 async def daily_expenses(
     db: AsyncSession, start: datetime, end: datetime, account_id: int
 ):
-    day = func.date_trunc("day", models.Transaction.created_at)
+    day = func.date(models.Transaction.created_at)
     stmt = (
         select(day.label("day"), func.sum(models.Transaction.amount_rub))
         .where(
@@ -383,3 +466,76 @@ async def monthly_overview(
     total_days = (end - start).days
     forecast = spent / elapsed_days * total_days if elapsed_days else 0
     return spent, forecast
+
+# ----------------------------------------------------------------------------
+# Регулярные платежи
+# ----------------------------------------------------------------------------
+
+
+async def get_recurring_payments(db: AsyncSession, account_id: int):
+    result = await db.execute(
+        select(models.RecurringPayment).where(models.RecurringPayment.account_id == account_id)
+    )
+    return result.scalars().all()
+
+
+async def get_recurring_payment(db: AsyncSession, rp_id: int, account_id: int):
+    result = await db.execute(
+        select(models.RecurringPayment).where(
+            models.RecurringPayment.id == rp_id,
+            models.RecurringPayment.account_id == account_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def create_recurring_payment(
+    db: AsyncSession,
+    rp: schemas.RecurringPaymentCreate,
+    account_id: int,
+    user_id: int,
+) -> models.RecurringPayment:
+    db_obj = models.RecurringPayment(
+        **rp.dict(), account_id=account_id, user_id=user_id
+    )
+    db.add(db_obj)
+    await db.commit()
+    await db.refresh(db_obj)
+    return db_obj
+
+
+async def update_recurring_payment(
+    db: AsyncSession,
+    rp_id: int,
+    data: schemas.RecurringPaymentUpdate,
+    account_id: int,
+) -> models.RecurringPayment | None:
+    stmt = (
+        update(models.RecurringPayment)
+        .where(models.RecurringPayment.id == rp_id, models.RecurringPayment.account_id == account_id)
+        .values(**data.dict(exclude_unset=True))
+        .returning(models.RecurringPayment)
+    )
+    result = await db.execute(stmt)
+    await db.commit()
+    return result.scalar_one_or_none()
+
+
+async def delete_recurring_payment(db: AsyncSession, rp_id: int, account_id: int) -> None:
+    await db.execute(
+        delete(models.RecurringPayment).where(
+            models.RecurringPayment.id == rp_id,
+            models.RecurringPayment.account_id == account_id,
+        )
+    )
+    await db.commit()
+
+
+async def get_recurring_by_day(db: AsyncSession, day: int):
+    result = await db.execute(
+        select(models.RecurringPayment).where(
+            models.RecurringPayment.day == day,
+            models.RecurringPayment.active == True,
+        )
+    )
+    return result.scalars().all()

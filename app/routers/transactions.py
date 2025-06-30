@@ -1,8 +1,9 @@
 """Маршруты для операций."""
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 import csv
+import io
 from datetime import datetime
 from .. import crud, schemas, database, models
 from .users import get_current_user
@@ -75,6 +76,57 @@ async def import_transactions(
         session, created, current_user.account_id, current_user.id
     )
     return {"created": len(created)}
+
+
+@router.get("/экспорт")
+async def export_transactions(
+    start: datetime | None = Query(None, description="Начало периода"),
+    end: datetime | None = Query(None, description="Конец периода"),
+    category_id: int | None = Query(None, description="Категория"),
+    session: AsyncSession = Depends(database.get_session),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Выгрузить операции в формате CSV."""
+    rows = await crud.get_transactions(
+        session,
+        current_user.account_id,
+        start=start,
+        end=end,
+        category_id=category_id,
+    )
+    fieldnames = [
+        "id",
+        "amount",
+        "currency",
+        "amount_rub",
+        "description",
+        "category_id",
+        "created_at",
+        "account_id",
+        "user_id",
+    ]
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames)
+    writer.writeheader()
+    for tx in rows:
+        writer.writerow(
+            {
+                "id": tx.id,
+                "amount": float(tx.amount),
+                "currency": tx.currency,
+                "amount_rub": float(tx.amount_rub),
+                "description": tx.description,
+                "category_id": tx.category_id,
+                "created_at": tx.created_at.isoformat(),
+                "account_id": tx.account_id,
+                "user_id": tx.user_id,
+            }
+        )
+    return Response(
+        content=buffer.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=transactions.csv"},
+    )
 
 
 @router.get("/{tx_id}", response_model=schemas.Transaction)

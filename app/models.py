@@ -19,6 +19,9 @@ class Account(Base):
     categories = relationship("Category", back_populates="account")
     transactions = relationship("Transaction", back_populates="account")
     goals = relationship("Goal", back_populates="account")
+    recurring_payments = relationship(
+        "RecurringPayment", back_populates="account"
+    )
 
 
 class User(Base):
@@ -30,6 +33,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    role = Column(String, default="owner")
 
     account_id = Column(Integer, ForeignKey("accounts.id"))
     account = relationship("Account", back_populates="users")
@@ -37,6 +41,9 @@ class User(Base):
     categories = relationship("Category", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
     goals = relationship("Goal", back_populates="user")
+    recurring_payments = relationship(
+        "RecurringPayment", back_populates="user"
+    )
 
 
 class Category(Base):
@@ -54,6 +61,9 @@ class Category(Base):
     account = relationship("Account", back_populates="categories")
     user = relationship("User", back_populates="categories")
     transactions = relationship("Transaction", back_populates="category")
+    recurring_payments = relationship(
+        "RecurringPayment", back_populates="category"
+    )
 
 
 class Transaction(Base):
@@ -93,3 +103,26 @@ class Goal(Base):
 
     account = relationship("Account", back_populates="goals")
     user = relationship("User", back_populates="goals")
+
+
+class RecurringPayment(Base):
+    """Регулярный ежемесячный платеж."""
+
+    __tablename__ = "recurring_payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False)
+    currency = Column(String, default="RUB")
+    day = Column(Integer, nullable=False)
+    description = Column(String, nullable=True)
+
+    category_id = Column(Integer, ForeignKey("categories.id"))
+    account_id = Column(Integer, ForeignKey("accounts.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    active = Column(Boolean, default=True)
+
+    category = relationship("Category", back_populates="recurring_payments")
+    account = relationship("Account", back_populates="recurring_payments")
+    user = relationship("User", back_populates="recurring_payments")

@@ -2,7 +2,7 @@ from datetime import datetime
 import asyncio
 
 from .celery_app import celery_app
-from . import notifications, banks, crud, database
+from . import notifications, banks, crud, database, schemas
 
 
 @celery_app.task
@@ -53,5 +53,29 @@ def check_limits_task(account_id: int, year: int, month: int) -> int:
         ]
         await notifications.send_message("\n".join(lines))
         return len(rows)
+
+    return asyncio.run(_run())
+
+
+@celery_app.task
+def process_recurring_task(date: str) -> int:
+    """Создать операции по регулярным платежам за указанный день."""
+
+    async def _run() -> int:
+        day = datetime.fromisoformat(date).day
+        async with database.async_session() as session:
+            payments = await crud.get_recurring_by_day(session, day)
+            created = 0
+            for p in payments:
+                tx = schemas.TransactionCreate(
+                    amount=float(p.amount),
+                    currency=p.currency,
+                    description=p.description or p.name,
+                    category_id=p.category_id,
+                    created_at=datetime.fromisoformat(date),
+                )
+                await crud.create_transaction(session, tx, p.account_id, p.user_id)
+                created += 1
+            return created
 
     return asyncio.run(_run())

@@ -47,6 +47,30 @@ async def join_account(
     return user
 
 
+@router.get("/участники", response_model=list[schemas.User])
+async def account_members(
+    current_user: models.User = Depends(get_current_user),
+    session: AsyncSession = Depends(database.get_session),
+):
+    """Список участников текущего счёта."""
+    return await crud.get_account_users(session, current_user.account_id)
+
+
+@router.delete("/{user_id}", status_code=204)
+async def remove_user(
+    user_id: int,
+    current_user: models.User = Depends(get_current_user),
+    session: AsyncSession = Depends(database.get_session),
+):
+    """Удалить пользователя из счёта (только владелец)."""
+    if current_user.role != "owner" and current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    ok = await crud.delete_user(session, user_id, current_user.account_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return None
+
+
 
 @router.post("/token", response_model=schemas.Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(database.get_session)):
@@ -62,3 +86,14 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Async
 async def read_users_me(current_user: models.User = Depends(get_current_user)):
     """Получить данные текущего пользователя."""
     return current_user
+
+
+@router.patch("/me", response_model=schemas.User)
+async def update_user_me(
+    data: schemas.UserUpdate,
+    current_user: models.User = Depends(get_current_user),
+    session: AsyncSession = Depends(database.get_session),
+):
+    """Обновить профиль пользователя."""
+    user = await crud.update_user(session, current_user, data)
+    return user

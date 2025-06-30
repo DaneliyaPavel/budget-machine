@@ -83,10 +83,51 @@ class GoalUpdate(BaseModel):
     current_amount: float | None = None
     due_date: datetime | None = None
 
+
+class GoalDeposit(BaseModel):
+    """Сумма пополнения цели."""
+
+    amount: float
+
 class Goal(GoalBase):
     id: int
     account_id: int
     user_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class RecurringPaymentBase(BaseModel):
+    """Общие поля регулярного платежа."""
+
+    name: str
+    amount: float
+    currency: str = "RUB"
+    day: int
+    description: str | None = None
+    category_id: int
+
+
+class RecurringPaymentCreate(RecurringPaymentBase):
+    pass
+
+
+class RecurringPaymentUpdate(BaseModel):
+    name: str | None = None
+    amount: float | None = None
+    currency: str | None = None
+    day: int | None = None
+    description: str | None = None
+    category_id: int | None = None
+    active: bool | None = None
+
+
+class RecurringPayment(RecurringPaymentBase):
+    id: int
+    account_id: int
+    user_id: int
+    active: bool
 
     class Config:
         orm_mode = True
@@ -99,6 +140,11 @@ class UserCreate(UserBase):
     password: str
 
 
+class UserUpdate(BaseModel):
+    email: str | None = None
+    password: str | None = None
+
+
 class JoinAccount(BaseModel):
     """Параметры для присоединения к существующему счёту."""
 
@@ -108,6 +154,7 @@ class User(UserBase):
     id: int
     is_active: bool
     account_id: int
+    role: str
       
 
     class Config:
