@@ -1,6 +1,7 @@
 """Точка входа FastAPI-приложения."""
 
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 from .routers import (
     transactions,
     categories,
@@ -48,6 +49,11 @@ async def on_startup():
     """Создаём таблицы при запуске приложения."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    try:
+        Instrumentator().instrument(app).expose(app)
+    except RuntimeError:
+        # Если приложение уже стартовало, игнорируем ошибку добавления middleware
+        pass
 
 
 app.include_router(categories.router)

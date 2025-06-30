@@ -15,3 +15,4 @@ redis
 openpyxl
 python-telegram-bot==20.3
 pywebpush
+prometheus-fastapi-instrumentator
