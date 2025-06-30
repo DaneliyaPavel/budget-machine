@@ -1,8 +1,10 @@
 from datetime import datetime
 import asyncio
+import os
 
 from ..celery_app import celery_app
 from .. import notifications, banks, crud, database, schemas
+from clickhouse_connect import get_client
 
 
 @celery_app.task
@@ -33,6 +35,57 @@ def import_transactions_task(
                 session, txs, account_id, user_id
             )
         return len(created)
+
+    return asyncio.run(_run())
+
+
+@celery_app.task
+def export_summary_task(account_id: int, year: int, month: int) -> int:
+    """Выгрузить помесячную сводку в ClickHouse."""
+
+    async def _run() -> int:
+        start = datetime(year, month, 1)
+        end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+        async with database.async_session() as session:
+            rows = await crud.transactions_summary_by_category(
+                session, start, end, account_id
+            )
+
+        client = get_client(
+            host=os.getenv("CLICKHOUSE_HOST", "clickhouse"),
+            port=int(os.getenv("CLICKHOUSE_PORT", "8123")),
+            username=os.getenv("CLICKHOUSE_USER", "default"),
+            password=os.getenv("CLICKHOUSE_PASSWORD", ""),
+        )
+        client.command(
+            """
+            CREATE TABLE IF NOT EXISTS summary_by_category (
+                account_id UInt32,
+                year UInt16,
+                month UInt8,
+                category String,
+                total Float64
+            ) ENGINE = MergeTree()
+            ORDER BY (account_id, year, month, category)
+            """
+        )
+        data = [
+            {
+                "account_id": account_id,
+                "year": year,
+                "month": month,
+                "category": r[0],
+                "total": float(r[1] or 0),
+            }
+            for r in rows
+        ]
+        if data:
+            client.insert(
+                "summary_by_category",
+                data,
+                column_names=["account_id", "year", "month", "category", "total"],
+            )
+        return len(data)
 
     return asyncio.run(_run())
 

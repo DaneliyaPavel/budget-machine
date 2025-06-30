@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   db:
-    image: postgres:15
+    image: timescale/timescaledb:2.13.0-pg15
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -51,6 +51,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       KAFKA_BROKER_URL: kafka:9092
+      CLICKHOUSE_HOST: clickhouse
     ports:
       - "8000:8000"
     depends_on:
@@ -66,6 +67,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/budget
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CLICKHOUSE_HOST: clickhouse
     depends_on:
       - db
       - redis
@@ -79,6 +81,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/budget
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CLICKHOUSE_HOST: clickhouse
     depends_on:
       - db
       - redis
@@ -92,8 +95,18 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/budget
       KAFKA_BROKER_URL: kafka:9092
+      CLICKHOUSE_HOST: clickhouse
     depends_on:
       - db
       - kafka
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.3
+    ports:
+      - "8123:8123"
+    environment:
+      CLICKHOUSE_DB: budget
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
 volumes:
   db_data:
+  clickhouse_data:
