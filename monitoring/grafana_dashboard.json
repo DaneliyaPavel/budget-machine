@@ -1,0 +1,28 @@
+{
+  "title": "Budget Machine API",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "time_series",
+      "title": "Requests per second",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[1m]))",
+          "legendFormat": "RPS"
+        }
+      ]
+    },
+    {
+      "type": "time_series",
+      "title": "95th Percentile Request Duration",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
+          "legendFormat": "95th"
+        }
+      ]
+    }
+  ]
+}
