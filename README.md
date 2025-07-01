@@ -227,3 +227,7 @@ npm run build
 `grafana_dashboard.json`.
 Создайте источник данных Prometheus в Grafana и импортируйте этот файл,
 чтобы наблюдать статистику запросов.
+
+## Deployment
+
+Инструкции по развёртыванию инфраструктуры Terraform и деплою Helm/Argo CD описаны в [docs/deployment.md](docs/deployment.md).

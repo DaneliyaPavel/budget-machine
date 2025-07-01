@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: budget-machine-prs
+spec:
+  generators:
+    - pullRequest:
+        github:
+          owner: example
+          repo: budget-machine
+          tokenRef:
+            secretName: github-token
+            key: token
+        requeueAfterSeconds: 180
+        filters:
+          - branchMatch: ".*"
+  template:
+    metadata:
+      name: 'budget-machine-pr-{{number}}'
+    spec:
+      project: default
+      source:
+        repoURL: 'https://github.com/example/budget-machine'
+        targetRevision: '{{branch}}'
+        path: deploy/helm
+        helm:
+          valueFiles:
+            - values.yaml
+      destination:
+        server: 'https://kubernetes.default.svc'
+        namespace: 'pr-{{number}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
