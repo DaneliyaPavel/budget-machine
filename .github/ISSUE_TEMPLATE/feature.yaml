@@ -1,0 +1,25 @@
+name: Feature
+description: Новая функциональность
+labels: [feature]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Описание
+      description: Что нужно сделать
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Мотивация
+      description: Зачем это нужно
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Критерии приёмки
+      description: Условия выполнения задачи
+    validations:
+      required: true
