@@ -5,7 +5,7 @@ import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 
-from . import models, schemas, currency
+from . import models, schemas, currency, vault
 from .security import get_password_hash
 
 
@@ -507,9 +507,12 @@ async def monthly_overview(
     result = await db.execute(stmt)
     spent = float(result.scalar() or 0)
 
-    elapsed_days = (cutoff - start).days + 1
-    total_days = (end - start).days
-    forecast = spent / elapsed_days * total_days if elapsed_days else 0
+    if now >= end:
+        forecast = spent
+    else:
+        elapsed_days = (cutoff - start).days + 1
+        total_days = (end - start).days
+        forecast = spent / elapsed_days * total_days if elapsed_days else 0
     return spent, forecast
 
 
@@ -599,55 +602,53 @@ async def get_recurring_by_day(db: AsyncSession, day: int):
 # ----------------------------------------------------------------------------
 
 
-async def get_bank_tokens(db: AsyncSession, account_id: int):
-    result = await db.execute(
-        select(models.BankToken).where(models.BankToken.account_id == account_id)
-    )
-    return result.scalars().all()
+BANKS = ["tinkoff", "sber", "gazprom"]
+
+
+async def get_bank_tokens(db: AsyncSession, user_id: int):
+    client = vault.get_vault_client()
+    items: list[schemas.BankToken] = []
+    for bank in BANKS:
+        token = await client.read(f"{bank}_token/{user_id}")
+        if token is not None:
+            items.append(
+                schemas.BankToken(
+                    id=0,
+                    bank=bank,
+                    token=token,
+                    account_id=0,
+                    user_id=user_id,
+                )
+            )
+    return items
 
 
 async def get_bank_token(
-    db: AsyncSession, bank: str, account_id: int
-) -> models.BankToken | None:
+    db: AsyncSession, bank: str, user_id: int
+) -> schemas.BankToken | None:
     """Получить токен конкретного банка."""
-    result = await db.execute(
-        select(models.BankToken).where(
-            models.BankToken.account_id == account_id,
-            models.BankToken.bank == bank,
-        )
+    client = vault.get_vault_client()
+    token = await client.read(f"{bank}_token/{user_id}")
+    if token is None:
+        return None
+    return schemas.BankToken(
+        id=0, bank=bank, token=token, account_id=0, user_id=user_id
     )
-    return result.scalar_one_or_none()
 
 
 async def set_bank_token(
-    db: AsyncSession, bank: str, token: str, account_id: int, user_id: int
-) -> models.BankToken:
-    stmt = select(models.BankToken).where(
-        models.BankToken.account_id == account_id,
-        models.BankToken.bank == bank,
+    db: AsyncSession, bank: str, token: str, user_id: int
+) -> schemas.BankToken:
+    client = vault.get_vault_client()
+    await client.write(f"{bank}_token/{user_id}", token)
+    return schemas.BankToken(
+        id=0, bank=bank, token=token, account_id=0, user_id=user_id
     )
-    result = await db.execute(stmt)
-    obj = result.scalar_one_or_none()
-    if obj:
-        obj.token = token
-    else:
-        obj = models.BankToken(
-            bank=bank, token=token, account_id=account_id, user_id=user_id
-        )
-        db.add(obj)
-    await db.commit()
-    await db.refresh(obj)
-    return obj
 
 
-async def delete_bank_token(db: AsyncSession, bank: str, account_id: int) -> None:
-    await db.execute(
-        delete(models.BankToken).where(
-            models.BankToken.bank == bank,
-            models.BankToken.account_id == account_id,
-        )
-    )
-    await db.commit()
+async def delete_bank_token(db: AsyncSession, bank: str, user_id: int) -> None:
+    client = vault.get_vault_client()
+    await client.delete(f"{bank}_token/{user_id}")
 
 
 # ----------------------------------------------------------------------------

@@ -13,7 +13,7 @@ async def read_tokens(
     session: AsyncSession = Depends(database.get_session),
 ):
     """Список сохранённых токенов банков."""
-    return await crud.get_bank_tokens(session, current_user.account_id)
+    return await crud.get_bank_tokens(session, current_user.id)
 
 
 @router.post("/", response_model=schemas.BankToken)
@@ -23,9 +23,7 @@ async def set_token(
     session: AsyncSession = Depends(database.get_session),
 ):
     """Сохранить или обновить токен банка."""
-    return await crud.set_bank_token(
-        session, data.bank, data.token, current_user.account_id, current_user.id
-    )
+    return await crud.set_bank_token(session, data.bank, data.token, current_user.id)
 
 
 @router.delete("/{bank}", status_code=204)
@@ -35,5 +33,5 @@ async def delete_token(
     session: AsyncSession = Depends(database.get_session),
 ):
     """Удалить токен банка."""
-    await crud.delete_bank_token(session, bank, current_user.account_id)
+    await crud.delete_bank_token(session, bank, current_user.id)
     return None

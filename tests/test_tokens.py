@@ -11,6 +11,7 @@ if db_path.exists():
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
 from app.main import app  # noqa: E402
+from app import vault  # noqa: E402
 
 
 def _login(client):
@@ -26,7 +27,24 @@ def _login(client):
     return r.json()["access_token"]
 
 
-def test_token_crud():
+class FakeVault:
+    def __init__(self):
+        self.storage = {}
+
+    async def read(self, path):
+        return self.storage.get(path)
+
+    async def write(self, path, value):
+        self.storage[path] = value
+
+    async def delete(self, path):
+        self.storage.pop(path, None)
+
+
+def test_token_crud(monkeypatch):
+    fake = FakeVault()
+    vault.get_vault_client.cache_clear()
+    monkeypatch.setattr(vault, "get_vault_client", lambda: fake)
     with TestClient(app) as client:
         token = _login(client)
         headers = {"Authorization": f"Bearer {token}"}
