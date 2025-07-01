@@ -1,0 +1,9 @@
+# CODEOWNERS assigns responsibility for certain directories.
+
+/backend/ @DaneliyaPavel
+/frontend/ @DaneliyaPavel
+/infra/ @DaneliyaPavel
+/deploy/ @DaneliyaPavel
+/services/ @DaneliyaPavel
+/app/ @DaneliyaPavel
+/web/ @DaneliyaPavel
