@@ -18,3 +18,8 @@ pywebpush
 prometheus-fastapi-instrumentator
 aiokafka
 clickhouse-connect
+pandas
+catboost
+prophet
+mlflow
+apache-airflow
