@@ -212,3 +212,16 @@ frontend/node_modules/
 frontend/dist/
 test.db
 web/node_modules/
+
+# Infrastructure
+# Docker artifacts
+*.tar
+*.img
+/docker-compose.override.yml
+
+# Terraform state
+.terraform/
+*.tfstate*
+
+# Node dependencies
+node_modules/
