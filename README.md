@@ -163,6 +163,8 @@ curl -X POST "http://127.0.0.1:8000/пользователи/join" \
 docker-compose up --build
 ```
 
+Docker build configuration resides in `backend/Dockerfile`.
+
 API будет доступно по адресу `http://localhost:8000`.
 
 ## Миграции
