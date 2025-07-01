@@ -23,4 +23,3 @@ pandas
 catboost
 prophet
 mlflow
-apache-airflow==2.9.3
