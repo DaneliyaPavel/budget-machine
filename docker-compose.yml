@@ -113,6 +113,43 @@ services:
     depends_on:
       - db
       - kafka
+  airflow:
+    image: apache/airflow:2.8.1
+    depends_on:
+      - kafka
+      - clickhouse
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./ml/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__FERNET_KEY: dummyfernetkey123
+      KAFKA_BROKER_URL: kafka:9092
+      CLICKHOUSE_HOST: clickhouse
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    command: >-
+      bash -c "airflow db upgrade && airflow users create --username admin --password admin --firstname admin --lastname admin --role Admin --email admin@example.com && airflow webserver"
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.0
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    command: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlflow --host 0.0.0.0
+  predictor:
+    build: .
+    command: uvicorn services/predictor.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    ports:
+      - "8001:8000"
+    depends_on:
+      - mlflow
   clickhouse:
     image: clickhouse/clickhouse-server:23.3
     ports:
@@ -124,3 +161,5 @@ services:
 volumes:
   db_data:
   clickhouse_data:
+  airflow_logs:
+  mlflow_data:
