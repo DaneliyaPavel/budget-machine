@@ -1,0 +1,6 @@
+apiVersion: v2
+name: budget-machine
+version: 0.1.0
+description: Helm chart for the budget-machine application
+type: application
+appVersion: "0.1.0"
