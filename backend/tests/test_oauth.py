@@ -3,15 +3,15 @@ from pathlib import Path
 import sys
 from fastapi.testclient import TestClient
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 DB_PATH = Path("test.db")
 if DB_PATH.exists():
     DB_PATH.unlink()
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from app.main import app  # noqa: E402
-from app import oauth  # noqa: E402
+from backend.app.main import app  # noqa: E402
+from backend.app import oauth  # noqa: E402
 
 
 def test_tinkoff_oauth_flow(monkeypatch):

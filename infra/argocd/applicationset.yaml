@@ -22,7 +22,7 @@ spec:
       source:
         repoURL: 'https://github.com/example/budget-machine'
         targetRevision: '{{branch}}'
-        path: deploy/helm
+        path: infra/helm
         helm:
           valueFiles:
             - values.yaml

@@ -2,8 +2,8 @@
 
 /backend/ @DaneliyaPavel
 /frontend/ @DaneliyaPavel
+/frontend/pwa/ @DaneliyaPavel
+/frontend/web/ @DaneliyaPavel
 /infra/ @DaneliyaPavel
-/deploy/ @DaneliyaPavel
 /services/ @DaneliyaPavel
-/app/ @DaneliyaPavel
-/web/ @DaneliyaPavel
+/backend/app/ @DaneliyaPavel

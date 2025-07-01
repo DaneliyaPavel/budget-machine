@@ -3,9 +3,9 @@ from pathlib import Path
 import types
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from app import telegram_bot, crud, database
+from backend.app import telegram_bot, crud, database
 
 
 class DummyMsg:

@@ -44,7 +44,7 @@ pip install -r requirements.txt
 Запустите сервер:
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn backend.app.main:app --reload
 ```
 
 По умолчанию используется SQLite. Для PostgreSQL задайте переменную окружения `DATABASE_URL`.
@@ -154,6 +154,16 @@ curl -X POST "http://127.0.0.1:8000/пользователи/join" \
 Перед коммитом выполните `pre-commit run --all-files`.
 Все тесты запускаются командой `pytest`.
 
+## Структура проекта
+
+- `backend/app` — исходный код FastAPI.
+- `backend/tests` — тесты backend.
+- `infra/terraform` — инфраструктура в Terraform.
+- `infra/helm` и `infra/argocd` — файлы развёртывания в Kubernetes.
+- `frontend/pwa` — PWA на React.
+- `frontend/web` — веб-клиент на Next.js.
+- `services/` — дополнительные сервисы.
+- `docs/` — документация.
 
 ## Запуск в Docker
 
@@ -201,11 +211,11 @@ python -m app.telegram_bot
 
 ## Веб-клиент
 
-В каталоге `frontend` находится минимальное приложение на React + TypeScript.
+В каталоге `frontend/pwa` находится минимальное приложение на React + TypeScript.
 Для разработки необходим Node.js. После установки зависимостей запустите:
 
 ```bash
-cd frontend
+cd frontend/pwa
 npm install
 npm run dev
 ```
@@ -216,9 +226,18 @@ npm run dev
 npm run build
 ```
 
-Готовая сборка появится в каталоге `frontend/dist`.
+Готовая сборка появится в каталоге `frontend/pwa/dist`.
 
 Приложение откроется на `http://localhost:3000` и будет проксировать запросы к API.
+
+В каталоге `frontend/web` находится отдельный проект на Next.js.
+Чтобы запустить его локально, выполните:
+
+```bash
+cd frontend/web
+npm install
+npm run dev
+```
 
 ## Мониторинг
 

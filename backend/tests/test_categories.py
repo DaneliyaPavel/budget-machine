@@ -4,14 +4,14 @@ import sys
 from fastapi.testclient import TestClient
 
 # добавить корень проекта в путь поиска модулей
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 db_path = Path("test.db")
 if db_path.exists():
     db_path.unlink()
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from app.main import app  # noqa: E402
+from backend.app.main import app  # noqa: E402
 
 
 def _create_user(client):
