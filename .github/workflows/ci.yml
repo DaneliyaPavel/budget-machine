@@ -23,6 +23,6 @@ jobs:
       - name: Black check
         run: black --check .
       - name: Mypy check
-        run: mypy app
+        run: mypy backend/app
       - name: Run tests
-        run: pytest
+        run: pytest backend/tests

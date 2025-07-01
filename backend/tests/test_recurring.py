@@ -3,14 +3,14 @@ from pathlib import Path
 import sys
 from fastapi.testclient import TestClient
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 db_path = Path("test.db")
 if db_path.exists():
     db_path.unlink()
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from app.main import app  # noqa: E402
+from backend.app.main import app  # noqa: E402
 
 
 def _login(client, email="test@example.com", password="pass"):
@@ -87,7 +87,7 @@ def test_recurring_task_creates_transactions():
         assert r.status_code == 200
 
         # run task for 2025-06-05
-        from app import tasks
+        from backend.app import tasks
 
         created = tasks.process_recurring_task("2025-06-05T00:00:00")
         assert created == 1
