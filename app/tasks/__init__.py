@@ -16,7 +16,7 @@ def send_telegram(text: str) -> None:
 @celery_app.task
 def import_transactions_task(
     bank: str,
-    token: str,
+    token: str | None,
     start: str,
     end: str,
     account_id: int,
@@ -25,7 +25,7 @@ def import_transactions_task(
     """Импортировать операции из банка."""
 
     async def _run() -> int:
-        connector = banks.get_connector(bank, token)
+        connector = banks.get_connector(bank, user_id, token)
         txs = await connector.fetch_transactions(
             datetime.fromisoformat(start),
             datetime.fromisoformat(end),

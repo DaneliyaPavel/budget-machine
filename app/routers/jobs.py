@@ -20,10 +20,9 @@ async def import_transactions_job(
 ):
     """Запустить импорт операций в фоне."""
     if token is None:
-        token_obj = await crud.get_bank_token(session, bank, current_user.account_id)
+        token_obj = await crud.get_bank_token(session, bank, current_user.id)
         if not token_obj:
             raise HTTPException(status_code=404, detail="Токен не найден")
-        token = token_obj.token
     result = tasks.import_transactions_task.delay(
         bank,
         token,

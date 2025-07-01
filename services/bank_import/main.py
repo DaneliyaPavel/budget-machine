@@ -22,7 +22,7 @@ consumer: AIOKafkaConsumer | None = None
 
 
 async def process_message(data: dict) -> None:
-    connector = banks.get_connector(data["bank"], data["token"])
+    connector = banks.get_connector(data["bank"], data["user_id"], data.get("token"))
     txs = await connector.fetch_transactions(
         datetime.fromisoformat(data["start"]),
         datetime.fromisoformat(data["end"]),

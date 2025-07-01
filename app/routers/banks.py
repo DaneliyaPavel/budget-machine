@@ -41,7 +41,7 @@ async def import_from_bank(
         )
         return {"queued": True}
     try:
-        connector = get_connector(bank, token)
+        connector = get_connector(bank, current_user.id, token)
     except ValueError:
         raise HTTPException(status_code=400, detail="Неизвестный банк")
 
@@ -63,7 +63,7 @@ async def import_using_saved_token(
     current_user: models.User = Depends(get_current_user),
 ):
     """Импортировать операции, используя сохранённый токен банка."""
-    token_obj = await crud.get_bank_token(session, bank, current_user.account_id)
+    token_obj = await crud.get_bank_token(session, bank, current_user.id)
     if not token_obj:
         raise HTTPException(status_code=404, detail="Токен не найден")
     if USE_KAFKA:
@@ -71,7 +71,7 @@ async def import_using_saved_token(
             KAFKA_TOPIC,
             {
                 "bank": bank,
-                "token": token_obj.token,
+                "token": None,
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "account_id": current_user.account_id,
@@ -80,7 +80,7 @@ async def import_using_saved_token(
         )
         return {"queued": True}
     try:
-        connector = get_connector(bank, token_obj.token)
+        connector = get_connector(bank, current_user.id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Неизвестный банк")
     transactions = await connector.fetch_transactions(start, end)
