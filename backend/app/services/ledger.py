@@ -59,7 +59,10 @@ async def get_balance(
             func.coalesce(
                 func.sum(
                     case(
-                        (models.Posting.side == models.PostingSide.debit, models.Posting.amount),
+                        (
+                            models.Posting.side == models.PostingSide.debit,
+                            models.Posting.amount,
+                        ),
                         else_=-models.Posting.amount,
                     )
                 ),
