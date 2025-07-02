@@ -1,0 +1,19 @@
+{
+  "name": "Budget Machine",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "backend",
+  "workspaceFolder": "/workspace/budget-machine",
+  "shutdownAction": "stopCompose",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "extensions": [
+    "ms-python.python",
+    "dbaeumer.vscode-eslint"
+  ]
+}
