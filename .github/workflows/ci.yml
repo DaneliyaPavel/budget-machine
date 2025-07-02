@@ -26,3 +26,11 @@ jobs:
         run: mypy backend/app
       - name: Run tests
         run: pytest backend/tests
+
+  codeql:
+    permissions: read-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/analyze@v3
