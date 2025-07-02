@@ -32,11 +32,19 @@ make devcontainer
 
 ## Дополнительные зависимости
 
-Для проверки кода в репозитории настроены [pre-commit](https://pre-commit.com/) 
+Для проверки кода в репозитории настроены [pre-commit](https://pre-commit.com/)
 хуки. Установите их командой `pre-commit install`, а затем используйте
-`pre-commit run --all-files` перед созданием pull request.
+`pre-commit run --all-files` перед созданием pull request. Эта команда запускает все проверки из конфигурации.
 
-В CI выполняется анализ безопасности исходного кода с помощью CodeQL.
+В CI выполняется анализ безопасности исходного кода с помощью [CodeQL и других job'ов](https://github.com/DaneliyaPavel/budget-machine/security/code-scanning).
+
+## Инструменты безопасности
+
+- Hadolint
+- Gitleaks
+- tfsec
+- Terrascan
+- Semgrep
 
 ## Вклад
 
