@@ -38,28 +38,28 @@ tags_metadata = [
     {"name": "Уведомления", "description": "Web Push подписки"},
 ]
 
-app = FastAPI(
-    title="Учет бюджета",
-    description="Простой API для ведения личных финансов",
-    openapi_tags=tags_metadata,
-)
+from contextlib import asynccontextmanager
 
 
-@app.on_event("startup")
-async def on_startup():
-    """Создаём таблицы при запуске приложения."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events using lifespan."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     try:
         Instrumentator().instrument(app).expose(app)
     except RuntimeError:
-        # Если приложение уже стартовало, игнорируем ошибку добавления middleware
         pass
-
-
-@app.on_event("shutdown")
-async def on_shutdown() -> None:
+    yield
     await close_producer()
+
+
+app = FastAPI(
+    title="Учет бюджета",
+    description="Простой API для ведения личных финансов",
+    openapi_tags=tags_metadata,
+    lifespan=lifespan,
+)
 
 
 app.include_router(categories.router)

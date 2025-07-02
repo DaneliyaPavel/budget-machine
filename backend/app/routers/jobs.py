@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,8 +36,8 @@ async def import_transactions_job(
 
 @router.post("/лимиты", response_model=dict)
 async def check_limits_job(
-    year: int = Query(datetime.utcnow().year, description="Год"),
-    month: int = Query(datetime.utcnow().month, description="Месяц"),
+    year: int = Query(datetime.now(timezone.utc).year, description="Год"),
+    month: int = Query(datetime.now(timezone.utc).month, description="Месяц"),
     current_user: models.User = Depends(get_current_user),
 ):
     """Проверить лимиты в фоне и прислать уведомление."""

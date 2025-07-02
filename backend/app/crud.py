@@ -1,6 +1,6 @@
 """Функции для взаимодействия с базой данных."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
@@ -189,7 +189,7 @@ async def update_category(
         .where(
             models.Category.id == category_id, models.Category.account_id == account_id
         )
-        .values(**data.dict(exclude_unset=True))
+        .values(**data.model_dump(exclude_unset=True))
         .returning(models.Category)
     )
     result = await db.execute(stmt)
@@ -254,7 +254,7 @@ async def create_transaction(
 ) -> models.Transaction:
     rate = await currency.get_rate(tx.currency)
     db_obj = models.Transaction(
-        **tx.dict(exclude_unset=True),
+        **tx.model_dump(exclude_unset=True),
         amount_rub=tx.amount * rate,
         account_id=account_id,
         user_id=user_id,
@@ -276,7 +276,7 @@ async def create_transactions_bulk(
         rate = await currency.get_rate(tx.currency)
         objects.append(
             models.Transaction(
-                **tx.dict(exclude_unset=True),
+                **tx.model_dump(exclude_unset=True),
                 amount_rub=tx.amount * rate,
                 account_id=account_id,
                 user_id=user_id,
@@ -298,7 +298,7 @@ async def update_transaction(
     tx_obj = await get_transaction(db, tx_id, account_id)
     if not tx_obj:
         return None
-    update_data = data.dict(exclude_unset=True)
+    update_data = data.model_dump(exclude_unset=True)
     if "currency" in update_data or "amount" in update_data:
         currency_code = update_data.get("currency", tx_obj.currency)
         amount_val = update_data.get("amount", tx_obj.amount)
@@ -349,7 +349,7 @@ async def create_goal(
     account_id: int,
     user_id: int,
 ) -> models.Goal:
-    db_obj = models.Goal(**goal.dict(), account_id=account_id, user_id=user_id)
+    db_obj = models.Goal(**goal.model_dump(), account_id=account_id, user_id=user_id)
     db.add(db_obj)
     await db.commit()
     await db.refresh(db_obj)
@@ -365,7 +365,7 @@ async def update_goal(
     stmt = (
         update(models.Goal)
         .where(models.Goal.id == goal_id, models.Goal.account_id == account_id)
-        .values(**data.dict(exclude_unset=True))
+        .values(**data.model_dump(exclude_unset=True))
         .returning(models.Goal)
     )
     result = await db.execute(stmt)
@@ -449,7 +449,7 @@ async def categories_over_limit(
 async def forecast_by_category(
     db: AsyncSession, start: datetime, end: datetime, account_id: int
 ):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if now < start:
         return []
     elapsed_days = (now - start).days + 1
@@ -497,7 +497,7 @@ async def daily_expenses(
 async def monthly_overview(
     db: AsyncSession, start: datetime, end: datetime, account_id: int
 ):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     cutoff = min(now, end)
     stmt = select(func.sum(models.Transaction.amount_rub)).where(
         models.Transaction.created_at >= start,
@@ -547,7 +547,7 @@ async def create_recurring_payment(
     user_id: int,
 ) -> models.RecurringPayment:
     db_obj = models.RecurringPayment(
-        **rp.dict(), account_id=account_id, user_id=user_id
+        **rp.model_dump(), account_id=account_id, user_id=user_id
     )
     db.add(db_obj)
     await db.commit()
@@ -567,7 +567,7 @@ async def update_recurring_payment(
             models.RecurringPayment.id == rp_id,
             models.RecurringPayment.account_id == account_id,
         )
-        .values(**data.dict(exclude_unset=True))
+        .values(**data.model_dump(exclude_unset=True))
         .returning(models.RecurringPayment)
     )
     result = await db.execute(stmt)
@@ -672,7 +672,7 @@ async def add_push_subscription(
     user_id: int,
 ) -> models.PushSubscription:
     db_obj = models.PushSubscription(
-        **subscription.dict(), account_id=account_id, user_id=user_id
+        **subscription.model_dump(), account_id=account_id, user_id=user_id
     )
     db.add(db_obj)
     await db.commit()

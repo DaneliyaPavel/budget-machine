@@ -1,7 +1,7 @@
 """Pydantic-схемы для API."""
 
 from datetime import datetime, date as date_
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 
 
@@ -12,8 +12,7 @@ class Account(BaseModel):
     name: str
     base_currency: str = "RUB"
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CategoryBase(BaseModel):
@@ -41,8 +40,7 @@ class Category(CategoryBase):
     account_id: int
     user_id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TransactionBase(BaseModel):
@@ -77,8 +75,7 @@ class Transaction(TransactionBase):
     account_id: int
     user_id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GoalBase(BaseModel):
@@ -114,8 +111,7 @@ class Goal(GoalBase):
     account_id: int
     user_id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecurringPaymentBase(BaseModel):
@@ -149,8 +145,7 @@ class RecurringPayment(RecurringPaymentBase):
     user_id: int
     active: bool
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BankTokenBase(BaseModel):
@@ -169,8 +164,7 @@ class BankToken(BankTokenBase):
     account_id: int
     user_id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserBase(BaseModel):
@@ -200,8 +194,7 @@ class User(UserBase):
     account_id: int
     role: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):
@@ -270,5 +263,4 @@ class PushSubscriptionCreate(PushSubscriptionBase):
 class PushSubscription(PushSubscriptionBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
