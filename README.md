@@ -11,6 +11,12 @@ make dev  # запускает docker-compose и открывает http://local
 make ci   # локальный запуск ruff, black, mypy и pytest
 ```
 
+Для работы в [devcontainer](https://containers.dev/) предусмотрена команда
+
+```bash
+make devcontainer
+```
+
 Полные примеры запросов смотрите в [docs/examples.md](docs/examples.md). Инструкции по развёртыванию доступны в [docs/deployment.md](docs/deployment.md).
 
 ## Структура проекта
@@ -23,6 +29,14 @@ make ci   # локальный запуск ruff, black, mypy и pytest
 - `frontend/web` — веб-клиент на Next.js
 - `services/` — дополнительные сервисы
 - `docs/` — документация
+
+## Дополнительные зависимости
+
+Для проверки кода в репозитории настроены [pre-commit](https://pre-commit.com/) 
+хуки. Установите их командой `pre-commit install`, а затем используйте
+`pre-commit run --all-files` перед созданием pull request.
+
+В CI выполняется анализ безопасности исходного кода с помощью CodeQL.
 
 ## Вклад
 
