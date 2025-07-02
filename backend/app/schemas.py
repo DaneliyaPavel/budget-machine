@@ -81,6 +81,23 @@ class Transaction(TransactionBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PostingBase(BaseModel):
+    amount: float
+    side: str
+    account_id: UUID
+
+
+class PostingCreate(PostingBase):
+    pass
+
+
+class Posting(PostingBase):
+    id: UUID
+    transaction_id: UUID
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class GoalBase(BaseModel):
     """Основные поля цели накоплений."""
 
