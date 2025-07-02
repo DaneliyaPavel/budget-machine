@@ -14,6 +14,8 @@ terraform apply
 
 Укажите значения переменных `yc_token`, `yc_cloud_id`, `yc_folder_id`, `yc_network_id` и при необходимости `yc_zone` в соответствии со своей учётной записью.
 
+Для проверки конфигураций Terraform можно запускать `tfsec` или `terrascan`.
+
 ## Развёртывание приложения с Helm
 
 В каталоге `infra/helm` находится Helm-чарт. Получив kubeconfig для кластера, установите чарт:
