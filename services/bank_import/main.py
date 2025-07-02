@@ -11,7 +11,7 @@ from aiokafka import AIOKafkaConsumer
 BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(BASE_DIR))  # noqa: E402
 
-from app import banks, crud, database  # noqa: E402
+from backend.app import banks, crud, database  # noqa: E402
 
 KAFKA_BROKER_URL = os.getenv("KAFKA_BROKER_URL", "localhost:9092")
 TOPIC = os.getenv("BANK_TOPIC", "bank.raw")

@@ -71,7 +71,7 @@ def test_import_with_saved_token(monkeypatch):
         vault.get_vault_client.cache_clear()
         monkeypatch.setattr(vault, "get_vault_client", lambda: fake_vault)
         monkeypatch.setattr(
-            "app.routers.banks.get_connector",
+            "backend.app.routers.banks.get_connector",
             lambda b, uid, token=None: FakeConnector(uid, token),
         )
 
