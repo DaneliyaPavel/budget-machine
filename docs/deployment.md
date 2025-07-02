@@ -1,10 +1,10 @@
-# Deployment Guide
+# Руководство по развертыванию
 
-This document describes how to provision infrastructure and deploy the application using Terraform, Helm and Argo CD.
+Этот документ описывает, как создавать инфраструктуру и развёртывать приложение с помощью Terraform, Helm и Argo CD.
 
-## Infrastructure with Terraform
+## Инфраструктура с Terraform
 
-The `infra/terraform` directory contains an example configuration for Yandex Cloud. It provisions a managed Kubernetes cluster and a node group.
+Каталог `infra/terraform` содержит пример конфигурации для Yandex Cloud. Он создаёт управляемый кластер Kubernetes и группу узлов.
 
 ```bash
 cd infra/terraform
@@ -12,11 +12,11 @@ terraform init
 terraform apply
 ```
 
-Set the variables `yc_token`, `yc_cloud_id`, `yc_folder_id`, `yc_network_id` and optionally `yc_zone` to match your account.
+Укажите значения переменных `yc_token`, `yc_cloud_id`, `yc_folder_id`, `yc_network_id` и при необходимости `yc_zone` в соответствии со своей учётной записью.
 
-## Application deployment with Helm
+## Развёртывание приложения с Helm
 
-A Helm chart lives in `infra/helm`. After obtaining kubeconfig for the cluster, install the chart:
+В каталоге `infra/helm` находится Helm-чарт. Получив kubeconfig для кластера, установите чарт:
 
 ```bash
 helm install budget-machine ./infra/helm \
@@ -24,19 +24,19 @@ helm install budget-machine ./infra/helm \
   --set env.SECRET_KEY=change_me
 ```
 
-It will create a Deployment, Service and a Rollout resource for canary releases.
+Чарт создаст Deployment, Service и ресурс Rollout для канареечных релизов.
 
 ## Argo CD
 
-The directory `infra/argocd` provides manifests for Argo CD.
+Каталог `infra/argocd` содержит манифесты для Argo CD.
 
-- `applicationset.yaml` creates preview environments for pull requests using `ApplicationSet`.
-- `rollout-example.yaml` demonstrates how to sync the chart with automated canary rollouts.
+- `applicationset.yaml` создаёт предварительные окружения для pull request'ов с помощью `ApplicationSet`.
+- `rollout-example.yaml` демонстрирует синхронизацию чарта с автоматизированными канареечными rollout'ами.
 
-Apply them to a running Argo CD instance:
+Примените их к запущенному экземпляру Argo CD:
 
 ```bash
 kubectl apply -f infra/argocd/
 ```
 
-After that new pull requests will trigger temporary environments and production updates will use Argo Rollouts for gradual rollout.
+После этого новые pull request'ы будут запускать временные окружения, а обновления в продакшене будут использовать Argo Rollouts для плавного развёртывания.
