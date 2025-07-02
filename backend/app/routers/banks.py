@@ -6,7 +6,8 @@ import os
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import database, crud, models
+from .. import database, crud
+from ..models import User
 from .users import get_current_user
 from ..banks import get_connector
 from ..kafka_producer import publish
@@ -24,7 +25,7 @@ async def import_from_bank(
     start: datetime = Query(..., description="Начало периода"),
     end: datetime = Query(..., description="Конец периода"),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Загрузить операции из указанного банка."""
     if USE_KAFKA:
@@ -60,7 +61,7 @@ async def import_using_saved_token(
     start: datetime = Query(..., description="Начало периода"),
     end: datetime = Query(..., description="Конец периода"),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Импортировать операции, используя сохранённый токен банка."""
     token_obj = await crud.get_bank_token(session, bank, current_user.id)

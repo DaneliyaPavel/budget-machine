@@ -3,14 +3,17 @@
 from datetime import datetime, date as date_
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
+from uuid import UUID
 
 
 class Account(BaseModel):
     """Информация об общем счёте."""
 
-    id: int
+    id: UUID
     name: str
-    base_currency: str = "RUB"
+    currency_code: str = "RUB"
+    type: str = "cash"
+    user_id: UUID | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -20,7 +23,7 @@ class CategoryBase(BaseModel):
 
     name: str
     monthly_limit: float | None = None
-    parent_id: int | None = None
+    parent_id: UUID | None = None
 
 
 class CategoryCreate(CategoryBase):
@@ -32,13 +35,13 @@ class CategoryUpdate(BaseModel):
 
     name: str | None = None
     monthly_limit: float | None = None
-    parent_id: int | None = None
+    parent_id: UUID | None = None
 
 
 class Category(CategoryBase):
-    id: int
-    account_id: int
-    user_id: int
+    id: UUID
+    account_id: UUID
+    user_id: UUID
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -50,7 +53,7 @@ class TransactionBase(BaseModel):
     currency: str = "RUB"
     amount_rub: float | None = None
     description: Optional[str] = None
-    category_id: int
+    category_id: UUID
 
 
 class TransactionCreate(TransactionBase):
@@ -64,16 +67,16 @@ class TransactionUpdate(BaseModel):
     amount: float | None = None
     currency: str | None = None
     description: str | None = None
-    category_id: int | None = None
+    category_id: UUID | None = None
     created_at: datetime | None = None
 
 
 class Transaction(TransactionBase):
-    id: int
+    id: UUID
     created_at: datetime
     amount_rub: float
-    account_id: int
-    user_id: int
+    account_id: UUID
+    user_id: UUID
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -107,9 +110,9 @@ class GoalDeposit(BaseModel):
 
 
 class Goal(GoalBase):
-    id: int
-    account_id: int
-    user_id: int
+    id: UUID
+    account_id: UUID
+    user_id: UUID
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -122,7 +125,7 @@ class RecurringPaymentBase(BaseModel):
     currency: str = "RUB"
     day: int
     description: str | None = None
-    category_id: int
+    category_id: UUID
 
 
 class RecurringPaymentCreate(RecurringPaymentBase):
@@ -135,14 +138,14 @@ class RecurringPaymentUpdate(BaseModel):
     currency: str | None = None
     day: int | None = None
     description: str | None = None
-    category_id: int | None = None
+    category_id: UUID | None = None
     active: bool | None = None
 
 
 class RecurringPayment(RecurringPaymentBase):
-    id: int
-    account_id: int
-    user_id: int
+    id: UUID
+    account_id: UUID
+    user_id: UUID
     active: bool
 
     model_config = ConfigDict(from_attributes=True)
@@ -159,10 +162,10 @@ class BankTokenCreate(BankTokenBase):
 
 
 class BankToken(BankTokenBase):
-    id: int
+    id: UUID
     token: str
-    account_id: int
-    user_id: int
+    account_id: UUID
+    user_id: UUID
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -185,13 +188,13 @@ class UserUpdate(BaseModel):
 class JoinAccount(BaseModel):
     """Параметры для присоединения к существующему счёту."""
 
-    account_id: int
+    account_id: UUID
 
 
 class User(UserBase):
-    id: int
+    id: UUID
     is_active: bool
-    account_id: int
+    account_id: UUID
     role: str
 
     model_config = ConfigDict(from_attributes=True)
@@ -242,7 +245,7 @@ class MonthlySummary(BaseModel):
 class GoalProgress(BaseModel):
     """Текущий прогресс по цели накоплений."""
 
-    id: int = Field(..., description="Идентификатор цели")
+    id: UUID = Field(..., description="Идентификатор цели")
     name: str = Field(..., description="Название цели")
     target_amount: float = Field(..., description="Сумма, которую нужно накопить")
     current_amount: float = Field(..., description="Уже накоплено")
@@ -261,6 +264,6 @@ class PushSubscriptionCreate(PushSubscriptionBase):
 
 
 class PushSubscription(PushSubscriptionBase):
-    id: int
+    id: UUID
 
     model_config = ConfigDict(from_attributes=True)

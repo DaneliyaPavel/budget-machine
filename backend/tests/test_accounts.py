@@ -32,10 +32,10 @@ def test_account_read_and_update():
 
         r = client.patch(
             "/счёт/",
-            json={"id": data["id"], "name": "Семейный", "base_currency": "USD"},
+            json={"id": data["id"], "name": "Семейный", "currency_code": "USD"},
             headers=headers,
         )
         assert r.status_code == 200
         result = r.json()
         assert result["name"] == "Семейный"
-        assert result["base_currency"] == "USD"
+        assert result["currency_code"] == "USD"

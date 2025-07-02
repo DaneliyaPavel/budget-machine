@@ -23,7 +23,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> models.User | None:
 async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User:
     """Создать пользователя и счёт."""
     hashed = get_password_hash(user.password)
-    account = models.Account(name="Личный бюджет", base_currency="RUB")
+    account = models.Account(name="Личный бюджет", currency_code="RUB")
     db.add(account)
     await db.flush()
     db_obj = models.User(
@@ -41,7 +41,7 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User
 async def create_user_oauth(db: AsyncSession, email: str) -> models.User:
     """Создать пользователя через OAuth."""
     hashed = get_password_hash(secrets.token_hex(8))
-    account = models.Account(name="Личный бюджет", base_currency="RUB")
+    account = models.Account(name="Личный бюджет", currency_code="RUB")
     db.add(account)
     await db.flush()
     user = models.User(
@@ -116,14 +116,14 @@ async def update_account(
     db: AsyncSession,
     account_id: int,
     name: str | None = None,
-    base_currency: str | None = None,
+    currency_code: str | None = None,
 ) -> models.Account | None:
     """Изменить параметры счёта."""
     values = {}
     if name is not None:
         values["name"] = name
-    if base_currency is not None:
-        values["base_currency"] = base_currency
+    if currency_code is not None:
+        values["currency_code"] = currency_code
     if not values:
         return await get_account(db, account_id)
     stmt = (

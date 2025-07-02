@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import crud, schemas, database, models
+from .. import crud, schemas, database
+from ..models import User
 from .users import get_current_user
 
 router = APIRouter(prefix="/push", tags=["Уведомления"])
@@ -10,7 +11,7 @@ router = APIRouter(prefix="/push", tags=["Уведомления"])
 @router.get("/", response_model=list[schemas.PushSubscription])
 async def read_subscriptions(
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     return await crud.get_push_subscriptions(session, current_user.account_id)
 
@@ -19,7 +20,7 @@ async def read_subscriptions(
 async def add_subscription(
     sub: schemas.PushSubscriptionCreate,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     return await crud.add_push_subscription(
         session, sub, current_user.account_id, current_user.id
@@ -28,9 +29,9 @@ async def add_subscription(
 
 @router.delete("/{sub_id}", status_code=204)
 async def remove_subscription(
-    sub_id: int,
+    sub_id: str,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     await crud.delete_push_subscription(session, sub_id, current_user.account_id)
     return None
