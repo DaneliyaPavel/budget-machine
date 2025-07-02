@@ -5,6 +5,7 @@ import os
 from ..celery_app import celery_app
 from .. import notifications, banks, crud, database, schemas
 from clickhouse_connect import get_client
+import uuid
 
 
 @celery_app.task
@@ -19,8 +20,8 @@ def import_transactions_task(
     token: str | None,
     start: str,
     end: str,
-    account_id: int,
-    user_id: int,
+    account_id: uuid.UUID,
+    user_id: uuid.UUID,
 ) -> int:
     """Импортировать операции из банка."""
 
@@ -40,7 +41,7 @@ def import_transactions_task(
 
 
 @celery_app.task
-def export_summary_task(account_id: int, year: int, month: int) -> int:
+def export_summary_task(account_id: uuid.UUID, year: int, month: int) -> int:
     """Выгрузить помесячную сводку в ClickHouse."""
 
     async def _run() -> int:
@@ -95,7 +96,7 @@ def export_summary_task(account_id: int, year: int, month: int) -> int:
 
 
 @celery_app.task
-def check_limits_task(account_id: int, year: int, month: int) -> int:
+def check_limits_task(account_id: uuid.UUID, year: int, month: int) -> int:
     """Проверить превышение лимитов и отправить уведомление."""
 
     async def _run() -> int:

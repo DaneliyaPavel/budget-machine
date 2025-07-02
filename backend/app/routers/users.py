@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 from .. import crud, schemas, database, security
 from ..models import User
 from ..security import verify_password, create_access_token
@@ -70,7 +71,7 @@ async def account_members(
 
 @router.delete("/{user_id}", status_code=204)
 async def remove_user(
-    user_id: str,
+    user_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(database.get_session),
 ):

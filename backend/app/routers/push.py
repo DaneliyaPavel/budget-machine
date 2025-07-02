@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 
 from .. import crud, schemas, database
 from ..models import User
@@ -29,7 +30,7 @@ async def add_subscription(
 
 @router.delete("/{sub_id}", status_code=204)
 async def remove_subscription(
-    sub_id: str,
+    sub_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):

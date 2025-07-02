@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 
 from .. import crud, schemas, database
 from ..models import User
@@ -33,7 +34,7 @@ async def create_category(
 
 @router.get("/{category_id}", response_model=schemas.Category)
 async def read_category(
-    category_id: str,
+    category_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -46,7 +47,7 @@ async def read_category(
 
 @router.patch("/{category_id}", response_model=schemas.Category)
 async def update_category(
-    category_id: str,
+    category_id: uuid.UUID,
     data: schemas.CategoryUpdate,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
@@ -62,7 +63,7 @@ async def update_category(
 
 @router.delete("/{category_id}", status_code=204)
 async def delete_category(
-    category_id: str,
+    category_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
