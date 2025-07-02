@@ -5,7 +5,7 @@ dev:
 	docker-compose up --build
 
 lint:
-	ruff .
+	ruff check .
 	black --check .
 	mypy backend/app
 
