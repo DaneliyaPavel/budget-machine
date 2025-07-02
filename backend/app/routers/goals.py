@@ -3,7 +3,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import crud, schemas, database, models
+from .. import crud, schemas, database
+from ..models import User
 from .users import get_current_user
 
 router = APIRouter(prefix="/цели", tags=["Цели"])
@@ -12,7 +13,7 @@ router = APIRouter(prefix="/цели", tags=["Цели"])
 @router.get("/", response_model=list[schemas.Goal])
 async def read_goals(
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Получить список целей пользователя."""
     return await crud.get_goals(session, current_user.account_id)
@@ -22,7 +23,7 @@ async def read_goals(
 async def create_goal(
     goal: schemas.GoalCreate,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Создать новую цель."""
     return await crud.create_goal(
@@ -32,9 +33,9 @@ async def create_goal(
 
 @router.get("/{goal_id}", response_model=schemas.Goal)
 async def read_goal(
-    goal_id: int,
+    goal_id: str,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Получить цель по ID."""
     goal = await crud.get_goal(session, goal_id, current_user.account_id)
@@ -45,10 +46,10 @@ async def read_goal(
 
 @router.patch("/{goal_id}", response_model=schemas.Goal)
 async def update_goal(
-    goal_id: int,
+    goal_id: str,
     data: schemas.GoalUpdate,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Изменить параметры цели."""
     goal = await crud.update_goal(session, goal_id, data, current_user.account_id)
@@ -59,10 +60,10 @@ async def update_goal(
 
 @router.post("/{goal_id}/пополнить", response_model=schemas.Goal)
 async def deposit_goal(
-    goal_id: int,
+    goal_id: str,
     data: schemas.GoalDeposit,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Пополнить текущую цель на заданную сумму."""
     goal = await crud.add_to_goal(
@@ -75,9 +76,9 @@ async def deposit_goal(
 
 @router.delete("/{goal_id}", status_code=204)
 async def delete_goal(
-    goal_id: int,
+    goal_id: str,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Удалить цель."""
     await crud.delete_goal(session, goal_id, current_user.account_id)

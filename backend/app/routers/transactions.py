@@ -17,7 +17,8 @@ from datetime import datetime
 from typing import Iterable
 
 from openpyxl import load_workbook
-from .. import crud, schemas, database, models
+from .. import crud, schemas, database
+from ..models import User
 from .users import get_current_user
 
 router = APIRouter(prefix="/операции", tags=["Операции"])
@@ -27,10 +28,10 @@ router = APIRouter(prefix="/операции", tags=["Операции"])
 async def read_transactions(
     start: datetime | None = Query(None, description="Начало периода"),
     end: datetime | None = Query(None, description="Конец периода"),
-    category_id: int | None = Query(None, description="Категория"),
+    category_id: str | None = Query(None, description="Категория"),
     limit: int | None = Query(None, description="Количество записей"),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Получить список операций с фильтрами по дате и категории."""
     return await crud.get_transactions(
@@ -47,7 +48,7 @@ async def read_transactions(
 async def create_transaction(
     tx: schemas.TransactionCreate,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Создать новую операцию."""
     return await crud.create_transaction(
@@ -85,7 +86,7 @@ def _parse_rows(rows: Iterable[dict]) -> list[schemas.TransactionCreate]:
 async def import_transactions(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Импортировать операции из CSV или Excel."""
     content = await file.read()
@@ -115,9 +116,9 @@ async def import_transactions(
 async def export_transactions(
     start: datetime | None = Query(None, description="Начало периода"),
     end: datetime | None = Query(None, description="Конец периода"),
-    category_id: int | None = Query(None, description="Категория"),
+    category_id: str | None = Query(None, description="Категория"),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Выгрузить операции в формате CSV."""
     rows = await crud.get_transactions(
@@ -164,9 +165,9 @@ async def export_transactions(
 
 @router.get("/{tx_id}", response_model=schemas.Transaction)
 async def read_transaction(
-    tx_id: int,
+    tx_id: str,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Получить одну операцию."""
     tx = await crud.get_transaction(session, tx_id, current_user.account_id)
@@ -177,10 +178,10 @@ async def read_transaction(
 
 @router.patch("/{tx_id}", response_model=schemas.Transaction)
 async def update_transaction(
-    tx_id: int,
+    tx_id: str,
     data: schemas.TransactionUpdate,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Изменить операцию."""
     tx = await crud.update_transaction(session, tx_id, data, current_user.account_id)
@@ -191,9 +192,9 @@ async def update_transaction(
 
 @router.delete("/{tx_id}", status_code=204)
 async def delete_transaction(
-    tx_id: int,
+    tx_id: str,
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Удалить операцию."""
     await crud.delete_transaction(session, tx_id, current_user.account_id)

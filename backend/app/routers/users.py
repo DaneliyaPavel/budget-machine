@@ -3,7 +3,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from .. import crud, schemas, database, models, security
+from .. import crud, schemas, database, security
+from ..models import User
 from ..security import verify_password, create_access_token
 from jose import JWTError, jwt
 
@@ -15,7 +16,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/пользователи/token")
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     session: AsyncSession = Depends(database.get_session),
-) -> models.User:
+) -> User:
     """Получить текущего пользователя по JWT-токену."""
     try:
         payload = jwt.decode(
@@ -48,7 +49,7 @@ async def create_user(
 @router.post("/join", response_model=schemas.User)
 async def join_account(
     data: schemas.JoinAccount,
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(database.get_session),
 ):
     """Присоединиться к существующему счёту."""
@@ -60,7 +61,7 @@ async def join_account(
 
 @router.get("/участники", response_model=list[schemas.User])
 async def account_members(
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(database.get_session),
 ):
     """Список участников текущего счёта."""
@@ -69,8 +70,8 @@ async def account_members(
 
 @router.delete("/{user_id}", status_code=204)
 async def remove_user(
-    user_id: int,
-    current_user: models.User = Depends(get_current_user),
+    user_id: str,
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(database.get_session),
 ):
     """Удалить пользователя из счёта (только владелец)."""
@@ -99,7 +100,7 @@ async def login(
 
 
 @router.get("/me", response_model=schemas.User)
-async def read_users_me(current_user: models.User = Depends(get_current_user)):
+async def read_users_me(current_user: User = Depends(get_current_user)):
     """Получить данные текущего пользователя."""
     return current_user
 
@@ -107,7 +108,7 @@ async def read_users_me(current_user: models.User = Depends(get_current_user)):
 @router.patch("/me", response_model=schemas.User)
 async def update_user_me(
     data: schemas.UserUpdate,
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(database.get_session),
 ):
     """Обновить профиль пользователя."""

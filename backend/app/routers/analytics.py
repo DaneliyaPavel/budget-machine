@@ -5,7 +5,8 @@ from datetime import datetime, date, timezone
 from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import crud, database, schemas, models, notifications
+from .. import crud, database, schemas, notifications
+from ..models import User
 from .users import get_current_user
 
 router = APIRouter(prefix="/аналитика", tags=["Аналитика"])
@@ -22,7 +23,7 @@ async def summary_by_category(
         description="Месяц (1-12)",
     ),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Сумма операций по категориям за месяц."""
     start = datetime(year, month, 1, tzinfo=timezone.utc)
@@ -52,7 +53,7 @@ async def limits_check(
     ),
     notify: bool = Query(False, description="Отправить уведомление"),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Категории, где траты превысили лимит."""
     start = datetime(year, month, 1, tzinfo=timezone.utc)
@@ -91,7 +92,7 @@ async def forecast(
         description="Месяц (1-12)",
     ),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Прогноз расходов по категориям."""
     start = datetime(year, month, 1, tzinfo=timezone.utc)
@@ -118,7 +119,7 @@ async def summary_by_day(
         description="Месяц (1-12)",
     ),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Траты по дням за месяц."""
     start = datetime(year, month, 1, tzinfo=timezone.utc)
@@ -150,7 +151,7 @@ async def balance_overview(
         description="Месяц (1-12)",
     ),
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Сколько уже потрачено и прогноз расходов."""
     start = datetime(year, month, 1, tzinfo=timezone.utc)
@@ -168,7 +169,7 @@ async def balance_overview(
 @router.get("/цели", response_model=list[schemas.GoalProgress])
 async def goals_progress(
     session: AsyncSession = Depends(database.get_session),
-    current_user: models.User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Прогресс по накопительным целям."""
     goals = await crud.get_goals(session, current_user.account_id)
