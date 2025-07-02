@@ -17,8 +17,12 @@ spec:
         app.kubernetes.io/name: {{ include "budget-machine.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: {{ include "budget-machine.name" . }}
+          securityContext:
+            allowPrivilegeEscalation: false
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:

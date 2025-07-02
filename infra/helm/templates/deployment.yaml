@@ -16,15 +16,19 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "budget-machine.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
-    spec:
-      containers:
-        - name: {{ include "budget-machine.name" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - name: DATABASE_URL
-              value: {{ .Values.env.DATABASE_URL | quote }}
-            - name: SECRET_KEY
-              value: {{ .Values.env.SECRET_KEY | quote }}
-          ports:
-            - containerPort: 8000
+  spec:
+    securityContext:
+      runAsNonRoot: true
+    containers:
+      - name: {{ include "budget-machine.name" . }}
+        securityContext:
+          allowPrivilegeEscalation: false
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+          - name: DATABASE_URL
+            value: {{ .Values.env.DATABASE_URL | quote }}
+          - name: SECRET_KEY
+            value: {{ .Values.env.SECRET_KEY | quote }}
+        ports:
+          - containerPort: 8000

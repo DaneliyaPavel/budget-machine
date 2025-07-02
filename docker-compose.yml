@@ -5,6 +5,9 @@ services:
     env_file: .env
     volumes:
       - db_data:/var/lib/postgresql/data
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
       interval: 10s
@@ -13,6 +16,9 @@ services:
   redis:
     image: redis:7-alpine
     env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -21,6 +27,9 @@ services:
   zookeeper:
     image: bitnami/zookeeper:3.8
     env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
     healthcheck:
       test: ["CMD-SHELL", "echo ruok | nc localhost $$ZOOKEEPER_CLIENT_PORT | grep imok"]
       interval: 10s
@@ -31,6 +40,9 @@ services:
     depends_on:
       - zookeeper
     env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 10s
