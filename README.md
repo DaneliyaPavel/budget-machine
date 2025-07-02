@@ -8,6 +8,7 @@
 
 ```bash
 make dev  # запускает docker-compose и открывает http://localhost:8000/docs
+make ci   # локальный запуск ruff, black, mypy и pytest
 ```
 
 Полные примеры запросов смотрите в [docs/examples.md](docs/examples.md). Инструкции по развёртыванию доступны в [docs/deployment.md](docs/deployment.md).
