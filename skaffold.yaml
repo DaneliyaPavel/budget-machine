@@ -1,0 +1,30 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: budget-machine
+build:
+  artifacts:
+    - image: budget-machine-backend
+      context: .
+      docker:
+        dockerfile: backend/Dockerfile
+
+deploy:
+  helm:
+    releases:
+      - name: budget-machine
+        chartPath: infra/helm
+        valuesFiles:
+          - infra/helm/values.yaml
+        setValues:
+          image.repository: budget-machine-backend
+          image.tag: dev
+          env.DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:///./app.db}
+          env.SECRET_KEY: ${SECRET_KEY:-secret}
+        namespace: default
+
+portForward:
+  - resourceType: Service
+    resourceName: budget-machine-budget-machine
+    port: 80
+    localPort: 8000
