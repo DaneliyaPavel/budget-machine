@@ -76,7 +76,7 @@ def _parse_rows(rows: Iterable[dict]) -> list[schemas.TransactionCreate]:
                 amount=float(row["amount"]),
                 currency=row.get("currency", "RUB"),
                 description=row.get("description"),
-                category_id=int(row["category_id"]),
+                category_id=str(row["category_id"]),
                 created_at=created_at,
             )
         )
