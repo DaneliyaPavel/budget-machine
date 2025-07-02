@@ -18,12 +18,8 @@ jobs:
           pip install -r requirements.txt
           pip install -r backend/requirements-dev.txt
           pip install ruff==0.12.1 black==25.1.0 pytest
-      - name: Ruff lint
-        run: ruff check --output-format=github .
-      - name: Black check
-        run: black --check .
-      - name: Mypy check
-        run: mypy backend/app
+      - name: Run linters
+        run: make lint
       - name: Run tests
         run: pytest backend/tests
 
