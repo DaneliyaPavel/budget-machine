@@ -20,6 +20,7 @@ from .routers import (
 )
 from .database import engine, Base
 from .kafka_producer import close as close_producer
+from contextlib import asynccontextmanager
 
 tags_metadata = [
     {"name": "Категории", "description": "Управление категориями операций"},
@@ -37,8 +38,6 @@ tags_metadata = [
     {"name": "Валюты", "description": "Курсы и конвертация"},
     {"name": "Уведомления", "description": "Web Push подписки"},
 ]
-
-from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
