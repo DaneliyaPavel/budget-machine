@@ -12,6 +12,7 @@ from fastapi import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 import csv
+import uuid
 import io
 from datetime import datetime
 from typing import Iterable
@@ -165,7 +166,7 @@ async def export_transactions(
 
 @router.get("/{tx_id}", response_model=schemas.Transaction)
 async def read_transaction(
-    tx_id: str,
+    tx_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -178,7 +179,7 @@ async def read_transaction(
 
 @router.patch("/{tx_id}", response_model=schemas.Transaction)
 async def update_transaction(
-    tx_id: str,
+    tx_id: uuid.UUID,
     data: schemas.TransactionUpdate,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
@@ -192,7 +193,7 @@ async def update_transaction(
 
 @router.delete("/{tx_id}", status_code=204)
 async def delete_transaction(
-    tx_id: str,
+    tx_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):

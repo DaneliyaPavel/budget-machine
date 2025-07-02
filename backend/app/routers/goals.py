@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .. import crud, schemas, database
 from ..models import User
 from .users import get_current_user
+import uuid
 
 router = APIRouter(prefix="/цели", tags=["Цели"])
 
@@ -33,7 +34,7 @@ async def create_goal(
 
 @router.get("/{goal_id}", response_model=schemas.Goal)
 async def read_goal(
-    goal_id: str,
+    goal_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -46,7 +47,7 @@ async def read_goal(
 
 @router.patch("/{goal_id}", response_model=schemas.Goal)
 async def update_goal(
-    goal_id: str,
+    goal_id: uuid.UUID,
     data: schemas.GoalUpdate,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
@@ -60,7 +61,7 @@ async def update_goal(
 
 @router.post("/{goal_id}/пополнить", response_model=schemas.Goal)
 async def deposit_goal(
-    goal_id: str,
+    goal_id: uuid.UUID,
     data: schemas.GoalDeposit,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
@@ -76,7 +77,7 @@ async def deposit_goal(
 
 @router.delete("/{goal_id}", status_code=204)
 async def delete_goal(
-    goal_id: str,
+    goal_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):

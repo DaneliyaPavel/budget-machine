@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
+import uuid
 
 from . import models, schemas, currency, vault
 from .security import get_password_hash
@@ -54,7 +55,7 @@ async def create_user_oauth(db: AsyncSession, email: str) -> models.User:
 
 
 async def join_account(
-    db: AsyncSession, user: models.User, account_id: int
+    db: AsyncSession, user: models.User, account_id: uuid.UUID
 ) -> models.User | None:
     """Присоединить пользователя к существующему счёту."""
     account = await db.get(models.Account, account_id)
@@ -67,7 +68,7 @@ async def join_account(
     return user
 
 
-async def get_account_users(db: AsyncSession, account_id: int):
+async def get_account_users(db: AsyncSession, account_id: uuid.UUID):
     """Получить всех пользователей счёта."""
     result = await db.execute(
         select(models.User).where(models.User.account_id == account_id)
@@ -75,7 +76,9 @@ async def get_account_users(db: AsyncSession, account_id: int):
     return result.scalars().all()
 
 
-async def delete_user(db: AsyncSession, user_id: int, account_id: int) -> bool:
+async def delete_user(
+    db: AsyncSession, user_id: uuid.UUID, account_id: uuid.UUID
+) -> bool:
     """Удалить пользователя из счёта."""
     result = await db.execute(
         delete(models.User).where(
@@ -107,14 +110,14 @@ async def update_user(
 # ----------------------------------------------------------------------------
 
 
-async def get_account(db: AsyncSession, account_id: int) -> models.Account | None:
+async def get_account(db: AsyncSession, account_id: uuid.UUID) -> models.Account | None:
     """Получить счёт по идентификатору."""
     return await db.get(models.Account, account_id)
 
 
 async def update_account(
     db: AsyncSession,
-    account_id: int,
+    account_id: uuid.UUID,
     name: str | None = None,
     currency_code: str | None = None,
 ) -> models.Account | None:
@@ -142,14 +145,14 @@ async def update_account(
 # ----------------------------------------------------------------------------
 
 
-async def get_categories(db: AsyncSession, account_id: int):
+async def get_categories(db: AsyncSession, account_id: uuid.UUID):
     result = await db.execute(
         select(models.Category).where(models.Category.account_id == account_id)
     )
     return result.scalars().all()
 
 
-async def get_category(db: AsyncSession, category_id: int, account_id: int):
+async def get_category(db: AsyncSession, category_id: uuid.UUID, account_id: uuid.UUID):
     result = await db.execute(
         select(models.Category).where(
             models.Category.id == category_id,
@@ -162,8 +165,8 @@ async def get_category(db: AsyncSession, category_id: int, account_id: int):
 async def create_category(
     db: AsyncSession,
     category: schemas.CategoryCreate,
-    account_id: int,
-    user_id: int,
+    account_id: uuid.UUID,
+    user_id: uuid.UUID,
 ) -> models.Category:
     db_obj = models.Category(
         name=category.name,
@@ -180,9 +183,9 @@ async def create_category(
 
 async def update_category(
     db: AsyncSession,
-    category_id: int,
+    category_id: uuid.UUID,
     data: schemas.CategoryUpdate,
-    account_id: int,
+    account_id: uuid.UUID,
 ) -> models.Category | None:
     stmt = (
         update(models.Category)
@@ -197,7 +200,9 @@ async def update_category(
     return result.scalar_one_or_none()
 
 
-async def delete_category(db: AsyncSession, category_id: int, account_id: int) -> None:
+async def delete_category(
+    db: AsyncSession, category_id: uuid.UUID, account_id: uuid.UUID
+) -> None:
     await db.execute(
         delete(models.Category).where(
             models.Category.id == category_id,
@@ -214,10 +219,10 @@ async def delete_category(db: AsyncSession, category_id: int, account_id: int) -
 
 async def get_transactions(
     db: AsyncSession,
-    account_id: int,
+    account_id: uuid.UUID,
     start: datetime | None = None,
     end: datetime | None = None,
-    category_id: int | None = None,
+    category_id: uuid.UUID | None = None,
     limit: int | None = None,
 ):
     stmt = select(models.Transaction).where(models.Transaction.account_id == account_id)
@@ -236,7 +241,8 @@ async def get_transactions(
     return result.scalars().all()
 
 
-async def get_transaction(db: AsyncSession, tx_id: int, account_id: int):
+async def get_transaction(db: AsyncSession, tx_id: uuid.UUID, account_id: uuid.UUID):
+
     result = await db.execute(
         select(models.Transaction).where(
             models.Transaction.id == tx_id,
@@ -249,8 +255,8 @@ async def get_transaction(db: AsyncSession, tx_id: int, account_id: int):
 async def create_transaction(
     db: AsyncSession,
     tx: schemas.TransactionCreate,
-    account_id: int,
-    user_id: int,
+    account_id: uuid.UUID,
+    user_id: uuid.UUID,
 ) -> models.Transaction:
     rate = await currency.get_rate(tx.currency)
     db_obj = models.Transaction(
@@ -268,8 +274,8 @@ async def create_transaction(
 async def create_transactions_bulk(
     db: AsyncSession,
     txs: list[schemas.TransactionCreate],
-    account_id: int,
-    user_id: int,
+    account_id: uuid.UUID,
+    user_id: uuid.UUID,
 ):
     objects = []
     for tx in txs:
@@ -291,9 +297,9 @@ async def create_transactions_bulk(
 
 async def update_transaction(
     db: AsyncSession,
-    tx_id: int,
+    tx_id: uuid.UUID,
     data: schemas.TransactionUpdate,
-    account_id: int,
+    account_id: uuid.UUID,
 ) -> models.Transaction | None:
     tx_obj = await get_transaction(db, tx_id, account_id)
     if not tx_obj:
@@ -311,7 +317,9 @@ async def update_transaction(
     return tx_obj
 
 
-async def delete_transaction(db: AsyncSession, tx_id: int, account_id: int) -> None:
+async def delete_transaction(
+    db: AsyncSession, tx_id: uuid.UUID, account_id: uuid.UUID
+) -> None:
     await db.execute(
         delete(models.Transaction).where(
             models.Transaction.id == tx_id,
@@ -326,14 +334,14 @@ async def delete_transaction(db: AsyncSession, tx_id: int, account_id: int) -> N
 # ----------------------------------------------------------------------------
 
 
-async def get_goals(db: AsyncSession, account_id: int):
+async def get_goals(db: AsyncSession, account_id: uuid.UUID):
     result = await db.execute(
         select(models.Goal).where(models.Goal.account_id == account_id)
     )
     return result.scalars().all()
 
 
-async def get_goal(db: AsyncSession, goal_id: int, account_id: int):
+async def get_goal(db: AsyncSession, goal_id: uuid.UUID, account_id: uuid.UUID):
     result = await db.execute(
         select(models.Goal).where(
             models.Goal.id == goal_id,
@@ -346,8 +354,8 @@ async def get_goal(db: AsyncSession, goal_id: int, account_id: int):
 async def create_goal(
     db: AsyncSession,
     goal: schemas.GoalCreate,
-    account_id: int,
-    user_id: int,
+    account_id: uuid.UUID,
+    user_id: uuid.UUID,
 ) -> models.Goal:
     db_obj = models.Goal(**goal.model_dump(), account_id=account_id, user_id=user_id)
     db.add(db_obj)
@@ -358,9 +366,9 @@ async def create_goal(
 
 async def update_goal(
     db: AsyncSession,
-    goal_id: int,
+    goal_id: uuid.UUID,
     data: schemas.GoalUpdate,
-    account_id: int,
+    account_id: uuid.UUID,
 ) -> models.Goal | None:
     stmt = (
         update(models.Goal)
@@ -375,9 +383,9 @@ async def update_goal(
 
 async def add_to_goal(
     db: AsyncSession,
-    goal_id: int,
+    goal_id: uuid.UUID,
     amount: float,
-    account_id: int,
+    account_id: uuid.UUID,
 ) -> models.Goal | None:
     """Увеличить накопленную сумму цели."""
     goal = await get_goal(db, goal_id, account_id)
@@ -391,7 +399,9 @@ async def add_to_goal(
     return goal
 
 
-async def delete_goal(db: AsyncSession, goal_id: int, account_id: int) -> None:
+async def delete_goal(
+    db: AsyncSession, goal_id: uuid.UUID, account_id: uuid.UUID
+) -> None:
     await db.execute(
         delete(models.Goal).where(
             models.Goal.id == goal_id,
@@ -407,7 +417,7 @@ async def delete_goal(db: AsyncSession, goal_id: int, account_id: int) -> None:
 
 
 async def transactions_summary_by_category(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
 ):
     stmt = (
         select(models.Category.name, func.sum(models.Transaction.amount_rub))
@@ -424,7 +434,7 @@ async def transactions_summary_by_category(
 
 
 async def categories_over_limit(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
 ):
     stmt = (
         select(
@@ -447,7 +457,7 @@ async def categories_over_limit(
 
 
 async def forecast_by_category(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
 ):
     now = datetime.now(timezone.utc)
     if now < start:
@@ -477,7 +487,7 @@ async def forecast_by_category(
 
 
 async def daily_expenses(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
 ):
     day = func.date(models.Transaction.created_at)
     stmt = (
@@ -495,7 +505,7 @@ async def daily_expenses(
 
 
 async def monthly_overview(
-    db: AsyncSession, start: datetime, end: datetime, account_id: int
+    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
 ):
     now = datetime.now(timezone.utc)
     cutoff = min(now, end)
@@ -521,7 +531,7 @@ async def monthly_overview(
 # ----------------------------------------------------------------------------
 
 
-async def get_recurring_payments(db: AsyncSession, account_id: int):
+async def get_recurring_payments(db: AsyncSession, account_id: uuid.UUID):
     result = await db.execute(
         select(models.RecurringPayment).where(
             models.RecurringPayment.account_id == account_id
@@ -530,7 +540,9 @@ async def get_recurring_payments(db: AsyncSession, account_id: int):
     return result.scalars().all()
 
 
-async def get_recurring_payment(db: AsyncSession, rp_id: int, account_id: int):
+async def get_recurring_payment(
+    db: AsyncSession, rp_id: uuid.UUID, account_id: uuid.UUID
+):
     result = await db.execute(
         select(models.RecurringPayment).where(
             models.RecurringPayment.id == rp_id,
@@ -543,8 +555,8 @@ async def get_recurring_payment(db: AsyncSession, rp_id: int, account_id: int):
 async def create_recurring_payment(
     db: AsyncSession,
     rp: schemas.RecurringPaymentCreate,
-    account_id: int,
-    user_id: int,
+    account_id: uuid.UUID,
+    user_id: uuid.UUID,
 ) -> models.RecurringPayment:
     db_obj = models.RecurringPayment(
         **rp.model_dump(), account_id=account_id, user_id=user_id
@@ -557,9 +569,9 @@ async def create_recurring_payment(
 
 async def update_recurring_payment(
     db: AsyncSession,
-    rp_id: int,
+    rp_id: uuid.UUID,
     data: schemas.RecurringPaymentUpdate,
-    account_id: int,
+    account_id: uuid.UUID,
 ) -> models.RecurringPayment | None:
     stmt = (
         update(models.RecurringPayment)
@@ -576,7 +588,7 @@ async def update_recurring_payment(
 
 
 async def delete_recurring_payment(
-    db: AsyncSession, rp_id: int, account_id: int
+    db: AsyncSession, rp_id: uuid.UUID, account_id: uuid.UUID
 ) -> None:
     await db.execute(
         delete(models.RecurringPayment).where(
@@ -605,7 +617,7 @@ async def get_recurring_by_day(db: AsyncSession, day: int):
 BANKS = ["tinkoff", "sber", "gazprom"]
 
 
-async def get_bank_tokens(db: AsyncSession, user_id: int):
+async def get_bank_tokens(db: AsyncSession, user_id: uuid.UUID):
     client = vault.get_vault_client()
     items: list[schemas.BankToken] = []
     for bank in BANKS:
@@ -613,10 +625,10 @@ async def get_bank_tokens(db: AsyncSession, user_id: int):
         if token is not None:
             items.append(
                 schemas.BankToken(
-                    id=0,
+                    id=uuid.uuid4(),
                     bank=bank,
                     token=token,
-                    account_id=0,
+                    account_id=uuid.uuid4(),
                     user_id=user_id,
                 )
             )
@@ -624,7 +636,7 @@ async def get_bank_tokens(db: AsyncSession, user_id: int):
 
 
 async def get_bank_token(
-    db: AsyncSession, bank: str, user_id: int
+    db: AsyncSession, bank: str, user_id: uuid.UUID
 ) -> schemas.BankToken | None:
     """Получить токен конкретного банка."""
     client = vault.get_vault_client()
@@ -632,21 +644,29 @@ async def get_bank_token(
     if token is None:
         return None
     return schemas.BankToken(
-        id=0, bank=bank, token=token, account_id=0, user_id=user_id
+        id=uuid.uuid4(),
+        bank=bank,
+        token=token,
+        account_id=uuid.uuid4(),
+        user_id=user_id,
     )
 
 
 async def set_bank_token(
-    db: AsyncSession, bank: str, token: str, user_id: int
+    db: AsyncSession, bank: str, token: str, user_id: uuid.UUID
 ) -> schemas.BankToken:
     client = vault.get_vault_client()
     await client.write(f"{bank}_token/{user_id}", token)
     return schemas.BankToken(
-        id=0, bank=bank, token=token, account_id=0, user_id=user_id
+        id=uuid.uuid4(),
+        bank=bank,
+        token=token,
+        account_id=uuid.uuid4(),
+        user_id=user_id,
     )
 
 
-async def delete_bank_token(db: AsyncSession, bank: str, user_id: int) -> None:
+async def delete_bank_token(db: AsyncSession, bank: str, user_id: uuid.UUID) -> None:
     client = vault.get_vault_client()
     await client.delete(f"{bank}_token/{user_id}")
 
@@ -656,7 +676,7 @@ async def delete_bank_token(db: AsyncSession, bank: str, user_id: int) -> None:
 # ----------------------------------------------------------------------------
 
 
-async def get_push_subscriptions(db: AsyncSession, account_id: int):
+async def get_push_subscriptions(db: AsyncSession, account_id: uuid.UUID):
     result = await db.execute(
         select(models.PushSubscription).where(
             models.PushSubscription.account_id == account_id
@@ -668,8 +688,8 @@ async def get_push_subscriptions(db: AsyncSession, account_id: int):
 async def add_push_subscription(
     db: AsyncSession,
     subscription: schemas.PushSubscriptionCreate,
-    account_id: int,
-    user_id: int,
+    account_id: uuid.UUID,
+    user_id: uuid.UUID,
 ) -> models.PushSubscription:
     db_obj = models.PushSubscription(
         **subscription.model_dump(), account_id=account_id, user_id=user_id
@@ -681,7 +701,7 @@ async def add_push_subscription(
 
 
 async def delete_push_subscription(
-    db: AsyncSession, sub_id: int, account_id: int
+    db: AsyncSession, sub_id: uuid.UUID, account_id: uuid.UUID
 ) -> None:
     await db.execute(
         delete(models.PushSubscription).where(

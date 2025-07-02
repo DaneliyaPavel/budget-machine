@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 
 from .. import crud, schemas, database
 from ..models import User
@@ -33,7 +34,7 @@ async def create_recurring_payment(
 
 @router.get("/{rp_id}", response_model=schemas.RecurringPayment)
 async def read_recurring_payment(
-    rp_id: str,
+    rp_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -46,7 +47,7 @@ async def read_recurring_payment(
 
 @router.patch("/{rp_id}", response_model=schemas.RecurringPayment)
 async def update_recurring_payment(
-    rp_id: str,
+    rp_id: uuid.UUID,
     data: schemas.RecurringPaymentUpdate,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
@@ -62,7 +63,7 @@ async def update_recurring_payment(
 
 @router.delete("/{rp_id}", status_code=204)
 async def delete_recurring_payment(
-    rp_id: str,
+    rp_id: uuid.UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
