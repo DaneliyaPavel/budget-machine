@@ -1,5 +1,5 @@
 ruff==0.4.4
 black==24.3.0
-mypy==1.10.0
+mypy==1.16.1
 pytest
 commitizen
