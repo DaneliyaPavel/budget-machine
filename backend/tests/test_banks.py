@@ -29,9 +29,10 @@ def _login(client):
 
 
 class FakeConnector:
-    def __init__(self, user_id, token=None):
+    def __init__(self, user_id, cat_id, token=None):
         self.token = token
         self.user_id = user_id
+        self.cat_id = cat_id
 
     async def fetch_transactions(self, start: datetime, end: datetime):
         return [
@@ -39,7 +40,7 @@ class FakeConnector:
                 amount=100,
                 currency="RUB",
                 description="test",
-                category_id=1,
+                category_id=self.cat_id,
                 created_at=start,
             )
         ]
@@ -53,6 +54,7 @@ def test_import_with_saved_token(monkeypatch):
         # create category
         r = client.post("/категории/", json={"name": "Test"}, headers=headers)
         assert r.status_code == 200
+        cat_id = r.json()["id"]
 
         class FakeVault:
             def __init__(self):
@@ -72,7 +74,7 @@ def test_import_with_saved_token(monkeypatch):
         monkeypatch.setattr(vault, "get_vault_client", lambda: fake_vault)
         monkeypatch.setattr(
             "backend.app.routers.banks.get_connector",
-            lambda b, uid, token=None: FakeConnector(uid, token),
+            lambda b, uid, token=None: FakeConnector(uid, cat_id, token),
         )
 
         # save bank token
