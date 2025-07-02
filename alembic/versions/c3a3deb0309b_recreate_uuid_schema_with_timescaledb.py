@@ -29,7 +29,7 @@ def upgrade() -> None:
         "currencies",
         "users",
     ]:
-        op.execute(f"DROP TABLE IF EXISTS {tbl} CASCADE")
+        op.drop_table(tbl, if_exists=True)
 
     # create base tables
     op.create_table(
@@ -229,6 +229,6 @@ def downgrade() -> None:
         "accounts",
         "currencies",
     ]:
-        op.execute(f"DROP TABLE IF EXISTS {tbl} CASCADE")
+        op.drop_table(tbl, if_exists=True)
     op.execute("DROP FUNCTION IF EXISTS check_postings_balance")
     op.execute("DROP EXTENSION IF EXISTS timescaledb")
