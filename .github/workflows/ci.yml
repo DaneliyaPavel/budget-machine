@@ -28,7 +28,9 @@ jobs:
         run: pytest backend/tests
 
   codeql:
-    permissions: read-all
+    permissions:
+      contents: read
+      security-events: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
