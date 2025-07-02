@@ -2,4 +2,5 @@ ruff==0.12.1
 black==24.3.0
 mypy==1.10.0
 pytest
+pytest-asyncio
 commitizen
