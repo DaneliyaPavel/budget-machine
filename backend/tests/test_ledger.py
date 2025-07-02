@@ -20,7 +20,9 @@ async def setup_db():
     old_engine = database.engine
     old_sessionmaker = database.async_session
     old_url = os.environ.get("DATABASE_URL")
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://testuser:testpass@localhost/testuserdb"
+    os.environ["DATABASE_URL"] = (
+        "postgresql+asyncpg://testuser:testpass@localhost/testuserdb"
+    )
 
     await old_engine.dispose()
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -94,10 +96,10 @@ async def setup_db():
 
 
 async def _prepare_entities(session: AsyncSession):
-    acc1 = models.Account(name='Cash', currency_code='RUB')
-    acc2 = models.Account(name='Income', currency_code='RUB')
-    user = models.User(email='u@example.com', hashed_password='x', account=acc1)
-    cat = models.Category(name='Misc', account=acc1, user=user)
+    acc1 = models.Account(name="Cash", currency_code="RUB")
+    acc2 = models.Account(name="Income", currency_code="RUB")
+    user = models.User(email="u@example.com", hashed_password="x", account=acc1)
+    cat = models.Category(name="Misc", account=acc1, user=user)
     session.add_all([acc1, acc2, user, cat])
     await session.commit()
     return acc1, acc2, user, cat
@@ -107,10 +109,10 @@ async def _prepare_entities(session: AsyncSession):
 async def test_post_entry_and_stream():
     async with database.async_session() as session:
         acc1, acc2, user, cat = await _prepare_entities(session)
-        tx = schemas.TransactionCreate(amount=100, currency='RUB', category_id=cat.id)
+        tx = schemas.TransactionCreate(amount=100, currency="RUB", category_id=cat.id)
         postings = [
-            schemas.PostingCreate(amount=100, side='debit', account_id=acc1.id),
-            schemas.PostingCreate(amount=100, side='credit', account_id=acc2.id),
+            schemas.PostingCreate(amount=100, side="debit", account_id=acc1.id),
+            schemas.PostingCreate(amount=100, side="credit", account_id=acc2.id),
         ]
         await ledger.post_entry(session, tx, postings, acc1.id, user.id)
 
@@ -129,15 +131,19 @@ async def test_post_entry_and_stream():
 async def test_post_entry_atomicity():
     async with database.async_session() as session:
         acc1, acc2, user, cat = await _prepare_entities(session)
-        tx = schemas.TransactionCreate(amount=100, currency='RUB', category_id=cat.id)
+        tx = schemas.TransactionCreate(amount=100, currency="RUB", category_id=cat.id)
         postings = [
-            schemas.PostingCreate(amount=100, side='debit', account_id=acc1.id),
-            schemas.PostingCreate(amount=50, side='credit', account_id=acc2.id),
+            schemas.PostingCreate(amount=100, side="debit", account_id=acc1.id),
+            schemas.PostingCreate(amount=50, side="credit", account_id=acc2.id),
         ]
         with pytest.raises(Exception):
             await ledger.post_entry(session, tx, postings, acc1.id, user.id)
 
-        count_tx = await session.scalar(select(func.count()).select_from(models.Transaction))
-        count_post = await session.scalar(select(func.count()).select_from(models.Posting))
+        count_tx = await session.scalar(
+            select(func.count()).select_from(models.Transaction)
+        )
+        count_post = await session.scalar(
+            select(func.count()).select_from(models.Posting)
+        )
         assert count_tx == 0
         assert count_post == 0
