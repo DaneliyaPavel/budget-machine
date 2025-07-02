@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
@@ -20,12 +20,12 @@ async def summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not user:
             await update.message.reply_text("Пользователь не найден")
             return
-        now = datetime.utcnow()
-        start = datetime(now.year, now.month, 1)
+        now = datetime.now(timezone.utc)
+        start = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
         end = (
-            datetime(now.year + 1, 1, 1)
+            datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
             if now.month == 12
-            else datetime(now.year, now.month + 1, 1)
+            else datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
         )
         rows = await crud.transactions_summary_by_category(
             session, start, end, user.account_id
@@ -45,12 +45,12 @@ async def limits(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not user:
             await update.message.reply_text("Пользователь не найден")
             return
-        now = datetime.utcnow()
-        start = datetime(now.year, now.month, 1)
+        now = datetime.now(timezone.utc)
+        start = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
         end = (
-            datetime(now.year + 1, 1, 1)
+            datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
             if now.month == 12
-            else datetime(now.year, now.month + 1, 1)
+            else datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
         )
         rows = await crud.categories_over_limit(session, start, end, user.account_id)
         if rows:

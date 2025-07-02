@@ -1,6 +1,6 @@
 """Маршруты аналитики расходов и целей."""
 
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,19 +14,23 @@ router = APIRouter(prefix="/аналитика", tags=["Аналитика"])
 @router.get("/категории", response_model=list[schemas.CategorySummary])
 async def summary_by_category(
     year: int = Query(
-        default_factory=lambda: datetime.utcnow().year,
+        default_factory=lambda: datetime.now(timezone.utc).year,
         description="Год",
     ),
     month: int = Query(
-        default_factory=lambda: datetime.utcnow().month,
+        default_factory=lambda: datetime.now(timezone.utc).month,
         description="Месяц (1-12)",
     ),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
     """Сумма операций по категориям за месяц."""
-    start = datetime(year, month, 1)
-    end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    end = (
+        datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        if month == 12
+        else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    )
     rows = await crud.transactions_summary_by_category(
         session, start, end, current_user.account_id
     )
@@ -39,11 +43,11 @@ async def summary_by_category(
 async def limits_check(
     background_tasks: BackgroundTasks,
     year: int = Query(
-        default_factory=lambda: datetime.utcnow().year,
+        default_factory=lambda: datetime.now(timezone.utc).year,
         description="Год",
     ),
     month: int = Query(
-        default_factory=lambda: datetime.utcnow().month,
+        default_factory=lambda: datetime.now(timezone.utc).month,
         description="Месяц (1-12)",
     ),
     notify: bool = Query(False, description="Отправить уведомление"),
@@ -51,8 +55,12 @@ async def limits_check(
     current_user: models.User = Depends(get_current_user),
 ):
     """Категории, где траты превысили лимит."""
-    start = datetime(year, month, 1)
-    end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    end = (
+        datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        if month == 12
+        else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    )
     rows = await crud.categories_over_limit(
         session, start, end, current_user.account_id
     )
@@ -75,19 +83,23 @@ async def limits_check(
 @router.get("/прогноз", response_model=list[schemas.ForecastItem])
 async def forecast(
     year: int = Query(
-        default_factory=lambda: datetime.utcnow().year,
+        default_factory=lambda: datetime.now(timezone.utc).year,
         description="Год",
     ),
     month: int = Query(
-        default_factory=lambda: datetime.utcnow().month,
+        default_factory=lambda: datetime.now(timezone.utc).month,
         description="Месяц (1-12)",
     ),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
     """Прогноз расходов по категориям."""
-    start = datetime(year, month, 1)
-    end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    end = (
+        datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        if month == 12
+        else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    )
     rows = await crud.forecast_by_category(session, start, end, current_user.account_id)
     return [
         schemas.ForecastItem(category=r[0], spent=float(r[1]), forecast=float(r[2]))
@@ -98,19 +110,23 @@ async def forecast(
 @router.get("/дни", response_model=list[schemas.DailySummary])
 async def summary_by_day(
     year: int = Query(
-        default_factory=lambda: datetime.utcnow().year,
+        default_factory=lambda: datetime.now(timezone.utc).year,
         description="Год",
     ),
     month: int = Query(
-        default_factory=lambda: datetime.utcnow().month,
+        default_factory=lambda: datetime.now(timezone.utc).month,
         description="Месяц (1-12)",
     ),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
     """Траты по дням за месяц."""
-    start = datetime(year, month, 1)
-    end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    end = (
+        datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        if month == 12
+        else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    )
     rows = await crud.daily_expenses(session, start, end, current_user.account_id)
     result: list[schemas.DailySummary] = []
     for r in rows:
@@ -126,19 +142,23 @@ async def summary_by_day(
 @router.get("/баланс", response_model=schemas.MonthlySummary)
 async def balance_overview(
     year: int = Query(
-        default_factory=lambda: datetime.utcnow().year,
+        default_factory=lambda: datetime.now(timezone.utc).year,
         description="Год",
     ),
     month: int = Query(
-        default_factory=lambda: datetime.utcnow().month,
+        default_factory=lambda: datetime.now(timezone.utc).month,
         description="Месяц (1-12)",
     ),
     session: AsyncSession = Depends(database.get_session),
     current_user: models.User = Depends(get_current_user),
 ):
     """Сколько уже потрачено и прогноз расходов."""
-    start = datetime(year, month, 1)
-    end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    end = (
+        datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        if month == 12
+        else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    )
     spent, forecast_val = await crud.monthly_overview(
         session, start, end, current_user.account_id
     )

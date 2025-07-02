@@ -1,6 +1,6 @@
 """Описание моделей базы данных."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column,
     Integer,
@@ -87,7 +87,7 @@ class Transaction(Base):
     currency = Column(String, default="RUB")
     amount_rub = Column(Numeric(10, 2), nullable=False)
     description = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     category_id = Column(Integer, ForeignKey("categories.id"))
     account_id = Column(Integer, ForeignKey("accounts.id"))

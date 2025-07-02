@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 import os
 
@@ -44,8 +44,12 @@ def export_summary_task(account_id: int, year: int, month: int) -> int:
     """Выгрузить помесячную сводку в ClickHouse."""
 
     async def _run() -> int:
-        start = datetime(year, month, 1)
-        end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+        start = datetime(year, month, 1, tzinfo=timezone.utc)
+        end = (
+            datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+            if month == 12
+            else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+        )
         async with database.async_session() as session:
             rows = await crud.transactions_summary_by_category(
                 session, start, end, account_id
@@ -95,8 +99,12 @@ def check_limits_task(account_id: int, year: int, month: int) -> int:
     """Проверить превышение лимитов и отправить уведомление."""
 
     async def _run() -> int:
-        start = datetime(year, month, 1)
-        end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+        start = datetime(year, month, 1, tzinfo=timezone.utc)
+        end = (
+            datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+            if month == 12
+            else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+        )
         async with database.async_session() as session:
             rows = await crud.categories_over_limit(session, start, end, account_id)
         if not rows:
