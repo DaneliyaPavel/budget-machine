@@ -58,3 +58,47 @@ async def test_post_entry_requires_two_postings(session):
     async with async_session() as db:
         with pytest.raises(HTTPException):
             await ledger.post_entry(db, txn, postings, user.account_id, user.id)
+
+
+@pytest.mark.asyncio
+async def test_post_entry_mismatched_totals(session):
+    """DB should raise error if debit and credit totals differ."""
+    from sqlalchemy import text
+
+    async with async_session() as setup_db:
+        await setup_db.execute(
+            text(
+                """
+                CREATE TRIGGER IF NOT EXISTS postings_balance_check
+                AFTER INSERT ON postings
+                BEGIN
+                    SELECT CASE WHEN (
+                        SELECT COALESCE(SUM(CASE WHEN side='debit' THEN amount ELSE -amount END), 0)
+                        FROM postings
+                        WHERE transaction_id = NEW.transaction_id
+                    ) != 0 THEN RAISE(ABORT, 'mismatch') END;
+                END;
+                """
+            )
+        )
+
+    user = await crud.create_user(
+        session, schemas.UserCreate(email="c@b.c", password="Pwd123$")
+    )
+    category = await crud.create_category(
+        session, schemas.CategoryCreate(name="Err"), user.account_id, user.id
+    )
+    account2 = await crud.create_account(
+        session,
+        schemas.AccountCreate(name="Income", currency_code="RUB", user_id=user.id),
+    )
+
+    txn = schemas.TransactionCreate(amount=100, currency="RUB", category_id=category.id)
+    postings = [
+        schemas.PostingCreate(amount=100, side="debit", account_id=user.account_id),
+        schemas.PostingCreate(amount=50, side="credit", account_id=account2.id),
+    ]
+    async with async_session() as db:
+        with pytest.raises(Exception):
+            await ledger.post_entry(db, txn, postings, user.account_id, user.id)
+
