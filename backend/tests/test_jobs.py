@@ -17,10 +17,10 @@ from backend.app import tasks  # noqa: E402
 
 def _login(client, email="job@example.com"):
     user = {"email": email, "password": "pass"}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": user["email"], "password": user["password"]},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -39,7 +39,7 @@ def test_import_job(monkeypatch):
         headers = {"Authorization": f"Bearer {token}"}
 
         # category
-        r = client.post("/категории/", json={"name": "Job"}, headers=headers)
+        r = client.post("/categories/", json={"name": "Job"}, headers=headers)
         assert r.status_code == 200
 
         called = {}

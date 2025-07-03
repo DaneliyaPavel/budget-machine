@@ -1,4 +1,12 @@
-"""Маршруты для операций."""
+from __future__ import annotations
+
+import csv
+import io
+from datetime import datetime
+from typing import Iterable
+from uuid import UUID
+
+from openpyxl import load_workbook
 
 from fastapi import (
     APIRouter,
@@ -11,30 +19,24 @@ from fastapi import (
     Response,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-import csv
-import uuid
-import io
-from datetime import datetime
-from typing import Iterable
 
-from openpyxl import load_workbook
-from .. import crud, schemas, database
-from ..models import User
+from ... import crud, schemas, database
+from ...models import User
 from .users import get_current_user
 
-router = APIRouter(prefix="/операции", tags=["Операции"])
+router = APIRouter(prefix="/transactions", tags=["Операции"])
 
 
 @router.get("/", response_model=list[schemas.Transaction])
 async def read_transactions(
-    start: datetime | None = Query(None, description="Начало периода"),
-    end: datetime | None = Query(None, description="Конец периода"),
-    category_id: str | None = Query(None, description="Категория"),
-    limit: int | None = Query(None, description="Количество записей"),
+    start: datetime | None = Query(None, description="Start date"),
+    end: datetime | None = Query(None, description="End date"),
+    category_id: str | None = Query(None, description="Category"),
+    limit: int | None = Query(None, description="Limit"),
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Получить список операций с фильтрами по дате и категории."""
+    """Вернуть список операций с указанными фильтрами."""
     return await crud.get_transactions(
         session,
         current_user.account_id,
@@ -83,7 +85,7 @@ def _parse_rows(rows: Iterable[dict]) -> list[schemas.TransactionCreate]:
     return parsed
 
 
-@router.post("/импорт", status_code=status.HTTP_201_CREATED)
+@router.post("/import", status_code=status.HTTP_201_CREATED)
 async def import_transactions(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(database.get_session),
@@ -113,15 +115,15 @@ async def import_transactions(
     return {"created": len(created)}
 
 
-@router.get("/экспорт")
+@router.get("/export")
 async def export_transactions(
-    start: datetime | None = Query(None, description="Начало периода"),
-    end: datetime | None = Query(None, description="Конец периода"),
-    category_id: str | None = Query(None, description="Категория"),
+    start: datetime | None = Query(None, description="Start date"),
+    end: datetime | None = Query(None, description="End date"),
+    category_id: str | None = Query(None, description="Category"),
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Выгрузить операции в формате CSV."""
+    """Экспортировать операции в CSV."""
     rows = await crud.get_transactions(
         session,
         current_user.account_id,
@@ -166,34 +168,34 @@ async def export_transactions(
 
 @router.get("/{tx_id}", response_model=schemas.Transaction)
 async def read_transaction(
-    tx_id: uuid.UUID,
+    tx_id: UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
     """Получить одну операцию."""
     tx = await crud.get_transaction(session, tx_id, current_user.account_id)
     if not tx:
-        raise HTTPException(status_code=404, detail="Операция не найдена")
+        raise HTTPException(status_code=404, detail="Transaction not found")
     return tx
 
 
 @router.patch("/{tx_id}", response_model=schemas.Transaction)
 async def update_transaction(
-    tx_id: uuid.UUID,
+    tx_id: UUID,
     data: schemas.TransactionUpdate,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Изменить операцию."""
+    """Обновить операцию."""
     tx = await crud.update_transaction(session, tx_id, data, current_user.account_id)
     if not tx:
-        raise HTTPException(status_code=404, detail="Операция не найдена")
+        raise HTTPException(status_code=404, detail="Transaction not found")
     return tx
 
 
 @router.delete("/{tx_id}", status_code=204)
 async def delete_transaction(
-    tx_id: uuid.UUID,
+    tx_id: UUID,
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
 ):

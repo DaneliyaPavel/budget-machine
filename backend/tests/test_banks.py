@@ -17,10 +17,10 @@ from backend.app import schemas, vault  # noqa: E402
 
 def _login(client):
     user = {"email": "bank@example.com", "password": "pass"}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": user["email"], "password": user["password"]},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -52,7 +52,7 @@ def test_import_with_saved_token(monkeypatch):
         headers = {"Authorization": f"Bearer {token}"}
 
         # create category
-        r = client.post("/категории/", json={"name": "Test"}, headers=headers)
+        r = client.post("/categories/", json={"name": "Test"}, headers=headers)
         assert r.status_code == 200
         cat_id = r.json()["id"]
 
@@ -91,6 +91,6 @@ def test_import_with_saved_token(monkeypatch):
         assert r.status_code == 200
         assert r.json()["created"] == 1
 
-        r = client.get("/операции/", headers=headers)
+        r = client.get("/transactions/", headers=headers)
         assert r.status_code == 200
         assert len(r.json()) == 1

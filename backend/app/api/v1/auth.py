@@ -14,7 +14,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 async def signup(
     user: schemas.UserCreate, session: AsyncSession = Depends(database.get_session)
 ):
-    """Register new user."""
+    """Регистрация нового пользователя."""
     try:
         security.validate_password(user.password)
     except ValueError as exc:
@@ -40,7 +40,7 @@ class TokenPair(BaseModel):
 async def login(
     data: LoginRequest, session: AsyncSession = Depends(database.get_session)
 ):
-    """Authenticate user and return tokens."""
+    """Аутентифицировать пользователя и вернуть токены."""
     user = await crud.get_user_by_email(session, data.email)
     if not user or not security.verify_password(data.password, user.hashed_password):
         raise HTTPException(
@@ -63,7 +63,7 @@ class RefreshRequest(BaseModel):
 async def refresh(
     data: RefreshRequest, session: AsyncSession = Depends(database.get_session)
 ):
-    """Refresh access token using refresh JWT."""
+    """Обновить access-токен по refresh JWT."""
     try:
         payload = security.decode_token(data.refresh_token)
     except Exception:

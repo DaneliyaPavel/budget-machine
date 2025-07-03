@@ -202,7 +202,18 @@ async def update_category(
 
 async def delete_category(
     db: AsyncSession, category_id: uuid.UUID, account_id: uuid.UUID
-) -> None:
+) -> bool:
+    count_stmt = (
+        select(func.count())
+        .select_from(models.Transaction)
+        .where(
+            models.Transaction.category_id == category_id,
+            models.Transaction.account_id == account_id,
+        )
+    )
+    result = await db.execute(count_stmt)
+    if result.scalar() > 0:
+        return False
     await db.execute(
         delete(models.Category).where(
             models.Category.id == category_id,
@@ -210,6 +221,7 @@ async def delete_category(
         )
     )
     await db.commit()
+    return True
 
 
 # ----------------------------------------------------------------------------

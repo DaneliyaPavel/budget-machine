@@ -16,14 +16,14 @@ from backend.app.main import app  # noqa: E402
 def test_create_and_login_user():
     with TestClient(app) as client:
         user = {"email": "u@example.com", "password": "pass"}
-        r = client.post("/пользователи/", json=user)
+        r = client.post("/users/", json=user)
         assert r.status_code == 200
         data = r.json()
         assert data["email"] == user["email"]
         assert data["role"] == "owner"
 
         r = client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": user["email"], "password": user["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -36,21 +36,21 @@ def test_join_account():
     with TestClient(app) as client:
         # create first user (owner of account)
         owner = {"email": "owner@example.com", "password": "pass"}
-        r = client.post("/пользователи/", json=owner)
+        r = client.post("/users/", json=owner)
         assert r.status_code == 200
         owner_data = r.json()
         client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": owner["email"], "password": owner["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # create second user
         member = {"email": "member@example.com", "password": "pass"}
-        r = client.post("/пользователи/", json=member)
+        r = client.post("/users/", json=member)
         assert r.status_code == 200
         member_token = client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": member["email"], "password": member["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         ).json()["access_token"]
@@ -58,7 +58,7 @@ def test_join_account():
         # member joins owner's account
         headers = {"Authorization": f"Bearer {member_token}"}
         r = client.post(
-            "/пользователи/join",
+            "/users/join",
             json={"account_id": owner_data["account_id"]},
             headers=headers,
         )
@@ -71,42 +71,42 @@ def test_join_account():
 def test_members_list_and_remove():
     with TestClient(app) as client:
         owner = {"email": "own2@example.com", "password": "pass"}
-        r = client.post("/пользователи/", json=owner)
+        r = client.post("/users/", json=owner)
         assert r.status_code == 200
         owner_data = r.json()
         owner_token = client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": owner["email"], "password": owner["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         ).json()["access_token"]
         headers_owner = {"Authorization": f"Bearer {owner_token}"}
 
         member = {"email": "mem2@example.com", "password": "pass"}
-        r = client.post("/пользователи/", json=member)
+        r = client.post("/users/", json=member)
         assert r.status_code == 200
         member_token = client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": member["email"], "password": member["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         ).json()["access_token"]
         headers_member = {"Authorization": f"Bearer {member_token}"}
 
         r = client.post(
-            "/пользователи/join",
+            "/users/join",
             json={"account_id": owner_data["account_id"]},
             headers=headers_member,
         )
         assert r.status_code == 200
         member_id = r.json()["id"]
 
-        r = client.get("/пользователи/участники", headers=headers_owner)
+        r = client.get("/users/members", headers=headers_owner)
         assert r.status_code == 200
         assert len(r.json()) == 2
 
-        r = client.delete(f"/пользователи/{member_id}", headers=headers_owner)
+        r = client.delete(f"/users/{member_id}", headers=headers_owner)
         assert r.status_code == 204
 
-        r = client.get("/пользователи/участники", headers=headers_owner)
+        r = client.get("/users/members", headers=headers_owner)
         assert r.status_code == 200
         assert len(r.json()) == 1
 
@@ -114,11 +114,11 @@ def test_members_list_and_remove():
 def test_update_user_profile():
     with TestClient(app) as client:
         user = {"email": "prof@example.com", "password": "pass"}
-        r = client.post("/пользователи/", json=user)
+        r = client.post("/users/", json=user)
         assert r.status_code == 200
 
         token = client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": user["email"], "password": user["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         ).json()["access_token"]
@@ -126,7 +126,7 @@ def test_update_user_profile():
 
         # смена email
         r = client.patch(
-            "/пользователи/me",
+            "/users/me",
             json={"email": "new@example.com"},
             headers=headers,
         )
@@ -134,7 +134,7 @@ def test_update_user_profile():
 
         # авторизация с новым email
         token = client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": "new@example.com", "password": user["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         ).json()["access_token"]
@@ -142,14 +142,14 @@ def test_update_user_profile():
 
         # смена пароля
         r = client.patch(
-            "/пользователи/me",
+            "/users/me",
             json={"password": "newpass"},
             headers=headers,
         )
         assert r.status_code == 200
 
         r = client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": "new@example.com", "password": "newpass"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )

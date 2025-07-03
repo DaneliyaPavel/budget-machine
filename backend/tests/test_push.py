@@ -15,10 +15,10 @@ from backend.app.main import app  # noqa: E402
 
 def _login(client):
     user = {"email": "push@example.com", "password": "pass"}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": user["email"], "password": user["password"]},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )

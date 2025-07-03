@@ -16,10 +16,10 @@ from backend.app import vault  # noqa: E402
 
 def _login(client):
     user = {"email": "tok@example.com", "password": "pass"}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": user["email"], "password": user["password"]},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )

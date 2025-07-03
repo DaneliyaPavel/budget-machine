@@ -17,10 +17,10 @@ from backend.app.main import app  # noqa: E402
 
 def _login(client, email="tx@example.com"):
     user = {"email": email, "password": "pass"}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": user["email"], "password": user["password"]},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -34,7 +34,7 @@ def test_export_transactions():
         headers = {"Authorization": f"Bearer {token}"}
 
         # create category
-        r = client.post("/категории/", json={"name": "Продукты"}, headers=headers)
+        r = client.post("/categories/", json={"name": "Продукты"}, headers=headers)
         assert r.status_code == 200
         cat_id = r.json()["id"]
 
@@ -50,10 +50,10 @@ def test_export_transactions():
             "description": "Amazon",
             "category_id": cat_id,
         }
-        client.post("/операции/", json=tx1, headers=headers)
-        client.post("/операции/", json=tx2, headers=headers)
+        client.post("/transactions/", json=tx1, headers=headers)
+        client.post("/transactions/", json=tx2, headers=headers)
 
-        r = client.get("/операции/экспорт", headers=headers)
+        r = client.get("/transactions/export", headers=headers)
         assert r.status_code == 200
         lines = r.text.strip().splitlines()
         assert len(lines) == 3
@@ -65,7 +65,7 @@ def test_import_transactions_excel():
         token = _login(client, email="xlsx@example.com")
         headers = {"Authorization": f"Bearer {token}"}
 
-        r = client.post("/категории/", json={"name": "Excel"}, headers=headers)
+        r = client.post("/categories/", json={"name": "Excel"}, headers=headers)
         assert r.status_code == 200
         cat_id = r.json()["id"]
 
@@ -93,11 +93,11 @@ def test_import_transactions_excel():
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         }
-        r = client.post("/операции/импорт", files=files, headers=headers)
+        r = client.post("/transactions/import", files=files, headers=headers)
         assert r.status_code == 201
         assert r.json()["created"] == 2
 
-        r = client.get("/операции/", headers=headers)
+        r = client.get("/transactions/", headers=headers)
         assert r.status_code == 200
         items = r.json()
         assert len(items) == 2
@@ -108,7 +108,7 @@ def test_transactions_limit():
         token = _login(client, email="limit2@example.com")
         headers = {"Authorization": f"Bearer {token}"}
 
-        r = client.post("/категории/", json={"name": "Lim"}, headers=headers)
+        r = client.post("/categories/", json={"name": "Lim"}, headers=headers)
         cat_id = r.json()["id"]
 
         for i in range(5):
@@ -118,9 +118,9 @@ def test_transactions_limit():
                 "description": f"#{i}",
                 "category_id": cat_id,
             }
-            client.post("/операции/", json=tx, headers=headers)
+            client.post("/transactions/", json=tx, headers=headers)
 
-        r = client.get("/операции/?limit=3", headers=headers)
+        r = client.get("/transactions/?limit=3", headers=headers)
         assert r.status_code == 200
         items = r.json()
         assert len(items) == 3

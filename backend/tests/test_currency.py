@@ -25,11 +25,11 @@ def test_currency_endpoints(monkeypatch):
     currency._rates = {"RUB": 1.0, "USD": 90.0, "EUR": 100.0}
 
     with TestClient(app) as client:
-        r = client.get("/валюты/?base=USD")
+        r = client.get("/currencies/?base=USD")
         assert r.status_code == 200
         data = r.json()
         assert abs(data["EUR"] - (100.0 / 90.0)) < 0.01
 
-        r = client.get("/валюты/конвертировать?amount=100&from=USD&to=EUR")
+        r = client.get("/currencies/convert?amount=100&from=USD&to=EUR")
         assert r.status_code == 200
         assert abs(r.json()["result"] - 90.0) < 0.01

@@ -26,10 +26,10 @@ pytestmark = pytest.mark.skipif(
 
 def _login(client):
     user = {"email": "notif@example.com", "password": "pass"}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": user["email"], "password": user["password"]},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -62,7 +62,7 @@ def test_notification_stream():
             headers = {"Authorization": f"Bearer {token}"}
 
             r = client.post(
-                "/категории/",
+                "/categories/",
                 json={"name": "Нотиф", "monthly_limit": 100},
                 headers=headers,
             )
@@ -75,7 +75,7 @@ def test_notification_stream():
                 "category_id": cat_id,
                 "created_at": "2025-06-15T12:00:00",
             }
-            client.post("/операции/", json=tx, headers=headers)
+            client.post("/transactions/", json=tx, headers=headers)
 
             r = client.get(
                 "/аналитика/лимиты?year=2025&month=6&notify=true",
