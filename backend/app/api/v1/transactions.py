@@ -54,6 +54,11 @@ async def create_transaction(
     current_user: User = Depends(get_current_user),
 ):
     """Создать новую операцию."""
+    if current_user.role == "readonly":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
+        )
     return await crud.create_transaction(
         session,
         tx,
@@ -92,6 +97,11 @@ async def import_transactions(
     current_user: User = Depends(get_current_user),
 ):
     """Импортировать операции из CSV или Excel."""
+    if current_user.role == "readonly":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
+        )
     content = await file.read()
     created: list[schemas.TransactionCreate]
 
@@ -175,7 +185,10 @@ async def read_transaction(
     """Получить одну операцию."""
     tx = await crud.get_transaction(session, tx_id, current_user.account_id)
     if not tx:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"detail": "Transaction not found", "code": "TRANSACTION_NOT_FOUND"},
+        )
     return tx
 
 
@@ -187,9 +200,17 @@ async def update_transaction(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить операцию."""
+    if current_user.role == "readonly":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
+        )
     tx = await crud.update_transaction(session, tx_id, data, current_user.account_id)
     if not tx:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"detail": "Transaction not found", "code": "TRANSACTION_NOT_FOUND"},
+        )
     return tx
 
 
@@ -200,5 +221,10 @@ async def delete_transaction(
     current_user: User = Depends(get_current_user),
 ):
     """Удалить операцию."""
+    if current_user.role == "readonly":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
+        )
     await crud.delete_transaction(session, tx_id, current_user.account_id)
     return None

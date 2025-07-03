@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import crud, schemas, database
@@ -26,6 +26,11 @@ async def create_category(
     current_user: User = Depends(get_current_user),
 ):
     """Создать новую категорию."""
+    if current_user.role == "readonly":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
+        )
     return await crud.create_category(
         session, category, current_user.account_id, current_user.id
     )
@@ -40,7 +45,10 @@ async def read_category(
     """Получить категорию по идентификатору."""
     category = await crud.get_category(session, category_id, current_user.account_id)
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"detail": "Category not found", "code": "CATEGORY_NOT_FOUND"},
+        )
     return category
 
 
@@ -52,11 +60,19 @@ async def update_category(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить категорию."""
+    if current_user.role == "readonly":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
+        )
     category = await crud.update_category(
         session, category_id, data, current_user.account_id
     )
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"detail": "Category not found", "code": "CATEGORY_NOT_FOUND"},
+        )
     return category
 
 
@@ -67,7 +83,15 @@ async def delete_category(
     current_user: User = Depends(get_current_user),
 ):
     """Удалить категорию."""
+    if current_user.role == "readonly":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
+        )
     success = await crud.delete_category(session, category_id, current_user.account_id)
     if not success:
-        raise HTTPException(status_code=409, detail="Category has transactions")
+        raise HTTPException(
+            status_code=409,
+            detail={"detail": "Category has transactions", "code": "CATEGORY_IN_USE"},
+        )
     return None
