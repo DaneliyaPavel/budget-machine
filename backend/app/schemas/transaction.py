@@ -1,6 +1,8 @@
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from .posting import PostingCreate
 
 STRICT = ConfigDict(strict=True)
 ORM_STRICT = ConfigDict(from_attributes=True, strict=True)
@@ -22,6 +24,7 @@ class TransactionBase(BaseModel):
 
 class TransactionCreate(TransactionBase):
     created_at: datetime | None = None
+    postings: list[PostingCreate] = Field(default_factory=list)
 
     model_config = STRICT
 

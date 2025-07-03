@@ -31,6 +31,11 @@ def test_analytics_endpoints():
         token = _login(client)
         headers = {"Authorization": f"Bearer {token}"}
 
+        acc = client.get("/accounts/me", headers=headers).json()
+        r = client.post("/accounts/", json={"name": "Income"}, headers=headers)
+        assert r.status_code == 200
+        acc2 = r.json()["id"]
+
         # create category
         r = client.post(
             "/categories/", json={"name": "Еда", "monthly_limit": 200}, headers=headers
@@ -45,6 +50,10 @@ def test_analytics_endpoints():
             "description": "Магазин",
             "category_id": cat_id,
             "created_at": "2025-06-05T12:00:00",
+            "postings": [
+                {"amount": 100, "side": "debit", "account_id": acc["id"]},
+                {"amount": 100, "side": "credit", "account_id": acc2},
+            ],
         }
         tx2 = {
             "amount": 50,
@@ -52,6 +61,10 @@ def test_analytics_endpoints():
             "description": "Кафе",
             "category_id": cat_id,
             "created_at": "2025-06-15T12:00:00",
+            "postings": [
+                {"amount": 50, "side": "debit", "account_id": acc["id"]},
+                {"amount": 50, "side": "credit", "account_id": acc2},
+            ],
         }
         client.post("/transactions/", json=tx1, headers=headers)
         client.post("/transactions/", json=tx2, headers=headers)
