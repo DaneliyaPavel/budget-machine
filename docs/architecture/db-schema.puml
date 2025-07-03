@@ -8,6 +8,12 @@ entity accounts {
   *id UUID
   user_id UUID
 }
+entity currencies {
+  *code VARCHAR(3)
+  name
+  symbol
+  precision
+}
 entity categories {
   *id UUID
   parent_id UUID
@@ -60,6 +66,8 @@ accounts ||--o{ goals
 accounts ||--o{ recurring_payments
 accounts ||--o{ bank_tokens
 accounts ||--o{ push_subscriptions
+currencies ||--o{ accounts
+currencies ||--o{ postings
 categories ||--o{ transactions
 categories ||--o{ recurring_payments
 categories ||--o{ categories : parent
