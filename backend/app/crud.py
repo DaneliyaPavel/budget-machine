@@ -519,7 +519,7 @@ async def daily_expenses(
 async def monthly_overview(
     db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
 ):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     cutoff = min(now, end)
     stmt = select(func.sum(models.Transaction.amount_rub)).where(
         models.Transaction.created_at >= start,

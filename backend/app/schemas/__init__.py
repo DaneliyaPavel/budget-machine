@@ -1,12 +1,17 @@
 """Pydantic-схемы для API."""
 
 from datetime import datetime, date as date_
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional
 from uuid import UUID
+from ..models import AccountType
 
 STRICT = ConfigDict(strict=True)
-ORM_STRICT = ConfigDict(from_attributes=True, strict=True)
+ORM_STRICT = ConfigDict(
+    from_attributes=True,
+    strict=True,
+    json_encoders={AccountType: lambda v: v.value},
+)
 
 
 class Account(BaseModel):
@@ -20,6 +25,14 @@ class Account(BaseModel):
 
     model_config = ORM_STRICT
 
+    @field_validator("type", mode="before")
+    def _validate_type(cls, v):
+        return v.value if isinstance(v, AccountType) else v
+
+    @field_validator("id", mode="before")
+    def _validate_id(cls, v):
+        return UUID(str(v))
+
 
 class CategoryBase(BaseModel):
     """Базовые поля категории."""
@@ -29,6 +42,12 @@ class CategoryBase(BaseModel):
     parent_id: UUID | None = None
 
     model_config = STRICT
+
+    @field_validator("parent_id", mode="before")
+    def _validate_parent(cls, v):
+        if v is None:
+            return None
+        return UUID(str(v))
 
 
 class CategoryCreate(CategoryBase):
@@ -64,11 +83,21 @@ class TransactionBase(BaseModel):
 
     model_config = STRICT
 
+    @field_validator("category_id", mode="before")
+    def _validate_category(cls, v: UUID | str):
+        return UUID(str(v))
+
 
 class TransactionCreate(TransactionBase):
     created_at: datetime | None = None
 
     model_config = STRICT
+
+    @field_validator("created_at", mode="before")
+    def _parse_created_at(cls, v):
+        if v is None or isinstance(v, datetime):
+            return v
+        return datetime.fromisoformat(str(v))
 
 
 class TransactionUpdate(BaseModel):
@@ -166,6 +195,10 @@ class RecurringPaymentBase(BaseModel):
 
     model_config = STRICT
 
+    @field_validator("category_id", mode="before")
+    def _validate_rp_category(cls, v: UUID | str):
+        return UUID(str(v))
+
 
 class RecurringPaymentCreate(RecurringPaymentBase):
     model_config = STRICT
@@ -242,6 +275,10 @@ class JoinAccount(BaseModel):
     account_id: UUID
 
     model_config = STRICT
+
+    @field_validator("account_id", mode="before")
+    def _validate_account(cls, v: UUID | str):
+        return UUID(str(v))
 
 
 class User(UserBase):
