@@ -41,10 +41,16 @@ async def test_account_read_and_update():
                 json={"id": data["id"], "name": "Семейный", "currency_code": "USD"},
                 headers=headers,
             )
+            assert r.status_code == 400
+
+            r = await client.patch(
+                "/accounts/me",
+                json={"id": data["id"], "name": "Семейный"},
+                headers=headers,
+            )
             assert r.status_code == 200
             result = r.json()
             assert result["name"] == "Семейный"
-            assert result["currency_code"] == "USD"
 
             r = await client.get(f"/accounts/{data['id']}/balance", headers=headers)
             assert r.status_code == 200
