@@ -1,0 +1,67 @@
+@startuml
+' Database schema
+entity users {
+  *id UUID
+  email
+}
+entity accounts {
+  *id UUID
+  user_id UUID
+}
+entity categories {
+  *id UUID
+  parent_id UUID
+  account_id UUID
+  user_id UUID
+}
+entity transactions {
+  *id UUID
+  category_id UUID
+  account_id UUID
+  user_id UUID
+}
+entity postings {
+  *id UUID
+  transaction_id UUID
+  account_id UUID
+}
+entity goals {
+  *id UUID
+  account_id UUID
+  user_id UUID
+}
+entity recurring_payments {
+  *id UUID
+  category_id UUID
+  account_id UUID
+  user_id UUID
+}
+entity bank_tokens {
+  *id UUID
+  account_id UUID
+  user_id UUID
+}
+entity push_subscriptions {
+  *id UUID
+  account_id UUID
+  user_id UUID
+}
+
+users ||--o{ accounts
+users ||--o{ categories
+users ||--o{ transactions
+users ||--o{ goals
+users ||--o{ recurring_payments
+users ||--o{ bank_tokens
+users ||--o{ push_subscriptions
+accounts ||--o{ categories
+accounts ||--o{ transactions
+accounts ||--o{ goals
+accounts ||--o{ recurring_payments
+accounts ||--o{ bank_tokens
+accounts ||--o{ push_subscriptions
+categories ||--o{ transactions
+categories ||--o{ recurring_payments
+categories ||--o{ categories : parent
+transactions ||--o{ postings
+@enduml

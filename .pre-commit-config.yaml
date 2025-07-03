@@ -46,3 +46,10 @@ repos:
       - id: terraform-pre-commit
         args: [--, infra/terraform]
         pass_filenames: false
+  - repo: local
+    hooks:
+      - id: generate-openapi
+        name: Generate OpenAPI spec
+        entry: make openapi
+        language: system
+        pass_filenames: false
