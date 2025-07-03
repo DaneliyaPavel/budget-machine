@@ -27,12 +27,14 @@ async def get_current_user(
         email: str = payload.get("sub")
     except JWTError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"detail": "Invalid token", "code": "INVALID_TOKEN"},
         )
     user = await crud.get_user_by_email(session, email)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"detail": "User not found", "code": "USER_NOT_FOUND"},
         )
     return user
 
@@ -44,7 +46,10 @@ async def create_user(
     """Зарегистрировать нового пользователя."""
     db_user = await crud.get_user_by_email(session, user.email)
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=400,
+            detail={"detail": "Email already registered", "code": "EMAIL_EXISTS"},
+        )
     return await crud.create_user(session, user)
 
 
@@ -57,7 +62,10 @@ async def join_account(
     """Присоединиться к существующему счёту."""
     user = await crud.join_account(session, current_user, data.account_id)
     if not user:
-        raise HTTPException(status_code=404, detail="Account not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"detail": "Account not found", "code": "ACCOUNT_NOT_FOUND"},
+        )
     return user
 
 
@@ -78,10 +86,16 @@ async def remove_user(
 ):
     """Удалить пользователя из счёта."""
     if current_user.role != "owner" and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(
+            status_code=403,
+            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
+        )
     ok = await crud.delete_user(session, user_id, current_user.account_id)
     if not ok:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"detail": "User not found", "code": "USER_NOT_FOUND"},
+        )
     return None
 
 
@@ -97,7 +111,10 @@ async def login(
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail={
+                "detail": "Incorrect username or password",
+                "code": "INVALID_CREDENTIALS",
+            },
         )
     access_token = security.create_access_token({"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}

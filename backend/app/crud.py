@@ -118,15 +118,22 @@ async def get_account(db: AsyncSession, account_id: uuid.UUID) -> models.Account
 async def update_account(
     db: AsyncSession,
     account_id: uuid.UUID,
+    *,
     name: str | None = None,
     currency_code: str | None = None,
+    type: str | None = None,
+    user_id: uuid.UUID | None = None,
 ) -> models.Account | None:
     """Изменить параметры счёта."""
-    values = {}
+    values: dict[str, object] = {}
     if name is not None:
         values["name"] = name
     if currency_code is not None:
         values["currency_code"] = currency_code
+    if type is not None:
+        values["type"] = type
+    if user_id is not None:
+        values["user_id"] = user_id
     if not values:
         return await get_account(db, account_id)
     stmt = (
@@ -138,6 +145,32 @@ async def update_account(
     result = await db.execute(stmt)
     await db.commit()
     return result.scalar_one_or_none()
+
+
+async def create_account(
+    db: AsyncSession, data: schemas.AccountCreate
+) -> models.Account:
+    """Создать новый счёт."""
+    obj = models.Account(**data.model_dump())
+    db.add(obj)
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+async def get_accounts(db: AsyncSession) -> list[models.Account]:
+    """Получить список счетов."""
+    result = await db.execute(select(models.Account))
+    return result.scalars().all()
+
+
+async def delete_account(db: AsyncSession, account_id: uuid.UUID) -> bool:
+    """Удалить счёт."""
+    result = await db.execute(
+        delete(models.Account).where(models.Account.id == account_id)
+    )
+    await db.commit()
+    return result.rowcount > 0
 
 
 # ----------------------------------------------------------------------------
