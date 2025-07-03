@@ -2515,6 +2515,29 @@ components:
       - forecast
       title: MonthlySummary
       description: Итог и прогноз расходов за месяц.
+    PostingCreate:
+      properties:
+        amount:
+          type: number
+          title: Amount
+        side:
+          type: string
+          title: Side
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        currency_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Currency Code
+      type: object
+      required:
+      - amount
+      - side
+      - account_id
+      title: PostingCreate
     PushSubscription:
       properties:
         endpoint:
@@ -2790,6 +2813,11 @@ components:
             format: date-time
           - type: 'null'
           title: Created At
+        postings:
+          items:
+            $ref: '#/components/schemas/PostingCreate'
+          type: array
+          title: Postings
       type: object
       required:
       - amount

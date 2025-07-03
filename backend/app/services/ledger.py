@@ -4,8 +4,10 @@ from datetime import datetime
 from typing import AsyncGenerator
 from uuid import UUID
 
+import contextlib
 from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, status
 
 from .. import models, schemas, currency
 
@@ -18,9 +20,17 @@ async def post_entry(
     user_id: UUID,
 ) -> models.Transaction:
     """Insert transaction and postings atomically."""
-    async with db.begin():
+    if len(postings) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least two postings required",
+        )
+    started = not db.in_transaction()
+    ctx = db.begin() if started else contextlib.nullcontext()
+    async with ctx:
         rate = await currency.get_rate(txn.currency)
         tx_data = txn.model_dump(exclude_unset=True)
+        tx_data.pop("postings", None)
         created = tx_data.get("created_at")
         if created is None:
             created = datetime.now().replace(tzinfo=None)
@@ -40,11 +50,16 @@ async def post_entry(
                 models.Posting(
                     amount=item.amount,
                     side=item.side,
+                    currency_code=txn.currency,
                     account_id=item.account_id,
                     transaction_id=tx_obj.id,
                 )
             )
-    await db.refresh(tx_obj)
+    if started:
+        await db.refresh(tx_obj)
+    else:
+        await db.commit()
+        await db.refresh(tx_obj)
     return tx_obj
 
 

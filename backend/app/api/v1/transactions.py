@@ -21,6 +21,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import crud, schemas, database
+from ...services import ledger
 from ...models import User
 from ..utils import api_error
 from .users import get_current_user
@@ -57,9 +58,10 @@ async def create_transaction(
     """Создать новую операцию."""
     if current_user.role == "readonly":
         raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
-    return await crud.create_transaction(
+    return await ledger.post_entry(
         session,
         tx,
+        tx.postings,
         current_user.account_id,
         current_user.id,
     )

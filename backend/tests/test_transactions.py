@@ -33,6 +33,12 @@ def test_export_transactions():
         token = _login(client)
         headers = {"Authorization": f"Bearer {token}"}
 
+        # prepare second account for postings
+        acc = client.get("/accounts/me", headers=headers).json()
+        r = client.post("/accounts/", json={"name": "Income"}, headers=headers)
+        assert r.status_code == 200
+        acc2_id = r.json()["id"]
+
         # create category
         r = client.post("/categories/", json={"name": "Продукты"}, headers=headers)
         assert r.status_code == 200
@@ -43,12 +49,20 @@ def test_export_transactions():
             "currency": "RUB",
             "description": "Магазин",
             "category_id": cat_id,
+            "postings": [
+                {"amount": 100, "side": "debit", "account_id": acc["id"]},
+                {"amount": 100, "side": "credit", "account_id": acc2_id},
+            ],
         }
         tx2 = {
             "amount": 50,
             "currency": "USD",
             "description": "Amazon",
             "category_id": cat_id,
+            "postings": [
+                {"amount": 50, "side": "debit", "account_id": acc["id"]},
+                {"amount": 50, "side": "credit", "account_id": acc2_id},
+            ],
         }
         client.post("/transactions/", json=tx1, headers=headers)
         client.post("/transactions/", json=tx2, headers=headers)
@@ -108,6 +122,11 @@ def test_transactions_limit():
         token = _login(client, email="limit2@example.com")
         headers = {"Authorization": f"Bearer {token}"}
 
+        base_acc = client.get("/accounts/me", headers=headers).json()
+        r = client.post("/accounts/", json={"name": "Income"}, headers=headers)
+        assert r.status_code == 200
+        acc2_id = r.json()["id"]
+
         r = client.post("/categories/", json={"name": "Lim"}, headers=headers)
         cat_id = r.json()["id"]
 
@@ -117,6 +136,10 @@ def test_transactions_limit():
                 "currency": "RUB",
                 "description": f"#{i}",
                 "category_id": cat_id,
+                "postings": [
+                    {"amount": i + 1, "side": "debit", "account_id": base_acc["id"]},
+                    {"amount": i + 1, "side": "credit", "account_id": acc2_id},
+                ],
             }
             client.post("/transactions/", json=tx, headers=headers)
 
