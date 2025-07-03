@@ -1858,10 +1858,6 @@ components:
   schemas:
     Account:
       properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
         name:
           type: string
           title: Name
@@ -1879,12 +1875,15 @@ components:
             format: uuid
           - type: 'null'
           title: User Id
+        id:
+          type: string
+          format: uuid
+          title: Id
       type: object
       required:
-      - id
       - name
+      - id
       title: Account
-      description: Информация об общем счёте.
     BankToken:
       properties:
         bank:
@@ -1981,6 +1980,11 @@ components:
           - type: number
           - type: 'null'
           title: Monthly Limit
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
         parent_id:
           anyOf:
           - type: string
@@ -2016,6 +2020,11 @@ components:
           - type: number
           - type: 'null'
           title: Monthly Limit
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
         parent_id:
           anyOf:
           - type: string
@@ -2054,6 +2063,11 @@ components:
           - type: number
           - type: 'null'
           title: Monthly Limit
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
         parent_id:
           anyOf:
           - type: string
@@ -2062,7 +2076,6 @@ components:
           title: Parent Id
       type: object
       title: CategoryUpdate
-      description: Поля для обновления категории.
     DailySummary:
       properties:
         date:
@@ -2171,7 +2184,6 @@ components:
       required:
       - amount
       title: GoalDeposit
-      description: Сумма пополнения цели.
     GoalProgress:
       properties:
         id:
@@ -2236,7 +2248,6 @@ components:
           title: Due Date
       type: object
       title: GoalUpdate
-      description: Параметры для изменения цели.
     HTTPValidationError:
       properties:
         detail:
@@ -2256,7 +2267,6 @@ components:
       required:
       - account_id
       title: JoinAccount
-      description: Параметры для присоединения к существующему счёту.
     LimitExceed:
       properties:
         category:
@@ -2618,7 +2628,6 @@ components:
           title: Created At
       type: object
       title: TransactionUpdate
-      description: Параметры для обновления операции.
     User:
       properties:
         email:
@@ -2638,6 +2647,12 @@ components:
         role:
           type: string
           title: Role
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
       type: object
       required:
       - email
