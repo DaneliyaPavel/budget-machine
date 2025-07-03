@@ -18,6 +18,7 @@ from .routers import (
     currency,
     push,
 )
+from .api.v1 import auth as auth_v1
 from .database import engine, Base
 from .kafka_producer import close as close_producer
 from contextlib import asynccontextmanager
@@ -35,6 +36,7 @@ tags_metadata = [
     {"name": "Токены", "description": "OAuth-токены банков"},
     {"name": "Задания", "description": "Фоновые задачи"},
     {"name": "OAuth", "description": "Авторизация через Тинькофф ID"},
+    {"name": "Auth", "description": "Signup and JWT auth"},
     {"name": "Валюты", "description": "Курсы и конвертация"},
     {"name": "Уведомления", "description": "Web Push подписки"},
 ]
@@ -73,5 +75,6 @@ app.include_router(accounts.router)
 app.include_router(tokens.router)
 app.include_router(jobs.router)
 app.include_router(oauth.router)
+app.include_router(auth_v1.router)
 app.include_router(currency.router)
 app.include_router(push.router)

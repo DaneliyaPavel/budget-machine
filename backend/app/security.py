@@ -1,34 +1,15 @@
-"""Вспомогательные функции для безопасности и JWT."""
+# ruff: noqa
+from .core.security import *
 
-from datetime import datetime, timedelta, timezone
-import os
-from jose import jwt
-from passlib.context import CryptContext
-
-# секретный ключ может быть переопределён через переменную окружения
-SECRET_KEY = os.getenv("SECRET_KEY", "secret")
-
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Проверить пароль пользователя."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password: str) -> str:
-    """Захешировать пароль."""
-    return pwd_context.hash(password)
-
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
-    """Создать JWT-токен доступа."""
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+__all__ = [
+    "SECRET_KEY",
+    "ALGORITHM",
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "REFRESH_TOKEN_EXPIRE_DAYS",
+    "validate_password",
+    "get_password_hash",
+    "verify_password",
+    "create_access_token",
+    "create_refresh_token",
+    "decode_token",
+]
