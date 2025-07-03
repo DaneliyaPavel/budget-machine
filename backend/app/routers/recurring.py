@@ -1,10 +1,11 @@
 """Маршруты для регулярных платежей."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
 from .. import crud, schemas, database
+from ..api.utils import api_error
 from ..models import User
 from ..api.v1.users import get_current_user
 
@@ -41,7 +42,7 @@ async def read_recurring_payment(
     """Получить регулярный платеж по ID."""
     rp = await crud.get_recurring_payment(session, rp_id, current_user.account_id)
     if not rp:
-        raise HTTPException(status_code=404, detail="Платёж не найден")
+        raise api_error(404, "Платёж не найден", "PAYMENT_NOT_FOUND")
     return rp
 
 
@@ -57,7 +58,7 @@ async def update_recurring_payment(
         session, rp_id, data, current_user.account_id
     )
     if not rp:
-        raise HTTPException(status_code=404, detail="Платёж не найден")
+        raise api_error(404, "Платёж не найден", "PAYMENT_NOT_FOUND")
     return rp
 
 

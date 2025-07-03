@@ -11,7 +11,6 @@ from openpyxl import load_workbook
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     UploadFile,
     File,
     status,
@@ -22,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import crud, schemas, database
 from ...models import User
+from ..utils import api_error
 from .users import get_current_user
 
 router = APIRouter(prefix="/transactions", tags=["Операции"])
@@ -55,10 +55,7 @@ async def create_transaction(
 ):
     """Создать новую операцию."""
     if current_user.role == "readonly":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
-        )
+        raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
     return await crud.create_transaction(
         session,
         tx,
@@ -98,10 +95,7 @@ async def import_transactions(
 ):
     """Импортировать операции из CSV или Excel."""
     if current_user.role == "readonly":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
-        )
+        raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
     content = await file.read()
     created: list[schemas.TransactionCreate]
 
@@ -185,10 +179,7 @@ async def read_transaction(
     """Получить одну операцию."""
     tx = await crud.get_transaction(session, tx_id, current_user.account_id)
     if not tx:
-        raise HTTPException(
-            status_code=404,
-            detail={"detail": "Transaction not found", "code": "TRANSACTION_NOT_FOUND"},
-        )
+        raise api_error(404, "Transaction not found", "TRANSACTION_NOT_FOUND")
     return tx
 
 
@@ -207,10 +198,7 @@ async def update_transaction(
         )
     tx = await crud.update_transaction(session, tx_id, data, current_user.account_id)
     if not tx:
-        raise HTTPException(
-            status_code=404,
-            detail={"detail": "Transaction not found", "code": "TRANSACTION_NOT_FOUND"},
-        )
+        raise api_error(404, "Transaction not found", "TRANSACTION_NOT_FOUND")
     return tx
 
 
@@ -222,9 +210,6 @@ async def delete_transaction(
 ):
     """Удалить операцию."""
     if current_user.role == "readonly":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
-        )
+        raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
     await crud.delete_transaction(session, tx_id, current_user.account_id)
     return None

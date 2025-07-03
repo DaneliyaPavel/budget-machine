@@ -1,9 +1,10 @@
 """Маршруты для целей накоплений."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import crud, schemas, database
+from ..api.utils import api_error
 from ..models import User
 from ..api.v1.users import get_current_user
 import uuid
@@ -41,7 +42,7 @@ async def read_goal(
     """Получить цель по ID."""
     goal = await crud.get_goal(session, goal_id, current_user.account_id)
     if not goal:
-        raise HTTPException(status_code=404, detail="Цель не найдена")
+        raise api_error(404, "Цель не найдена", "GOAL_NOT_FOUND")
     return goal
 
 
@@ -55,7 +56,7 @@ async def update_goal(
     """Изменить параметры цели."""
     goal = await crud.update_goal(session, goal_id, data, current_user.account_id)
     if not goal:
-        raise HTTPException(status_code=404, detail="Цель не найдена")
+        raise api_error(404, "Цель не найдена", "GOAL_NOT_FOUND")
     return goal
 
 
@@ -71,7 +72,7 @@ async def deposit_goal(
         session, goal_id, data.amount, current_user.account_id
     )
     if not goal:
-        raise HTTPException(status_code=404, detail="Цель не найдена")
+        raise api_error(404, "Цель не найдена", "GOAL_NOT_FOUND")
     return goal
 
 

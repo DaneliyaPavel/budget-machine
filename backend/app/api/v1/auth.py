@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import crud, schemas, database
 from ...core import security
+from ..utils import api_error
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -17,10 +18,10 @@ async def signup(
     try:
         security.validate_password(user.password)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise api_error(400, str(exc), "INVALID_PASSWORD") from exc
     existing = await crud.get_user_by_email(session, user.email)
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise api_error(400, "Email already registered", "EMAIL_EXISTS")
     return await crud.create_user(session, user)
 
 
@@ -31,8 +32,8 @@ async def login(
     """Аутентифицировать пользователя и вернуть токены."""
     user = await crud.get_user_by_email(session, data.email)
     if not user or not security.verify_password(data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+        raise api_error(
+            status.HTTP_401_UNAUTHORIZED, "Invalid credentials", "INVALID_CREDENTIALS"
         )
     access = security.create_access_token({"sub": user.email})
     refresh = security.create_refresh_token({"sub": user.email})
@@ -51,18 +52,14 @@ async def refresh(
     try:
         payload = security.decode_token(data.refresh_token)
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
-        )
+        raise api_error(status.HTTP_401_UNAUTHORIZED, "Invalid token", "INVALID_TOKEN")
     if payload.get("type") != "refresh":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
-        )
+        raise api_error(status.HTTP_401_UNAUTHORIZED, "Invalid token", "INVALID_TOKEN")
     email = payload.get("sub")
     user = await crud.get_user_by_email(session, email)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        raise api_error(
+            status.HTTP_401_UNAUTHORIZED, "User not found", "USER_NOT_FOUND"
         )
     access = security.create_access_token({"sub": email})
     refresh = security.create_refresh_token({"sub": email})
