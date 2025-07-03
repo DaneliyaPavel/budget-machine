@@ -1276,6 +1276,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /accounts/:
+    get:
+      tags:
+      - Счёт
+      summary: List Accounts
+      description: Список счетов.
+      operationId: list_accounts_accounts__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Account'
+                type: array
+                title: Response List Accounts Accounts  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Счёт
+      summary: Create Account
+      description: Создать счёт.
+      operationId: create_account_accounts__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
   /accounts/me:
     get:
       tags:
@@ -1302,7 +1348,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Account'
+              $ref: '#/components/schemas/AccountUpdate'
         required: true
       responses:
         '200':
@@ -1319,6 +1365,96 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - OAuth2PasswordBearer: []
+  /accounts/{account_id}:
+    get:
+      tags:
+      - Счёт
+      summary: Read One Account
+      description: Получить счёт по идентификатору.
+      operationId: read_one_account_accounts__account_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - Счёт
+      summary: Update One Account
+      description: Обновить счёт.
+      operationId: update_one_account_accounts__account_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Счёт
+      summary: Delete Account
+      description: Удалить счёт.
+      operationId: delete_account_accounts__account_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /accounts/{account_id}/balance:
     get:
       tags:
@@ -1884,6 +2020,54 @@ components:
       - name
       - id
       title: Account
+    AccountCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+        currency_code:
+          type: string
+          title: Currency Code
+          default: RUB
+        type:
+          type: string
+          title: Type
+          default: cash
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+      type: object
+      required:
+      - name
+      title: AccountCreate
+    AccountUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        currency_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Currency Code
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+      type: object
+      title: AccountUpdate
     BankToken:
       properties:
         bank:
