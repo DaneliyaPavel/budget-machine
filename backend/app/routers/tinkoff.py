@@ -2,10 +2,11 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import database, crud
+from ..api.utils import api_error
 from ..models import User
 from ..api.v1.users import get_current_user
 from ..banks.tinkoff import TinkoffConnector
@@ -25,7 +26,7 @@ async def import_tinkoff(
     connector = TinkoffConnector(token)
     transactions = await connector.fetch_transactions(start, end)
     if not transactions:
-        raise HTTPException(status_code=400, detail="Не удалось получить операции")
+        raise api_error(400, "Не удалось получить операции", "BANK_FETCH_ERROR")
     await crud.create_transactions_bulk(
         session, transactions, current_user.account_id, current_user.id
     )

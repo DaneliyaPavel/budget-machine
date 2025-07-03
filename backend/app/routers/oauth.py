@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import database, crud, security, oauth
 from .. import schemas
+from ..api.utils import api_error
 
 router = APIRouter(prefix="/oauth", tags=["OAuth"])
 
@@ -22,7 +23,7 @@ async def tinkoff_callback(
     try:
         email = await oauth.exchange_code(code)
     except Exception as exc:  # pragma: no cover - network errors
-        raise HTTPException(status_code=400, detail="OAuth error") from exc
+        raise api_error(400, "OAuth error", "OAUTH_ERROR") from exc
     user = await crud.get_user_by_email(session, email)
     if not user:
         user = await crud.create_user_oauth(session, email)

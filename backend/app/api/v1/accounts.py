@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from ... import crud, database, schemas
 from ...models import User
 from ...services import ledger
+from ..utils import api_error
 from .users import get_current_user
 
 router = APIRouter(prefix="/accounts", tags=["Счёт"])
@@ -18,10 +19,7 @@ async def create_account(
 ):
     """Создать счёт."""
     if current_user.role == "readonly":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
-        )
+        raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
     if data.user_id is None:
         data.user_id = current_user.id
     account = await crud.create_account(session, data)
@@ -45,10 +43,7 @@ async def read_account(
     """Вернуть информацию о текущем счёте."""
     account = await crud.get_account(session, current_user.account_id)
     if not account:
-        raise HTTPException(
-            status_code=404,
-            detail={"detail": "Account not found", "code": "ACCOUNT_NOT_FOUND"},
-        )
+        raise api_error(404, "Account not found", "ACCOUNT_NOT_FOUND")
     return account
 
 
@@ -59,16 +54,18 @@ async def update_account(
     session: AsyncSession = Depends(database.get_session),
 ):
     """Изменить параметры текущего счёта."""
+    if data.currency_code is not None:
+        existing = await crud.get_account(session, current_user.account_id)
+        if existing and existing.currency_code != data.currency_code:
+            raise api_error(400, "Account currency immutable", "CURRENCY_IMMUTABLE")
+
     account = await crud.update_account(
         session,
         current_user.account_id,
         **data.model_dump(exclude_unset=True),
     )
     if not account:
-        raise HTTPException(
-            status_code=404,
-            detail={"detail": "Account not found", "code": "ACCOUNT_NOT_FOUND"},
-        )
+        raise api_error(404, "Account not found", "ACCOUNT_NOT_FOUND")
     return account
 
 
@@ -81,10 +78,7 @@ async def read_one_account(
     """Получить счёт по идентификатору."""
     account = await crud.get_account(session, account_id)
     if not account:
-        raise HTTPException(
-            status_code=404,
-            detail={"detail": "Account not found", "code": "ACCOUNT_NOT_FOUND"},
-        )
+        raise api_error(404, "Account not found", "ACCOUNT_NOT_FOUND")
     return account
 
 
@@ -97,18 +91,17 @@ async def update_one_account(
 ):
     """Обновить счёт."""
     if current_user.role == "readonly":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
-        )
+        raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
+    if data.currency_code is not None:
+        existing = await crud.get_account(session, account_id)
+        if existing and existing.currency_code != data.currency_code:
+            raise api_error(400, "Account currency immutable", "CURRENCY_IMMUTABLE")
+
     account = await crud.update_account(
         session, account_id, **data.model_dump(exclude_unset=True)
     )
     if not account:
-        raise HTTPException(
-            status_code=404,
-            detail={"detail": "Account not found", "code": "ACCOUNT_NOT_FOUND"},
-        )
+        raise api_error(404, "Account not found", "ACCOUNT_NOT_FOUND")
     return account
 
 
@@ -120,16 +113,10 @@ async def delete_account(
 ):
     """Удалить счёт."""
     if current_user.role in {"readonly", "member"}:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"detail": "Forbidden", "code": "FORBIDDEN"},
-        )
+        raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
     ok = await crud.delete_account(session, account_id)
     if not ok:
-        raise HTTPException(
-            status_code=404,
-            detail={"detail": "Account not found", "code": "ACCOUNT_NOT_FOUND"},
-        )
+        raise api_error(404, "Account not found", "ACCOUNT_NOT_FOUND")
     return None
 
 

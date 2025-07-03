@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import tasks, database, crud
+from ..api.utils import api_error
 from ..models import User
 from ..api.v1.users import get_current_user
 
@@ -23,7 +24,7 @@ async def import_transactions_job(
     if token is None:
         token_obj = await crud.get_bank_token(session, bank, current_user.id)
         if not token_obj:
-            raise HTTPException(status_code=404, detail="Токен не найден")
+            raise api_error(404, "Токен не найден", "TOKEN_NOT_FOUND")
     result = tasks.import_transactions_task.delay(
         bank,
         token,
