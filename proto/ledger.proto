@@ -1,0 +1,55 @@
+syntax = "proto3";
+package ledger;
+
+import "google/protobuf/timestamp.proto";
+
+message Posting {
+    double amount = 1;
+    string side = 2;
+    string account_id = 3;
+}
+
+message PostEntryRequest {
+    double amount = 1;
+    string currency = 2;
+    string description = 3;
+    string category_id = 4;
+    google.protobuf.Timestamp created_at = 5;
+    repeated Posting postings = 6;
+    string account_id = 7; // account for tx
+    string user_id = 8;
+}
+
+message Transaction {
+    string id = 1;
+    double amount = 2;
+    string currency = 3;
+    double amount_rub = 4;
+    string description = 5;
+    string category_id = 6;
+    google.protobuf.Timestamp created_at = 7;
+    string account_id = 8;
+    string user_id = 9;
+}
+
+message GetBalanceRequest {
+    string account_id = 1;
+    google.protobuf.Timestamp at = 2;
+}
+
+message Balance {
+    double amount = 1;
+}
+
+message StreamTxnsRequest {
+    string account_id = 1;
+    google.protobuf.Timestamp start = 2;
+    google.protobuf.Timestamp end = 3;
+}
+
+service LedgerService {
+    rpc PostEntry(PostEntryRequest) returns (Transaction);
+    rpc GetBalance(GetBalanceRequest) returns (Balance);
+    rpc StreamTxns(StreamTxnsRequest) returns (stream Transaction);
+}
+
