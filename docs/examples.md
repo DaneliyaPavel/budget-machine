@@ -17,11 +17,11 @@ uvicorn backend.app.main:app --reload
 ## Создание пользователя и получение токена
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/пользователи/" \
+curl -X POST "http://127.0.0.1:8000/users/" \
      -H "Content-Type: application/json" \
      -d '{"email": "me@example.com", "password": "secret"}'
 
-curl -X POST "http://127.0.0.1:8000/пользователи/token" \
+curl -X POST "http://127.0.0.1:8000/users/token" \
      -d "username=me@example.com&password=secret" \
      -H "Content-Type: application/x-www-form-urlencoded"
 ```
@@ -29,7 +29,7 @@ curl -X POST "http://127.0.0.1:8000/пользователи/token" \
 ## Создание категории с лимитом
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/категории/" \
+curl -X POST "http://127.0.0.1:8000/categories/" \
      -H "Authorization: Bearer <token>" \
      -H "Content-Type: application/json" \
      -d '{"name": "Продукты", "monthly_limit": 15000}'
@@ -40,7 +40,7 @@ curl -X POST "http://127.0.0.1:8000/категории/" \
 CSV-файл должен содержать колонки `amount`, `currency`, `description`, `category_id` и опционально `created_at` в ISO-формате.
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/операции/импорт" \
+curl -X POST "http://127.0.0.1:8000/transactions/import" \
      -H "Authorization: Bearer <token>" \
      -F "file=@transactions.csv"
 ```
@@ -48,7 +48,7 @@ curl -X POST "http://127.0.0.1:8000/операции/импорт" \
 ## Получить операции за период
 
 ```bash
-curl "http://127.0.0.1:8000/операции/?start=2025-06-01T00:00:00&end=2025-06-30T23:59:59" \
+curl "http://127.0.0.1:8000/transactions/?start=2025-06-01T00:00:00&end=2025-06-30T23:59:59" \
      -H "Authorization: Bearer <token>"
 ```
 Можно указать `category_id`, чтобы вывести операции только по конкретной категории.
@@ -100,7 +100,7 @@ curl -X POST "http://127.0.0.1:8000/банки/импорт" \
 ## Присоединиться к счёту
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/пользователи/join" \
+curl -X POST "http://127.0.0.1:8000/users/join" \
      -H "Authorization: Bearer <token>" \
      -H "Content-Type: application/json" \
      -d '{"account_id": 1}'
