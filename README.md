@@ -4,6 +4,13 @@
 
 Небольшой FastAPI-бекенд для учёта доходов, расходов и целей накоплений. Все примеры и интерфейс на русском языке.
 
+## Установка зависимостей
+
+```bash
+pip install -r requirements.txt
+pip install -r backend/requirements-dev.txt  # для разработки
+```
+
 ## Быстрый старт
 
 ```bash
