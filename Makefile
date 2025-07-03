@@ -1,4 +1,4 @@
-.PHONY: dev ci lint test devcontainer
+.PHONY: dev ci lint test devcontainer proto
 
 dev:
 	python -m webbrowser http://localhost:8000/docs &
@@ -15,4 +15,8 @@ test:
 ci: lint test
 
 devcontainer:
-	devcontainer up --workspace-folder .
+        devcontainer up --workspace-folder .
+
+proto:
+        python -m grpc_tools.protoc -I proto --python_out=backend/app/grpc \
+                --grpclib_python_out=backend/app/grpc proto/ledger.proto
