@@ -3,5 +3,6 @@ black==24.3.0
 mypy==1.10.0
 pytest
 pytest-asyncio
+pytest-cov
 asgi_lifespan
 commitizen
