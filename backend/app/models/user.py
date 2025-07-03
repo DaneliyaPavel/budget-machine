@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship
 from ..database import Base
 
 
-class UserRole(PyEnum):
+class UserRole(str, PyEnum):
     owner = "owner"
     member = "member"
     readonly = "readonly"
@@ -21,7 +21,7 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
     role = Column(SAEnum(UserRole), default=UserRole.owner)
