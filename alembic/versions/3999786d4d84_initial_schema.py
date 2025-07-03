@@ -1,41 +1,22 @@
-"""Recreate schema using UUID keys and enable TimescaleDB."""
+"""initial schema with timescaledb and postings balance trigger"""
 
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
 
-# revision identifiers, used by Alembic.
-revision: str = "c3a3deb0309b"
-down_revision: Union[str, Sequence[str], None] = "0d74380f2dbb"
+revision: str = "3999786d4d84"
+down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
     op.execute("CREATE EXTENSION IF NOT EXISTS timescaledb")
 
-    # drop old tables if they exist
-    for tbl in [
-        "push_subscriptions",
-        "bank_tokens",
-        "recurring_payments",
-        "goals",
-        "postings",
-        "transactions",
-        "categories",
-        "accounts",
-        "currencies",
-        "users",
-    ]:
-        op.drop_table(tbl, if_exists=True)
-
-    # create base tables
     op.create_table(
         "currencies",
-        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("code", sa.String(3), nullable=False, unique=True),
+        sa.Column("code", sa.String(3), primary_key=True),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("symbol", sa.String(), nullable=False),
         sa.Column("precision", sa.Integer(), server_default="2"),
@@ -46,33 +27,30 @@ def upgrade() -> None:
         sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("currency_code", sa.String(3), nullable=False),
-        sa.Column("type", sa.String(), nullable=False, server_default="cash"),
-        sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("base_currency", sa.String(), nullable=False, server_default="RUB"),
+        sa.Column("type", sa.String(), server_default="cash"),
+        sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=True)),
         sa.ForeignKeyConstraint(["currency_code"], ["currencies.code"]),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
     )
 
     op.create_table(
         "users",
         sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("email", sa.String(), nullable=False, unique=True, index=True),
+        sa.Column("email", sa.String(), nullable=False, unique=True),
         sa.Column("hashed_password", sa.String(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
         sa.Column("is_active", sa.Boolean(), server_default=sa.text("true")),
         sa.Column("role", sa.String(), server_default="owner"),
-        sa.Column(
-            "account_id", sa.dialects.postgresql.UUID(as_uuid=True), nullable=True
-        ),
+        sa.Column("account_id", sa.dialects.postgresql.UUID(as_uuid=True)),
+        sa.ForeignKeyConstraint(["account_id"], ["accounts.id"]),
     )
-
-    # add fk relations now that both tables exist
-    op.create_foreign_key(None, "accounts", "users", ["user_id"], ["id"])
-    op.create_foreign_key(None, "users", "accounts", ["account_id"], ["id"])
 
     op.create_table(
         "categories",
         sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("name", sa.String(), nullable=False, index=True),
         sa.Column("monthly_limit", sa.Numeric(20, 6)),
+        sa.Column("icon", sa.String()),
         sa.Column("parent_id", sa.dialects.postgresql.UUID(as_uuid=True)),
         sa.Column("account_id", sa.dialects.postgresql.UUID(as_uuid=True)),
         sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=True)),
@@ -85,15 +63,10 @@ def upgrade() -> None:
         "transactions",
         sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("amount", sa.Numeric(20, 6), nullable=False),
-        sa.Column("currency", sa.String(), server_default="RUB"),
+        sa.Column("currency", sa.String(), nullable=True),
         sa.Column("amount_rub", sa.Numeric(20, 6), nullable=False),
         sa.Column("description", sa.String()),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            nullable=False,
-            server_default=sa.text("now()"),
-        ),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("category_id", sa.dialects.postgresql.UUID(as_uuid=True)),
         sa.Column("account_id", sa.dialects.postgresql.UUID(as_uuid=True)),
         sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=True)),
@@ -107,8 +80,10 @@ def upgrade() -> None:
         sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("amount", sa.Numeric(20, 6), nullable=False),
         sa.Column("side", sa.String(), nullable=False),
+        sa.Column("currency_code", sa.String(3), nullable=False),
         sa.Column("transaction_id", sa.dialects.postgresql.UUID(as_uuid=True)),
         sa.Column("account_id", sa.dialects.postgresql.UUID(as_uuid=True)),
+        sa.ForeignKeyConstraint(["currency_code"], ["currencies.code"]),
         sa.ForeignKeyConstraint(["transaction_id"], ["transactions.id"]),
         sa.ForeignKeyConstraint(["account_id"], ["accounts.id"]),
     )
@@ -168,12 +143,8 @@ def upgrade() -> None:
         sa.UniqueConstraint("account_id", "endpoint"),
     )
 
-    # convert transactions to hypertable
-    op.execute(
-        "SELECT create_hypertable('transactions', 'created_at', if_not_exists => TRUE)"
-    )
+    op.execute("SELECT create_hypertable('transactions', 'created_at', if_not_exists => TRUE)")
 
-    # trigger to check postings balance
     op.execute(
         """
         CREATE OR REPLACE FUNCTION check_postings_balance()
@@ -216,7 +187,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade schema."""
     for tbl in [
         "push_subscriptions",
         "bank_tokens",
@@ -229,6 +199,6 @@ def downgrade() -> None:
         "accounts",
         "currencies",
     ]:
-        op.drop_table(tbl, if_exists=True)
+        op.drop_table(tbl)
     op.execute("DROP FUNCTION IF EXISTS check_postings_balance")
     op.execute("DROP EXTENSION IF EXISTS timescaledb")
