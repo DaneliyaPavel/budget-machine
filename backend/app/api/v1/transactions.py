@@ -16,6 +16,7 @@ from fastapi import (
     status,
     Query,
     Response,
+    HTTPException,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 

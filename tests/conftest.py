@@ -1,7 +1,6 @@
 import os
 import sys
 from pathlib import Path
-import pytest
 import pytest_asyncio
 
 # add repository root to sys.path
@@ -13,7 +12,8 @@ if DB_PATH.exists():
     DB_PATH.unlink()
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
-from backend.app.database import engine, async_session, Base
+from backend.app.database import engine, async_session, Base  # noqa: E402
+
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_db():
@@ -23,6 +23,7 @@ async def setup_db():
     await engine.dispose()
     if DB_PATH.exists():
         DB_PATH.unlink()
+
 
 @pytest_asyncio.fixture
 async def session():

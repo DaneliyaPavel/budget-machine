@@ -16,6 +16,7 @@ app = FastAPI()
 app.include_router(auth_v1.router)
 app.include_router(users_v1.router)
 
+
 @app.on_event("startup")
 async def startup() -> None:
     async with engine.begin() as conn:
@@ -59,6 +60,7 @@ async def test_signup_duplicate():
             r = await client.post("/auth/signup", json=data)
             assert r.status_code == 400
 
+
 @pytest.mark.asyncio
 async def test_update_user_me():
     async with LifespanManager(app):
@@ -69,6 +71,8 @@ async def test_update_user_me():
             r = await client.post("/auth/login", json=data)
             token = r.json()["access_token"]
             headers = {"Authorization": f"Bearer {token}"}
-            r = await client.patch("/users/me", json={"email": "changed@example.com"}, headers=headers)
+            r = await client.patch(
+                "/users/me", json={"email": "changed@example.com"}, headers=headers
+            )
             assert r.status_code == 200
             assert r.json()["email"] == "changed@example.com"
