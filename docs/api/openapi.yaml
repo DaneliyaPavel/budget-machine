@@ -1843,6 +1843,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /auth/tinkoff/mock:
+    get:
+      tags:
+      - Auth
+      summary: Tinkoff Mock
+      description: Выдать JWT для фиктивного пользователя Тинькофф.
+      operationId: tinkoff_mock_auth_tinkoff_mock_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
   /currencies/:
     get:
       tags:
