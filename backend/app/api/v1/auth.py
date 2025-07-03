@@ -67,3 +67,17 @@ async def refresh(
     access = security.create_access_token({"sub": email})
     refresh = security.create_refresh_token({"sub": email})
     return {"access_token": access, "refresh_token": refresh, "token_type": "bearer"}
+
+
+MOCK_EMAIL = "mock@tinkoff.dev"
+
+
+@router.get("/tinkoff/mock", response_model=schemas.Token)
+async def tinkoff_mock(session: AsyncSession = Depends(database.get_session)) -> dict:
+    """Выдать JWT для фиктивного пользователя Тинькофф."""
+    email = MOCK_EMAIL
+    user = await crud.get_user_by_email(session, email)
+    if not user:
+        user = await crud.create_user_oauth(session, email)
+    token = security.create_access_token({"sub": user.email})
+    return {"access_token": token, "token_type": "bearer"}
