@@ -1,0 +1,2734 @@
+openapi: 3.1.0
+info:
+  title: Учет бюджета
+  description: Простой API для ведения личных финансов
+  version: 0.1.0
+paths:
+  /categories/:
+    get:
+      tags:
+      - Категории
+      summary: Read Categories
+      description: Вернуть список категорий пользователя.
+      operationId: read_categories_categories__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Category'
+                type: array
+                title: Response Read Categories Categories  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Категории
+      summary: Create Category
+      description: Создать новую категорию.
+      operationId: create_category_categories__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /categories/{category_id}:
+    get:
+      tags:
+      - Категории
+      summary: Read Category
+      description: Получить категорию по идентификатору.
+      operationId: read_category_categories__category_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: category_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Category Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Категории
+      summary: Update Category
+      description: Обновить категорию.
+      operationId: update_category_categories__category_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: category_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Category Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Категории
+      summary: Delete Category
+      description: Удалить категорию.
+      operationId: delete_category_categories__category_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: category_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Category Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /transactions/:
+    get:
+      tags:
+      - Операции
+      summary: Read Transactions
+      description: Вернуть список операций с указанными фильтрами.
+      operationId: read_transactions_transactions__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: start
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Start date
+          title: Start
+        description: Start date
+      - name: end
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: End date
+          title: End
+        description: End date
+      - name: category_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Category
+          title: Category Id
+        description: Category
+      - name: limit
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Limit
+          title: Limit
+        description: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+                title: Response Read Transactions Transactions  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Операции
+      summary: Create Transaction
+      description: Создать новую операцию.
+      operationId: create_transaction_transactions__post
+      security:
+      - OAuth2PasswordBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /transactions/import:
+    post:
+      tags:
+      - Операции
+      summary: Import Transactions
+      description: Импортировать операции из CSV или Excel.
+      operationId: import_transactions_transactions_import_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_import_transactions_transactions_import_post'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /transactions/export:
+    get:
+      tags:
+      - Операции
+      summary: Export Transactions
+      description: Экспортировать операции в CSV.
+      operationId: export_transactions_transactions_export_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: start
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Start date
+          title: Start
+        description: Start date
+      - name: end
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: End date
+          title: End
+        description: End date
+      - name: category_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Category
+          title: Category Id
+        description: Category
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /transactions/{tx_id}:
+    get:
+      tags:
+      - Операции
+      summary: Read Transaction
+      description: Получить одну операцию.
+      operationId: read_transaction_transactions__tx_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: tx_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Tx Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Операции
+      summary: Update Transaction
+      description: Обновить операцию.
+      operationId: update_transaction_transactions__tx_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: tx_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Tx Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Операции
+      summary: Delete Transaction
+      description: Удалить операцию.
+      operationId: delete_transaction_transactions__tx_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: tx_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Tx Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /цели/:
+    get:
+      tags:
+      - Цели
+      summary: Read Goals
+      description: Получить список целей пользователя.
+      operationId: read_goals_цели__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Goal'
+                type: array
+                title: Response Read Goals Цели  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Цели
+      summary: Create Goal
+      description: Создать новую цель.
+      operationId: create_goal_цели__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /цели/{goal_id}:
+    get:
+      tags:
+      - Цели
+      summary: Read Goal
+      description: Получить цель по ID.
+      operationId: read_goal_цели__goal_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Goal Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Цели
+      summary: Update Goal
+      description: Изменить параметры цели.
+      operationId: update_goal_цели__goal_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Goal Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Цели
+      summary: Delete Goal
+      description: Удалить цель.
+      operationId: delete_goal_цели__goal_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Goal Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /цели/{goal_id}/пополнить:
+    post:
+      tags:
+      - Цели
+      summary: Deposit Goal
+      description: Пополнить текущую цель на заданную сумму.
+      operationId: deposit_goal_цели__goal_id__пополнить_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Goal Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalDeposit'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/:
+    post:
+      tags:
+      - Пользователи
+      summary: Create User
+      description: Зарегистрировать нового пользователя.
+      operationId: create_user_users__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/join:
+    post:
+      tags:
+      - Пользователи
+      summary: Join Account
+      description: Присоединиться к существующему счёту.
+      operationId: join_account_users_join_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinAccount'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /users/members:
+    get:
+      tags:
+      - Пользователи
+      summary: Account Members
+      description: Список участников счёта.
+      operationId: account_members_users_members_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/User'
+                type: array
+                title: Response Account Members Users Members Get
+      security:
+      - OAuth2PasswordBearer: []
+  /users/{user_id}:
+    delete:
+      tags:
+      - Пользователи
+      summary: Remove User
+      description: Удалить пользователя из счёта.
+      operationId: remove_user_users__user_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/token:
+    post:
+      tags:
+      - Пользователи
+      summary: Login
+      description: Выдать JWT-токен.
+      operationId: login_users_token_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_login_users_token_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/me:
+    get:
+      tags:
+      - Пользователи
+      summary: Read Users Me
+      description: Вернуть текущего пользователя.
+      operationId: read_users_me_users_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      security:
+      - OAuth2PasswordBearer: []
+    patch:
+      tags:
+      - Пользователи
+      summary: Update User Me
+      description: Обновить профиль пользователя.
+      operationId: update_user_me_users_me_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /аналитика/категории:
+    get:
+      tags:
+      - Аналитика
+      summary: Summary By Category
+      description: Сумма операций по категориям за месяц.
+      operationId: summary_by_category_аналитика_категории_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Год
+          title: Year
+        description: Год
+      - name: month
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Месяц (1-12)
+          title: Month
+        description: Месяц (1-12)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategorySummary'
+                title: Response Summary By Category Аналитика Категории Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /аналитика/лимиты:
+    get:
+      tags:
+      - Аналитика
+      summary: Limits Check
+      description: Категории, где траты превысили лимит.
+      operationId: limits_check_аналитика_лимиты_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Год
+          title: Year
+        description: Год
+      - name: month
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Месяц (1-12)
+          title: Month
+        description: Месяц (1-12)
+      - name: notify
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Отправить уведомление
+          default: false
+          title: Notify
+        description: Отправить уведомление
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LimitExceed'
+                title: Response Limits Check Аналитика Лимиты Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /аналитика/прогноз:
+    get:
+      tags:
+      - Аналитика
+      summary: Forecast
+      description: Прогноз расходов по категориям.
+      operationId: forecast_аналитика_прогноз_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Год
+          title: Year
+        description: Год
+      - name: month
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Месяц (1-12)
+          title: Month
+        description: Месяц (1-12)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ForecastItem'
+                title: Response Forecast Аналитика Прогноз Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /аналитика/дни:
+    get:
+      tags:
+      - Аналитика
+      summary: Summary By Day
+      description: Траты по дням за месяц.
+      operationId: summary_by_day_аналитика_дни_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Год
+          title: Year
+        description: Год
+      - name: month
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Месяц (1-12)
+          title: Month
+        description: Месяц (1-12)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DailySummary'
+                title: Response Summary By Day Аналитика Дни Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /аналитика/баланс:
+    get:
+      tags:
+      - Аналитика
+      summary: Balance Overview
+      description: Сколько уже потрачено и прогноз расходов.
+      operationId: balance_overview_аналитика_баланс_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Год
+          title: Year
+        description: Год
+      - name: month
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Месяц (1-12)
+          title: Month
+        description: Месяц (1-12)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthlySummary'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /аналитика/цели:
+    get:
+      tags:
+      - Аналитика
+      summary: Goals Progress
+      description: Прогресс по накопительным целям.
+      operationId: goals_progress_аналитика_цели_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/GoalProgress'
+                type: array
+                title: Response Goals Progress Аналитика Цели Get
+      security:
+      - OAuth2PasswordBearer: []
+  /тинькофф/импорт:
+    post:
+      tags:
+      - Тинькофф
+      summary: Import Tinkoff
+      description: Загрузить операции с помощью токена Тинькофф.
+      operationId: import_tinkoff_тинькофф_импорт_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: token
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Token
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Начало периода
+          title: Start
+        description: Начало периода
+      - name: end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Конец периода
+          title: End
+        description: Конец периода
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Import Tinkoff Тинькофф Импорт Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /банки/импорт:
+    post:
+      tags:
+      - Банки
+      summary: Import From Bank
+      description: Загрузить операции из указанного банка.
+      operationId: import_from_bank_банки_импорт_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: bank
+        in: query
+        required: true
+        schema:
+          type: string
+          description: Название банка
+          title: Bank
+        description: Название банка
+      - name: token
+        in: query
+        required: true
+        schema:
+          type: string
+          description: Токен или ключ доступа
+          title: Token
+        description: Токен или ключ доступа
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Начало периода
+          title: Start
+        description: Начало периода
+      - name: end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Конец периода
+          title: End
+        description: Конец периода
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Import From Bank Банки Импорт Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /банки/импорт_по_токену:
+    post:
+      tags:
+      - Банки
+      summary: Import Using Saved Token
+      description: Импортировать операции, используя сохранённый токен банка.
+      operationId: import_using_saved_token_банки_импорт_по_токену_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: bank
+        in: query
+        required: true
+        schema:
+          type: string
+          description: Название банка
+          title: Bank
+        description: Название банка
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Начало периода
+          title: Start
+        description: Начало периода
+      - name: end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Конец периода
+          title: End
+        description: Конец периода
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Import Using Saved Token Банки Импорт По Токену Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /регулярные/:
+    get:
+      tags:
+      - Регулярные платежи
+      summary: Read Recurring Payments
+      description: Получить все регулярные платежи пользователя.
+      operationId: read_recurring_payments_регулярные__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RecurringPayment'
+                type: array
+                title: Response Read Recurring Payments Регулярные  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Регулярные платежи
+      summary: Create Recurring Payment
+      description: Создать регулярный платеж.
+      operationId: create_recurring_payment_регулярные__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecurringPaymentCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringPayment'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /регулярные/{rp_id}:
+    get:
+      tags:
+      - Регулярные платежи
+      summary: Read Recurring Payment
+      description: Получить регулярный платеж по ID.
+      operationId: read_recurring_payment_регулярные__rp_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: rp_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Rp Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringPayment'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Регулярные платежи
+      summary: Update Recurring Payment
+      description: Обновить регулярный платеж.
+      operationId: update_recurring_payment_регулярные__rp_id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: rp_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Rp Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecurringPaymentUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringPayment'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Регулярные платежи
+      summary: Delete Recurring Payment
+      description: Удалить регулярный платеж.
+      operationId: delete_recurring_payment_регулярные__rp_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: rp_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Rp Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /accounts/me:
+    get:
+      tags:
+      - Счёт
+      summary: Read Account
+      description: Вернуть информацию о текущем счёте.
+      operationId: read_account_accounts_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+      security:
+      - OAuth2PasswordBearer: []
+    patch:
+      tags:
+      - Счёт
+      summary: Update Account
+      description: Изменить параметры текущего счёта.
+      operationId: update_account_accounts_me_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /accounts/{account_id}/balance:
+    get:
+      tags:
+      - Счёт
+      summary: Account Balance
+      description: Текущий баланс указанного счёта.
+      operationId: account_balance_accounts__account_id__balance_get
+      parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Account Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /токены/:
+    get:
+      tags:
+      - Токены
+      summary: Read Tokens
+      description: Список сохранённых токенов банков.
+      operationId: read_tokens_токены__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/BankToken'
+                type: array
+                title: Response Read Tokens Токены  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Токены
+      summary: Set Token
+      description: Сохранить или обновить токен банка.
+      operationId: set_token_токены__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankTokenCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankToken'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /токены/{bank}:
+    delete:
+      tags:
+      - Токены
+      summary: Delete Token
+      description: Удалить токен банка.
+      operationId: delete_token_токены__bank__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: bank
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Bank
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /задания/импорт:
+    post:
+      tags:
+      - Задания
+      summary: Import Transactions Job
+      description: Запустить импорт операций в фоне.
+      operationId: import_transactions_job_задания_импорт_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: bank
+        in: query
+        required: true
+        schema:
+          type: string
+          description: Название банка
+          title: Bank
+        description: Название банка
+      - name: token
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: OAuth-токен
+          title: Token
+        description: OAuth-токен
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Начало периода
+          title: Start
+        description: Начало периода
+      - name: end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Конец периода
+          title: End
+        description: Конец периода
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Import Transactions Job Задания Импорт Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /задания/лимиты:
+    post:
+      tags:
+      - Задания
+      summary: Check Limits Job
+      description: Проверить лимиты в фоне и прислать уведомление.
+      operationId: check_limits_job_задания_лимиты_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Год
+          default: 2025
+          title: Year
+        description: Год
+      - name: month
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Месяц
+          default: 7
+          title: Month
+        description: Месяц
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Check Limits Job Задания Лимиты Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /задания/регулярные:
+    post:
+      tags:
+      - Задания
+      summary: Process Recurring Job
+      description: Создать операции по регулярным платежам в фоне.
+      operationId: process_recurring_job_задания_регулярные_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+          description: Дата выполнения
+          title: Date
+        description: Дата выполнения
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Process Recurring Job Задания Регулярные Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /задания/{task_id}:
+    get:
+      tags:
+      - Задания
+      summary: Get Job Status
+      description: Получить статус фоновой задачи.
+      operationId: get_job_status_задания__task_id__get
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Job Status Задания  Task Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /oauth/tinkoff/url:
+    get:
+      tags:
+      - OAuth
+      summary: Tinkoff Url
+      description: Получить URL для авторизации через Тинькофф ID.
+      operationId: tinkoff_url_oauth_tinkoff_url_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Tinkoff Url Oauth Tinkoff Url Get
+  /oauth/tinkoff/callback:
+    get:
+      tags:
+      - OAuth
+      summary: Tinkoff Callback
+      description: Обработать код авторизации Тинькофф и выдать JWT.
+      operationId: tinkoff_callback_oauth_tinkoff_callback_get
+      parameters:
+      - name: code
+        in: query
+        required: true
+        schema:
+          type: string
+          description: Authorization code
+          title: Code
+        description: Authorization code
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/signup:
+    post:
+      tags:
+      - Auth
+      summary: Signup
+      description: Регистрация нового пользователя.
+      operationId: signup_auth_signup_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/login:
+    post:
+      tags:
+      - Auth
+      summary: Login
+      description: Аутентифицировать пользователя и вернуть токены.
+      operationId: login_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/refresh:
+    post:
+      tags:
+      - Auth
+      summary: Refresh
+      description: Обновить access-токен по refresh JWT.
+      operationId: refresh_auth_refresh_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /currencies/:
+    get:
+      tags:
+      - Валюты
+      summary: Read Rates
+      description: Вернуть текущие курсы валют.
+      operationId: read_rates_currencies__get
+      parameters:
+      - name: base
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Base currency
+          default: RUB
+          title: Base
+        description: Base currency
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: number
+                title: Response Read Rates Currencies  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /currencies/convert:
+    get:
+      tags:
+      - Валюты
+      summary: Convert Amount
+      description: Конвертировать сумму из одной валюты в другую.
+      operationId: convert_amount_currencies_convert_get
+      parameters:
+      - name: amount
+        in: query
+        required: true
+        schema:
+          type: number
+          description: Amount
+          title: Amount
+        description: Amount
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          description: Source currency
+          title: From
+        description: Source currency
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Target currency
+          default: RUB
+          title: To
+        description: Target currency
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /push/:
+    get:
+      tags:
+      - Уведомления
+      summary: Read Subscriptions
+      operationId: read_subscriptions_push__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/PushSubscription'
+                type: array
+                title: Response Read Subscriptions Push  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Уведомления
+      summary: Add Subscription
+      operationId: add_subscription_push__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushSubscriptionCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushSubscription'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /push/{sub_id}:
+    delete:
+      tags:
+      - Уведомления
+      summary: Remove Subscription
+      operationId: remove_subscription_push__sub_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: sub_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Sub Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    Account:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        currency_code:
+          type: string
+          title: Currency Code
+          default: RUB
+        type:
+          type: string
+          title: Type
+          default: cash
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+      type: object
+      required:
+      - id
+      - name
+      title: Account
+      description: Информация об общем счёте.
+    BankToken:
+      properties:
+        bank:
+          type: string
+          title: Bank
+        id:
+          type: string
+          format: uuid
+          title: Id
+        token:
+          type: string
+          title: Token
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - bank
+      - id
+      - token
+      - account_id
+      - user_id
+      title: BankToken
+    BankTokenCreate:
+      properties:
+        bank:
+          type: string
+          title: Bank
+        token:
+          type: string
+          title: Token
+      type: object
+      required:
+      - bank
+      - token
+      title: BankTokenCreate
+    Body_import_transactions_transactions_import_post:
+      properties:
+        file:
+          type: string
+          format: binary
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_import_transactions_transactions_import_post
+    Body_login_users_token_post:
+      properties:
+        grant_type:
+          anyOf:
+          - type: string
+            pattern: ^password$
+          - type: 'null'
+          title: Grant Type
+        username:
+          type: string
+          title: Username
+        password:
+          type: string
+          format: password
+          title: Password
+        scope:
+          type: string
+          title: Scope
+          default: ''
+        client_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Id
+        client_secret:
+          anyOf:
+          - type: string
+          - type: 'null'
+          format: password
+          title: Client Secret
+      type: object
+      required:
+      - username
+      - password
+      title: Body_login_users_token_post
+    Category:
+      properties:
+        name:
+          type: string
+          title: Name
+        monthly_limit:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Monthly Limit
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - name
+      - id
+      - account_id
+      - user_id
+      title: Category
+    CategoryCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+        monthly_limit:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Monthly Limit
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+      type: object
+      required:
+      - name
+      title: CategoryCreate
+    CategorySummary:
+      properties:
+        category:
+          type: string
+          title: Category
+          description: Название категории
+        total:
+          type: number
+          title: Total
+          description: Сумма операций
+      type: object
+      required:
+      - category
+      - total
+      title: CategorySummary
+      description: Сводные данные по категории расходов.
+    CategoryUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        monthly_limit:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Monthly Limit
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+      type: object
+      title: CategoryUpdate
+      description: Поля для обновления категории.
+    DailySummary:
+      properties:
+        date:
+          type: string
+          format: date
+          title: Date
+          description: Дата
+        total:
+          type: number
+          title: Total
+          description: Потрачено за день
+      type: object
+      required:
+      - date
+      - total
+      title: DailySummary
+      description: Сумма расходов за конкретный день.
+    ForecastItem:
+      properties:
+        category:
+          type: string
+          title: Category
+          description: Название категории
+        spent:
+          type: number
+          title: Spent
+          description: Уже потрачено
+        forecast:
+          type: number
+          title: Forecast
+          description: Ожидаемые траты к концу месяца
+      type: object
+      required:
+      - category
+      - spent
+      - forecast
+      title: ForecastItem
+      description: Прогноз трат по категории на месяц.
+    Goal:
+      properties:
+        name:
+          type: string
+          title: Name
+        target_amount:
+          type: number
+          title: Target Amount
+        current_amount:
+          type: number
+          title: Current Amount
+          default: 0
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - name
+      - target_amount
+      - id
+      - account_id
+      - user_id
+      title: Goal
+    GoalCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+        target_amount:
+          type: number
+          title: Target Amount
+        current_amount:
+          type: number
+          title: Current Amount
+          default: 0
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+      type: object
+      required:
+      - name
+      - target_amount
+      title: GoalCreate
+    GoalDeposit:
+      properties:
+        amount:
+          type: number
+          title: Amount
+      type: object
+      required:
+      - amount
+      title: GoalDeposit
+      description: Сумма пополнения цели.
+    GoalProgress:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Идентификатор цели
+        name:
+          type: string
+          title: Name
+          description: Название цели
+        target_amount:
+          type: number
+          title: Target Amount
+          description: Сумма, которую нужно накопить
+        current_amount:
+          type: number
+          title: Current Amount
+          description: Уже накоплено
+        progress:
+          type: number
+          title: Progress
+          description: Выполнение цели в процентах
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+          description: Желаемая дата достижения
+      type: object
+      required:
+      - id
+      - name
+      - target_amount
+      - current_amount
+      - progress
+      title: GoalProgress
+      description: Текущий прогресс по цели накоплений.
+    GoalUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        target_amount:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Target Amount
+        current_amount:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Current Amount
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+      type: object
+      title: GoalUpdate
+      description: Параметры для изменения цели.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    JoinAccount:
+      properties:
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+      type: object
+      required:
+      - account_id
+      title: JoinAccount
+      description: Параметры для присоединения к существующему счёту.
+    LimitExceed:
+      properties:
+        category:
+          type: string
+          title: Category
+          description: Название категории
+        limit:
+          type: number
+          title: Limit
+          description: Установленный лимит
+        spent:
+          type: number
+          title: Spent
+          description: Фактические траты
+      type: object
+      required:
+      - category
+      - limit
+      - spent
+      title: LimitExceed
+      description: Категория, в которой превышен месячный лимит.
+    LoginRequest:
+      properties:
+        email:
+          type: string
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+      - email
+      - password
+      title: LoginRequest
+    MonthlySummary:
+      properties:
+        spent:
+          type: number
+          title: Spent
+          description: Потрачено на текущий момент
+        forecast:
+          type: number
+          title: Forecast
+          description: Ожидаемые траты к концу месяца
+      type: object
+      required:
+      - spent
+      - forecast
+      title: MonthlySummary
+      description: Итог и прогноз расходов за месяц.
+    PushSubscription:
+      properties:
+        endpoint:
+          type: string
+          title: Endpoint
+        p256dh:
+          type: string
+          title: P256Dh
+        auth:
+          type: string
+          title: Auth
+        id:
+          type: string
+          format: uuid
+          title: Id
+      type: object
+      required:
+      - endpoint
+      - p256dh
+      - auth
+      - id
+      title: PushSubscription
+    PushSubscriptionCreate:
+      properties:
+        endpoint:
+          type: string
+          title: Endpoint
+        p256dh:
+          type: string
+          title: P256Dh
+        auth:
+          type: string
+          title: Auth
+      type: object
+      required:
+      - endpoint
+      - p256dh
+      - auth
+      title: PushSubscriptionCreate
+    RecurringPayment:
+      properties:
+        name:
+          type: string
+          title: Name
+        amount:
+          type: number
+          title: Amount
+        currency:
+          type: string
+          title: Currency
+          default: RUB
+        day:
+          type: integer
+          title: Day
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category_id:
+          type: string
+          format: uuid
+          title: Category Id
+        id:
+          type: string
+          format: uuid
+          title: Id
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        active:
+          type: boolean
+          title: Active
+      type: object
+      required:
+      - name
+      - amount
+      - day
+      - category_id
+      - id
+      - account_id
+      - user_id
+      - active
+      title: RecurringPayment
+    RecurringPaymentCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+        amount:
+          type: number
+          title: Amount
+        currency:
+          type: string
+          title: Currency
+          default: RUB
+        day:
+          type: integer
+          title: Day
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category_id:
+          type: string
+          format: uuid
+          title: Category Id
+      type: object
+      required:
+      - name
+      - amount
+      - day
+      - category_id
+      title: RecurringPaymentCreate
+    RecurringPaymentUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        amount:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Amount
+        currency:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Currency
+        day:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Day
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Category Id
+        active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Active
+      type: object
+      title: RecurringPaymentUpdate
+    RefreshRequest:
+      properties:
+        refresh_token:
+          type: string
+          title: Refresh Token
+      type: object
+      required:
+      - refresh_token
+      title: RefreshRequest
+    Token:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+      type: object
+      required:
+      - access_token
+      - token_type
+      title: Token
+    TokenPair:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+        refresh_token:
+          type: string
+          title: Refresh Token
+      type: object
+      required:
+      - access_token
+      - token_type
+      - refresh_token
+      title: TokenPair
+    Transaction:
+      properties:
+        amount:
+          type: number
+          title: Amount
+        currency:
+          type: string
+          title: Currency
+          default: RUB
+        amount_rub:
+          type: number
+          title: Amount Rub
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category_id:
+          type: string
+          format: uuid
+          title: Category Id
+        id:
+          type: string
+          format: uuid
+          title: Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - amount
+      - amount_rub
+      - category_id
+      - id
+      - created_at
+      - account_id
+      - user_id
+      title: Transaction
+    TransactionCreate:
+      properties:
+        amount:
+          type: number
+          title: Amount
+        currency:
+          type: string
+          title: Currency
+          default: RUB
+        amount_rub:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Amount Rub
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category_id:
+          type: string
+          format: uuid
+          title: Category Id
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+      type: object
+      required:
+      - amount
+      - category_id
+      title: TransactionCreate
+    TransactionUpdate:
+      properties:
+        amount:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Amount
+        currency:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Currency
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        category_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Category Id
+        created_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At
+      type: object
+      title: TransactionUpdate
+      description: Параметры для обновления операции.
+    User:
+      properties:
+        email:
+          type: string
+          title: Email
+        id:
+          type: string
+          format: uuid
+          title: Id
+        is_active:
+          type: boolean
+          title: Is Active
+        account_id:
+          type: string
+          format: uuid
+          title: Account Id
+        role:
+          type: string
+          title: Role
+      type: object
+      required:
+      - email
+      - id
+      - is_active
+      - account_id
+      - role
+      title: User
+    UserCreate:
+      properties:
+        email:
+          type: string
+          title: Email
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+      - email
+      - password
+      title: UserCreate
+    UserUpdate:
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Password
+      type: object
+      title: UserUpdate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: /users/token
+tags:
+- name: Категории
+  description: Управление категориями операций
+- name: Операции
+  description: Доходы и расходы
+- name: Цели
+  description: Накопления и цели
+- name: Пользователи
+  description: Регистрация и авторизация
+- name: Аналитика
+  description: Сводные отчёты
+- name: Тинькофф
+  description: Импорт операций из банка
+- name: Банки
+  description: Импорт операций из разных банков
+- name: Регулярные платежи
+  description: Повторяющиеся операции
+- name: Счёт
+  description: Управление общим счётом
+- name: Токены
+  description: OAuth-токены банков
+- name: Задания
+  description: Фоновые задачи
+- name: OAuth
+  description: Авторизация через Тинькофф ID
+- name: Auth
+  description: Signup and JWT auth
+- name: Валюты
+  description: Курсы и конвертация
+- name: Уведомления
+  description: Web Push подписки
