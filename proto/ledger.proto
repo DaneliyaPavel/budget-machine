@@ -20,7 +20,7 @@ message PostEntryRequest {
     string user_id = 8;
 }
 
-message Transaction {
+message Txn {
     string id = 1;
     double amount = 2;
     string currency = 3;
@@ -32,24 +32,28 @@ message Transaction {
     string user_id = 9;
 }
 
-message GetBalanceRequest {
+message TxnId {
+    string id = 1;
+}
+
+message BalanceRequest {
     string account_id = 1;
     google.protobuf.Timestamp at = 2;
 }
 
-message Balance {
+message BalanceResponse {
     double amount = 1;
 }
 
-message StreamTxnsRequest {
+message StreamRequest {
     string account_id = 1;
     google.protobuf.Timestamp start = 2;
     google.protobuf.Timestamp end = 3;
 }
 
 service LedgerService {
-    rpc PostEntry(PostEntryRequest) returns (Transaction);
-    rpc GetBalance(GetBalanceRequest) returns (Balance);
-    rpc StreamTxns(StreamTxnsRequest) returns (stream Transaction);
+    rpc PostEntry(PostEntryRequest) returns (TxnId);
+    rpc GetBalance(BalanceRequest) returns (BalanceResponse);
+    rpc StreamTxns(StreamRequest) returns (stream Txn);
 }
 

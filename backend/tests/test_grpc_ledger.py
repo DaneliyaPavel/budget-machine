@@ -136,21 +136,21 @@ async def test_grpc_post_entry_and_stream():
             account_id=str(acc1.id),
             user_id=str(user.id),
         )
-        tx = await stub.PostEntry(req)
-        assert tx.amount == 100
+        tx_id = await stub.PostEntry(req)
+        assert tx_id.id
 
         bal1 = await stub.GetBalance(
-            ledger_pb2.GetBalanceRequest(account_id=str(acc1.id))
+            ledger_pb2.BalanceRequest(account_id=str(acc1.id))
         )
         bal2 = await stub.GetBalance(
-            ledger_pb2.GetBalanceRequest(account_id=str(acc2.id))
+            ledger_pb2.BalanceRequest(account_id=str(acc2.id))
         )
         assert bal1.amount == 100
         assert bal2.amount == -100
 
         txns = []
         async for item in stub.StreamTxns(
-            ledger_pb2.StreamTxnsRequest(account_id=str(acc1.id))
+            ledger_pb2.StreamRequest(account_id=str(acc1.id))
         ):
             txns.append(item)
         assert len(txns) == 1

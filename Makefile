@@ -19,8 +19,7 @@ devcontainer:
 	devcontainer up --workspace-folder .
 
 proto:
-	python -m grpc_tools.protoc -I proto --python_out=backend/app/grpc \
-		--grpclib_python_out=backend/app/grpc proto/ledger.proto
+	buf generate proto
 
 openapi:
 	python -m backend.scripts.generate_openapi
