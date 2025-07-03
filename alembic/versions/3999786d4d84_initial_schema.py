@@ -38,7 +38,9 @@ def upgrade() -> None:
         sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("email", sa.String(), nullable=False, unique=True),
         sa.Column("hashed_password", sa.String(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")
+        ),
         sa.Column("is_active", sa.Boolean(), server_default=sa.text("true")),
         sa.Column("role", sa.String(), server_default="owner"),
         sa.Column("account_id", sa.dialects.postgresql.UUID(as_uuid=True)),
@@ -66,7 +68,12 @@ def upgrade() -> None:
         sa.Column("currency", sa.String(), nullable=True),
         sa.Column("amount_rub", sa.Numeric(20, 6), nullable=False),
         sa.Column("description", sa.String()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
         sa.Column("category_id", sa.dialects.postgresql.UUID(as_uuid=True)),
         sa.Column("account_id", sa.dialects.postgresql.UUID(as_uuid=True)),
         sa.Column("user_id", sa.dialects.postgresql.UUID(as_uuid=True)),
@@ -143,7 +150,9 @@ def upgrade() -> None:
         sa.UniqueConstraint("account_id", "endpoint"),
     )
 
-    op.execute("SELECT create_hypertable('transactions', 'created_at', if_not_exists => TRUE)")
+    op.execute(
+        "SELECT create_hypertable('transactions', 'created_at', if_not_exists => TRUE)"
+    )
 
     op.execute(
         """
