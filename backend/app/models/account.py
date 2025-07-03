@@ -30,7 +30,6 @@ class Account(Base):
         "User", back_populates="account", foreign_keys="User.account_id"
     )
     categories = relationship("Category", back_populates="account")
-    transactions = relationship("Transaction", back_populates="account")
     goals = relationship("Goal", back_populates="account")
     recurring_payments = relationship("RecurringPayment", back_populates="account")
     tokens = relationship("BankToken", back_populates="account")

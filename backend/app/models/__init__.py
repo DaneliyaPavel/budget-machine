@@ -1,4 +1,4 @@
-from .user import User as User
+from .user import User as User, UserRole as UserRole
 from .account import Account as Account, AccountType as AccountType
 from .currency import Currency as Currency
 from .category import Category as Category
@@ -18,6 +18,7 @@ __all__ = [
     "Transaction",
     "Posting",
     "PostingSide",
+    "UserRole",
     "Goal",
     "RecurringPayment",
     "BankToken",

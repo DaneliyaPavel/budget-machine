@@ -1,9 +1,17 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, ForeignKey
+from datetime import datetime, timezone
+from enum import Enum as PyEnum
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from ..database import Base
+
+
+class UserRole(PyEnum):
+    owner = "owner"
+    member = "member"
+    readonly = "readonly"
 
 
 class User(Base):
@@ -13,9 +21,10 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, default=True)
-    role = Column(String, default="owner")
+    role = Column(SAEnum(UserRole), default=UserRole.owner)
 
     account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"))
     account = relationship("Account", back_populates="users", foreign_keys=[account_id])
