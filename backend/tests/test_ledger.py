@@ -27,63 +27,74 @@ async def setup_db():
     await old_engine.dispose()
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-    database.engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
-    database.async_session = async_sessionmaker(database.engine, expire_on_commit=False)
+    engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
+    sessionmaker = async_sessionmaker(engine, expire_on_commit=False)
 
-    async with database.engine.begin() as conn:
-        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
-        await conn.execute(text("CREATE SCHEMA public"))
-        await conn.run_sync(database.Base.metadata.create_all)
-        uid = uuid.uuid4()
-        await conn.execute(
-            text(
-                "INSERT INTO currencies(id, code, name, symbol, precision) "
-                "VALUES(:id, 'RUB', 'Ruble', '₽', 2)"
-            ),
-            {"id": uid},
-        )
-        await conn.execute(
-            text(
-                """
-                CREATE OR REPLACE FUNCTION check_postings_balance()
-                RETURNS TRIGGER AS $$
-                DECLARE
-                    txid uuid;
-                    deb NUMERIC;
-                    cred NUMERIC;
-                BEGIN
-                    IF TG_OP = 'DELETE' THEN
-                        txid := OLD.transaction_id;
-                    ELSE
-                        txid := NEW.transaction_id;
-                    END IF;
-                    SELECT COALESCE(SUM(amount) FILTER (WHERE side='debit'), 0),
-                           COALESCE(SUM(amount) FILTER (WHERE side='credit'), 0)
-                    INTO deb, cred
-                    FROM postings WHERE transaction_id = txid;
-                    IF deb <> cred THEN
-                        RAISE EXCEPTION 'Debit and credit totals do not match for transaction %', txid;
-                    END IF;
-                    IF TG_OP = 'DELETE' THEN
-                        RETURN OLD;
-                    ELSE
-                        RETURN NEW;
-                    END IF;
-                END;
-                $$ LANGUAGE plpgsql;
-                """
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+            await conn.execute(text("CREATE SCHEMA public"))
+            await conn.run_sync(database.Base.metadata.create_all)
+            uid = uuid.uuid4()
+            await conn.execute(
+                text(
+                    "INSERT INTO currencies(id, code, name, symbol, precision) "
+                    "VALUES(:id, 'RUB', 'Ruble', '₽', 2)"
+                ),
+                {"id": uid},
             )
-        )
-        await conn.execute(
-            text(
-                """
-                CREATE CONSTRAINT TRIGGER postings_balance_check
-                AFTER INSERT OR UPDATE OR DELETE ON postings
-                DEFERRABLE INITIALLY DEFERRED
-                FOR EACH ROW EXECUTE FUNCTION check_postings_balance()
-                """
+            await conn.execute(
+                text(
+                    """
+                    CREATE OR REPLACE FUNCTION check_postings_balance()
+                    RETURNS TRIGGER AS $$
+                    DECLARE
+                        txid uuid;
+                        deb NUMERIC;
+                        cred NUMERIC;
+                    BEGIN
+                        IF TG_OP = 'DELETE' THEN
+                            txid := OLD.transaction_id;
+                        ELSE
+                            txid := NEW.transaction_id;
+                        END IF;
+                        SELECT COALESCE(SUM(amount) FILTER (WHERE side='debit'), 0),
+                               COALESCE(SUM(amount) FILTER (WHERE side='credit'), 0)
+                        INTO deb, cred
+                        FROM postings WHERE transaction_id = txid;
+                        IF deb <> cred THEN
+                            RAISE EXCEPTION 'Debit and credit totals do not match for transaction %', txid;
+                        END IF;
+                        IF TG_OP = 'DELETE' THEN
+                            RETURN OLD;
+                        ELSE
+                            RETURN NEW;
+                        END IF;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                    """
+                )
             )
-        )
+            await conn.execute(
+                text(
+                    """
+                    CREATE CONSTRAINT TRIGGER postings_balance_check
+                    AFTER INSERT OR UPDATE OR DELETE ON postings
+                    DEFERRABLE INITIALLY DEFERRED
+                    FOR EACH ROW EXECUTE FUNCTION check_postings_balance()
+                    """
+                )
+            )
+    except Exception:
+        await engine.dispose()
+        database.engine = old_engine
+        database.async_session = old_sessionmaker
+        if old_url is not None:
+            os.environ["DATABASE_URL"] = old_url
+        pytest.skip("PostgreSQL server is not available")
+
+    database.engine = engine
+    database.async_session = sessionmaker
     yield
     async with database.engine.begin() as conn:
         await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
