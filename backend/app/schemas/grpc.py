@@ -26,7 +26,7 @@ class PostEntryRequest(BaseModel):
     model_config = STRICT
 
 
-class Transaction(BaseModel):
+class Txn(BaseModel):
     id: UUID
     amount: float
     currency: str
@@ -40,20 +40,26 @@ class Transaction(BaseModel):
     model_config = STRICT
 
 
-class GetBalanceRequest(BaseModel):
+class TxnId(BaseModel):
+    id: UUID
+
+    model_config = STRICT
+
+
+class BalanceRequest(BaseModel):
     account_id: UUID
     at: datetime | None = None
 
     model_config = STRICT
 
 
-class Balance(BaseModel):
+class BalanceResponse(BaseModel):
     amount: float
 
     model_config = STRICT
 
 
-class StreamTxnsRequest(BaseModel):
+class StreamRequest(BaseModel):
     account_id: UUID
     start: datetime | None = None
     end: datetime | None = None

@@ -48,16 +48,8 @@ class LedgerService(ledger_grpc.LedgerServiceBase):
             tx = await ledger.post_entry(
                 session, txn, postings, UUID(request.account_id), UUID(request.user_id)
             )
-        response = ledger_pb2.Transaction(
+        response = ledger_pb2.TxnId(
             id=str(tx.id),
-            amount=tx.amount,
-            currency=tx.currency,
-            amount_rub=tx.amount_rub,
-            description=tx.description or "",
-            category_id=str(tx.category_id),
-            created_at=_dt_to_ts(tx.created_at),
-            account_id=str(tx.account_id),
-            user_id=str(tx.user_id),
         )
         await stream.send_message(response)
 
@@ -70,7 +62,7 @@ class LedgerService(ledger_grpc.LedgerServiceBase):
                 UUID(request.account_id),
                 _ts_to_dt(request.at),
             )
-        await stream.send_message(ledger_pb2.Balance(amount=amount))
+        await stream.send_message(ledger_pb2.BalanceResponse(amount=amount))
 
     async def StreamTxns(self, stream) -> None:
         request = await stream.recv_message()
@@ -83,7 +75,7 @@ class LedgerService(ledger_grpc.LedgerServiceBase):
                 _ts_to_dt(request.end),
             ):
                 await stream.send_message(
-                    ledger_pb2.Transaction(
+                    ledger_pb2.Txn(
                         id=str(tx.id),
                         amount=tx.amount,
                         currency=tx.currency,

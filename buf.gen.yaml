@@ -1,0 +1,7 @@
+version: v1
+plugins:
+  - name: python
+    out: backend/app/grpc
+  - name: grpclib_python
+    out: backend/app/grpc
+    opt: paths=source_relative
