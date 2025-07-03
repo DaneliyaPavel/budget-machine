@@ -33,6 +33,6 @@ def test_tinkoff_oauth_flow(monkeypatch):
         token = r.json()["access_token"]
 
         headers = {"Authorization": f"Bearer {token}"}
-        r = client.get("/пользователи/me", headers=headers)
+        r = client.get("/users/me", headers=headers)
         assert r.status_code == 200
         assert r.json()["email"] == "oauth@example.com"

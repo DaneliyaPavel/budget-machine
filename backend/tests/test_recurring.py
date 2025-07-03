@@ -15,10 +15,10 @@ from backend.app.main import app  # noqa: E402
 
 def _login(client, email="test@example.com", password="pass"):
     user = {"email": email, "password": password}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": email, "password": password},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -32,7 +32,7 @@ def test_recurring_crud():
         headers = {"Authorization": f"Bearer {token}"}
 
         # create category for payment
-        r = client.post("/категории/", json={"name": "Подписки"}, headers=headers)
+        r = client.post("/categories/", json={"name": "Подписки"}, headers=headers)
         assert r.status_code == 200
         cat_id = r.json()["id"]
 
@@ -72,7 +72,7 @@ def test_recurring_task_creates_transactions():
         headers = {"Authorization": f"Bearer {token}"}
 
         # category
-        r = client.post("/категории/", json={"name": "Подписки"}, headers=headers)
+        r = client.post("/categories/", json={"name": "Подписки"}, headers=headers)
         cat_id = r.json()["id"]
 
         # create recurring payment for day 5
@@ -92,6 +92,6 @@ def test_recurring_task_creates_transactions():
         created = tasks.process_recurring_task("2025-06-05T00:00:00")
         assert created == 1
 
-        r = client.get("/операции/", headers=headers)
+        r = client.get("/transactions/", headers=headers)
         assert r.status_code == 200
         assert len(r.json()) == 1

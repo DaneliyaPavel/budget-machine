@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import database, crud
 from ..models import User
-from .users import get_current_user
+from ..api.v1.users import get_current_user
 from ..banks.tinkoff import TinkoffConnector
 
 router = APIRouter(prefix="/тинькофф", tags=["Тинькофф"])

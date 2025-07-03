@@ -3,22 +3,24 @@
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 from .routers import (
-    transactions,
-    categories,
     goals,
-    users,
     analytics,
     tinkoff,
     banks,
     recurring,
-    accounts,
     tokens,
     jobs,
     oauth,
-    currency,
     push,
 )
-from .api.v1 import auth as auth_v1
+from .api.v1 import (
+    auth as auth_v1,
+    accounts as accounts_v1,
+    categories as categories_v1,
+    transactions as transactions_v1,
+    users as users_v1,
+    currencies as currencies_v1,
+)
 from .database import engine, Base
 from .kafka_producer import close as close_producer
 from contextlib import asynccontextmanager
@@ -63,18 +65,18 @@ app = FastAPI(
 )
 
 
-app.include_router(categories.router)
-app.include_router(transactions.router)
+app.include_router(categories_v1.router)
+app.include_router(transactions_v1.router)
 app.include_router(goals.router)
-app.include_router(users.router)
+app.include_router(users_v1.router)
 app.include_router(analytics.router)
 app.include_router(tinkoff.router)
 app.include_router(banks.router)
 app.include_router(recurring.router)
-app.include_router(accounts.router)
+app.include_router(accounts_v1.router)
 app.include_router(tokens.router)
 app.include_router(jobs.router)
 app.include_router(oauth.router)
 app.include_router(auth_v1.router)
-app.include_router(currency.router)
+app.include_router(currencies_v1.router)
 app.include_router(push.router)

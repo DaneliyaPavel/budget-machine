@@ -6,7 +6,7 @@ import uuid
 
 from .. import crud, schemas, database
 from ..models import User
-from .users import get_current_user
+from ..api.v1.users import get_current_user
 
 router = APIRouter(prefix="/регулярные", tags=["Регулярные платежи"])
 

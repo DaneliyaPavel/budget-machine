@@ -16,22 +16,22 @@ from backend.app.main import app  # noqa: E402
 def test_account_read_and_update():
     with TestClient(app) as client:
         user = {"email": "acc@example.com", "password": "pass"}
-        r = client.post("/пользователи/", json=user)
+        r = client.post("/users/", json=user)
         assert r.status_code == 200
         token = client.post(
-            "/пользователи/token",
+            "/users/token",
             data={"username": user["email"], "password": user["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         ).json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        r = client.get("/счёт/", headers=headers)
+        r = client.get("/accounts/me", headers=headers)
         assert r.status_code == 200
         data = r.json()
         assert data["name"] == "Личный бюджет"
 
         r = client.patch(
-            "/счёт/",
+            "/accounts/me",
             json={"id": data["id"], "name": "Семейный", "currency_code": "USD"},
             headers=headers,
         )
@@ -39,3 +39,7 @@ def test_account_read_and_update():
         result = r.json()
         assert result["name"] == "Семейный"
         assert result["currency_code"] == "USD"
+
+        r = client.get(f"/accounts/{data['id']}/balance", headers=headers)
+        assert r.status_code == 200
+        assert "balance" in r.json()

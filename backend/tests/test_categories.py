@@ -16,7 +16,7 @@ from backend.app.main import app  # noqa: E402
 
 def _create_user(client):
     user = {"email": "cat@example.com", "password": "pass"}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     assert r.json()["role"] == "owner"
     return user
@@ -24,7 +24,7 @@ def _create_user(client):
 
 def _login(client, user):
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": user["email"], "password": user["password"]},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -39,7 +39,7 @@ def test_category_crud():
         headers = {"Authorization": f"Bearer {token}"}
 
         r = client.post(
-            "/категории/",
+            "/categories/",
             json={"name": "Продукты", "monthly_limit": 1000},
             headers=headers,
         )
@@ -48,23 +48,23 @@ def test_category_crud():
         cat_id = data["id"]
         assert data["name"] == "Продукты"
 
-        r = client.get("/категории/", headers=headers)
+        r = client.get("/categories/", headers=headers)
         assert r.status_code == 200
         cats = r.json()
         assert len(cats) == 1
         assert cats[0]["id"] == cat_id
 
         r = client.patch(
-            f"/категории/{cat_id}",
+            f"/categories/{cat_id}",
             json={"monthly_limit": 2000},
             headers=headers,
         )
         assert r.status_code == 200
         assert r.json()["monthly_limit"] == 2000
 
-        r = client.delete(f"/категории/{cat_id}", headers=headers)
+        r = client.delete(f"/categories/{cat_id}", headers=headers)
         assert r.status_code == 204
-        r = client.get("/категории/", headers=headers)
+        r = client.get("/categories/", headers=headers)
         assert r.status_code == 200
         assert r.json() == []
 
@@ -72,16 +72,16 @@ def test_category_crud():
 def test_subcategory_creation():
     with TestClient(app) as client:
         user = {"email": "cat2@example.com", "password": "pass"}
-        r = client.post("/пользователи/", json=user)
+        r = client.post("/users/", json=user)
         assert r.status_code == 200
         token = _login(client, user)
         headers = {"Authorization": f"Bearer {token}"}
 
-        r = client.post("/категории/", json={"name": "Быт"}, headers=headers)
+        r = client.post("/categories/", json={"name": "Быт"}, headers=headers)
         parent_id = r.json()["id"]
 
         r = client.post(
-            "/категории/",
+            "/categories/",
             json={"name": "Химия", "parent_id": parent_id},
             headers=headers,
         )
@@ -89,7 +89,7 @@ def test_subcategory_creation():
         sub_id = r.json()["id"]
         assert r.json()["parent_id"] == parent_id
 
-        r = client.get("/категории/", headers=headers)
+        r = client.get("/categories/", headers=headers)
         data = {c["id"]: c for c in r.json()}
         assert parent_id in data and sub_id in data
         assert data[sub_id]["parent_id"] == parent_id

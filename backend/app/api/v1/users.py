@@ -1,24 +1,25 @@
-"""Маршруты аутентификации пользователей."""
+from __future__ import annotations
+
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-import uuid
-from .. import crud, schemas, database, security
-from ..models import User
-from ..security import verify_password, create_access_token
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter(prefix="/пользователи", tags=["Пользователи"])
+from ... import crud, schemas, database, security
+from ...models import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/пользователи/token")
+router = APIRouter(prefix="/users", tags=["Пользователи"])
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
 
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     session: AsyncSession = Depends(database.get_session),
 ) -> User:
-    """Получить текущего пользователя по JWT-токену."""
+    """Вернуть текущего пользователя по JWT."""
     try:
         payload = jwt.decode(
             token, security.SECRET_KEY, algorithms=[security.ALGORITHM]
@@ -26,12 +27,12 @@ async def get_current_user(
         email: str = payload.get("sub")
     except JWTError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный токен"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
     user = await crud.get_user_by_email(session, email)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Пользователь не найден"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
     return user
 
@@ -40,7 +41,7 @@ async def get_current_user(
 async def create_user(
     user: schemas.UserCreate, session: AsyncSession = Depends(database.get_session)
 ):
-    """Регистрация нового пользователя."""
+    """Зарегистрировать нового пользователя."""
     db_user = await crud.get_user_by_email(session, user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -56,16 +57,16 @@ async def join_account(
     """Присоединиться к существующему счёту."""
     user = await crud.join_account(session, current_user, data.account_id)
     if not user:
-        raise HTTPException(status_code=404, detail="Счёт не найден")
+        raise HTTPException(status_code=404, detail="Account not found")
     return user
 
 
-@router.get("/участники", response_model=list[schemas.User])
+@router.get("/members", response_model=list[schemas.User])
 async def account_members(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(database.get_session),
 ):
-    """Список участников текущего счёта."""
+    """Список участников счёта."""
     return await crud.get_account_users(session, current_user.account_id)
 
 
@@ -75,12 +76,12 @@ async def remove_user(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(database.get_session),
 ):
-    """Удалить пользователя из счёта (только владелец)."""
+    """Удалить пользователя из счёта."""
     if current_user.role != "owner" and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Недостаточно прав")
+        raise HTTPException(status_code=403, detail="Forbidden")
     ok = await crud.delete_user(session, user_id, current_user.account_id)
     if not ok:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        raise HTTPException(status_code=404, detail="User not found")
     return None
 
 
@@ -89,20 +90,22 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: AsyncSession = Depends(database.get_session),
 ):
-    """Получение JWT-токена."""
+    """Выдать JWT-токен."""
     user = await crud.get_user_by_email(session, form_data.username)
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not security.verify_password(
+        form_data.password, user.hashed_password
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
-    access_token = create_access_token({"sub": user.email})
+    access_token = security.create_access_token({"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get("/me", response_model=schemas.User)
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    """Получить данные текущего пользователя."""
+    """Вернуть текущего пользователя."""
     return current_user
 
 

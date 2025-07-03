@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import crud, schemas, database
 from ..models import User
-from .users import get_current_user
+from ..api.v1.users import get_current_user
 import uuid
 
 router = APIRouter(prefix="/цели", tags=["Цели"])

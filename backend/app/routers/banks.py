@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import database, crud
 from ..models import User
-from .users import get_current_user
+from ..api.v1.users import get_current_user
 from ..banks import get_connector
 from ..kafka_producer import publish
 

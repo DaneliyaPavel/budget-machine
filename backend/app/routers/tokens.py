@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import crud, database, schemas
 from ..models import User
-from .users import get_current_user
+from ..api.v1.users import get_current_user
 
 router = APIRouter(prefix="/токены", tags=["Токены"])
 

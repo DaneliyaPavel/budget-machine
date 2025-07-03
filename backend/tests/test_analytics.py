@@ -15,10 +15,10 @@ from backend.app.main import app  # noqa: E402
 
 def _login(client, email="ana@example.com", password="pass"):
     user = {"email": email, "password": password}
-    r = client.post("/пользователи/", json=user)
+    r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
-        "/пользователи/token",
+        "/users/token",
         data={"username": email, "password": password},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
@@ -33,7 +33,7 @@ def test_analytics_endpoints():
 
         # create category
         r = client.post(
-            "/категории/", json={"name": "Еда", "monthly_limit": 200}, headers=headers
+            "/categories/", json={"name": "Еда", "monthly_limit": 200}, headers=headers
         )
         assert r.status_code == 200
         cat_id = r.json()["id"]
@@ -53,8 +53,8 @@ def test_analytics_endpoints():
             "category_id": cat_id,
             "created_at": "2025-06-15T12:00:00",
         }
-        client.post("/операции/", json=tx1, headers=headers)
-        client.post("/операции/", json=tx2, headers=headers)
+        client.post("/transactions/", json=tx1, headers=headers)
+        client.post("/transactions/", json=tx2, headers=headers)
 
         # create goal and deposit
         r = client.post(
