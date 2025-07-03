@@ -5,6 +5,9 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from uuid import UUID
 
+STRICT = ConfigDict(strict=True)
+ORM_STRICT = ConfigDict(from_attributes=True, strict=True)
+
 
 class Account(BaseModel):
     """Информация об общем счёте."""
@@ -15,7 +18,7 @@ class Account(BaseModel):
     type: str = "cash"
     user_id: UUID | None = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT
 
 
 class CategoryBase(BaseModel):
@@ -25,9 +28,11 @@ class CategoryBase(BaseModel):
     monthly_limit: float | None = None
     parent_id: UUID | None = None
 
+    model_config = STRICT
+
 
 class CategoryCreate(CategoryBase):
-    pass
+    model_config = STRICT
 
 
 class CategoryUpdate(BaseModel):
@@ -37,13 +42,15 @@ class CategoryUpdate(BaseModel):
     monthly_limit: float | None = None
     parent_id: UUID | None = None
 
+    model_config = STRICT
+
 
 class Category(CategoryBase):
     id: UUID
     account_id: UUID
     user_id: UUID
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT
 
 
 class TransactionBase(BaseModel):
@@ -55,10 +62,13 @@ class TransactionBase(BaseModel):
     description: Optional[str] = None
     category_id: UUID
 
+    model_config = STRICT
+
 
 class TransactionCreate(TransactionBase):
     created_at: datetime | None = None
-    pass
+
+    model_config = STRICT
 
 
 class TransactionUpdate(BaseModel):
@@ -70,6 +80,8 @@ class TransactionUpdate(BaseModel):
     category_id: UUID | None = None
     created_at: datetime | None = None
 
+    model_config = STRICT
+
 
 class Transaction(TransactionBase):
     id: UUID
@@ -78,7 +90,7 @@ class Transaction(TransactionBase):
     account_id: UUID
     user_id: UUID
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT
 
 
 class PostingBase(BaseModel):
@@ -86,16 +98,18 @@ class PostingBase(BaseModel):
     side: str
     account_id: UUID
 
+    model_config = STRICT
+
 
 class PostingCreate(PostingBase):
-    pass
+    model_config = STRICT
 
 
 class Posting(PostingBase):
     id: UUID
     transaction_id: UUID
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT
 
 
 class GoalBase(BaseModel):
@@ -106,9 +120,11 @@ class GoalBase(BaseModel):
     current_amount: float = 0
     due_date: Optional[datetime] = None
 
+    model_config = STRICT
+
 
 class GoalCreate(GoalBase):
-    pass
+    model_config = STRICT
 
 
 class GoalUpdate(BaseModel):
@@ -119,11 +135,15 @@ class GoalUpdate(BaseModel):
     current_amount: float | None = None
     due_date: datetime | None = None
 
+    model_config = STRICT
+
 
 class GoalDeposit(BaseModel):
     """Сумма пополнения цели."""
 
     amount: float
+
+    model_config = STRICT
 
 
 class Goal(GoalBase):
@@ -131,7 +151,7 @@ class Goal(GoalBase):
     account_id: UUID
     user_id: UUID
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT
 
 
 class RecurringPaymentBase(BaseModel):
@@ -144,9 +164,11 @@ class RecurringPaymentBase(BaseModel):
     description: str | None = None
     category_id: UUID
 
+    model_config = STRICT
+
 
 class RecurringPaymentCreate(RecurringPaymentBase):
-    pass
+    model_config = STRICT
 
 
 class RecurringPaymentUpdate(BaseModel):
@@ -158,6 +180,8 @@ class RecurringPaymentUpdate(BaseModel):
     category_id: UUID | None = None
     active: bool | None = None
 
+    model_config = STRICT
+
 
 class RecurringPayment(RecurringPaymentBase):
     id: UUID
@@ -165,7 +189,7 @@ class RecurringPayment(RecurringPaymentBase):
     user_id: UUID
     active: bool
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT
 
 
 class BankTokenBase(BaseModel):
@@ -173,9 +197,13 @@ class BankTokenBase(BaseModel):
 
     bank: str
 
+    model_config = STRICT
+
 
 class BankTokenCreate(BankTokenBase):
     token: str
+
+    model_config = STRICT
 
 
 class BankToken(BankTokenBase):
@@ -184,7 +212,7 @@ class BankToken(BankTokenBase):
     account_id: UUID
     user_id: UUID
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT
 
 
 class UserBase(BaseModel):
@@ -192,20 +220,28 @@ class UserBase(BaseModel):
 
     email: str
 
+    model_config = STRICT
+
 
 class UserCreate(UserBase):
     password: str
+
+    model_config = STRICT
 
 
 class UserUpdate(BaseModel):
     email: str | None = None
     password: str | None = None
 
+    model_config = STRICT
+
 
 class JoinAccount(BaseModel):
     """Параметры для присоединения к существующему счёту."""
 
     account_id: UUID
+
+    model_config = STRICT
 
 
 class User(UserBase):
@@ -214,16 +250,41 @@ class User(UserBase):
     account_id: UUID
     role: str
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT
 
 
 class Token(BaseModel):
     access_token: str
     token_type: str
 
+    model_config = STRICT
+
 
 class TokenPair(Token):
     refresh_token: str
+
+    model_config = STRICT
+
+
+class TokenPayload(BaseModel):
+    sub: str | None = None
+    exp: int | None = None
+    type: str | None = None
+
+    model_config = STRICT
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+    model_config = STRICT
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+    model_config = STRICT
 
 
 class CategorySummary(BaseModel):
@@ -231,6 +292,8 @@ class CategorySummary(BaseModel):
 
     category: str = Field(..., description="Название категории")
     total: float = Field(..., description="Сумма операций")
+
+    model_config = STRICT
 
 
 class LimitExceed(BaseModel):
@@ -240,6 +303,8 @@ class LimitExceed(BaseModel):
     limit: float = Field(..., description="Установленный лимит")
     spent: float = Field(..., description="Фактические траты")
 
+    model_config = STRICT
+
 
 class ForecastItem(BaseModel):
     """Прогноз трат по категории на месяц."""
@@ -248,6 +313,8 @@ class ForecastItem(BaseModel):
     spent: float = Field(..., description="Уже потрачено")
     forecast: float = Field(..., description="Ожидаемые траты к концу месяца")
 
+    model_config = STRICT
+
 
 class DailySummary(BaseModel):
     """Сумма расходов за конкретный день."""
@@ -255,12 +322,16 @@ class DailySummary(BaseModel):
     date: date_ = Field(..., description="Дата")
     total: float = Field(..., description="Потрачено за день")
 
+    model_config = STRICT
+
 
 class MonthlySummary(BaseModel):
     """Итог и прогноз расходов за месяц."""
 
     spent: float = Field(..., description="Потрачено на текущий момент")
     forecast: float = Field(..., description="Ожидаемые траты к концу месяца")
+
+    model_config = STRICT
 
 
 class GoalProgress(BaseModel):
@@ -273,18 +344,22 @@ class GoalProgress(BaseModel):
     progress: float = Field(..., description="Выполнение цели в процентах")
     due_date: datetime | None = Field(None, description="Желаемая дата достижения")
 
+    model_config = STRICT
+
 
 class PushSubscriptionBase(BaseModel):
     endpoint: str
     p256dh: str
     auth: str
 
+    model_config = STRICT
+
 
 class PushSubscriptionCreate(PushSubscriptionBase):
-    pass
+    model_config = STRICT
 
 
 class PushSubscription(PushSubscriptionBase):
     id: UUID
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ORM_STRICT

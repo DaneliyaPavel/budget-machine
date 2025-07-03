@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ... import crud, schemas, database
 from ...core import security
-from pydantic import BaseModel
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -25,20 +24,9 @@ async def signup(
     return await crud.create_user(session, user)
 
 
-class LoginRequest(BaseModel):
-    email: str
-    password: str
-
-
-class TokenPair(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-
-
-@router.post("/login", response_model=TokenPair)
+@router.post("/login", response_model=schemas.TokenPair)
 async def login(
-    data: LoginRequest, session: AsyncSession = Depends(database.get_session)
+    data: schemas.LoginRequest, session: AsyncSession = Depends(database.get_session)
 ):
     """Аутентифицировать пользователя и вернуть токены."""
     user = await crud.get_user_by_email(session, data.email)
@@ -55,13 +43,9 @@ async def login(
     }
 
 
-class RefreshRequest(BaseModel):
-    refresh_token: str
-
-
-@router.post("/refresh", response_model=TokenPair)
+@router.post("/refresh", response_model=schemas.TokenPair)
 async def refresh(
-    data: RefreshRequest, session: AsyncSession = Depends(database.get_session)
+    data: schemas.RefreshRequest, session: AsyncSession = Depends(database.get_session)
 ):
     """Обновить access-токен по refresh JWT."""
     try:
