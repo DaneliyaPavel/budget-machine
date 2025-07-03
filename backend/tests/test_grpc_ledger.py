@@ -139,12 +139,8 @@ async def test_grpc_post_entry_and_stream():
         tx_id = await stub.PostEntry(req)
         assert tx_id.id
 
-        bal1 = await stub.GetBalance(
-            ledger_pb2.BalanceRequest(account_id=str(acc1.id))
-        )
-        bal2 = await stub.GetBalance(
-            ledger_pb2.BalanceRequest(account_id=str(acc2.id))
-        )
+        bal1 = await stub.GetBalance(ledger_pb2.BalanceRequest(account_id=str(acc1.id)))
+        bal2 = await stub.GetBalance(ledger_pb2.BalanceRequest(account_id=str(acc2.id)))
         assert bal1.amount == 100
         assert bal2.amount == -100
 

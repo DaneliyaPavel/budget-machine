@@ -1,14 +1,15 @@
-import asyncio
 import pytest
 
-from backend.app import models, schemas, crud, currency
+from backend.app import schemas, crud, currency
 from backend.app.database import async_session
 from backend.app.services import ledger
 
 
 @pytest.mark.asyncio
 async def test_post_entry_and_balance(session, monkeypatch):
-    user = await crud.create_user(session, schemas.UserCreate(email="a@b.c", password="Pwd123$"))
+    user = await crud.create_user(
+        session, schemas.UserCreate(email="a@b.c", password="Pwd123$")
+    )
     category = await crud.create_category(
         session, schemas.CategoryCreate(name="Food"), user.account_id, user.id
     )

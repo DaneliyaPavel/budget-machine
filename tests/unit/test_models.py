@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timezone
 
 from backend.app import models
 
@@ -7,9 +8,6 @@ def test_account_currency_immutable():
     acc = models.Account(name="Test", currency_code="RUB")
     with pytest.raises(ValueError):
         acc.currency_code = "USD"
-
-
-from datetime import datetime, timezone
 
 
 def test_transaction_created_at_tz():
