@@ -26,12 +26,12 @@ async def summary_by_category(
     current_user: User = Depends(get_current_user),
 ):
     """Сумма операций по категориям за месяц."""
-    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    start = datetime(year, month, 1, tzinfo=timezone.utc).replace(tzinfo=None)
     end = (
         datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         if month == 12
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
-    )
+    ).replace(tzinfo=None)
     rows = await crud.transactions_summary_by_category(
         session, start, end, current_user.account_id
     )
@@ -56,12 +56,12 @@ async def limits_check(
     current_user: User = Depends(get_current_user),
 ):
     """Категории, где траты превысили лимит."""
-    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    start = datetime(year, month, 1, tzinfo=timezone.utc).replace(tzinfo=None)
     end = (
         datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         if month == 12
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
-    )
+    ).replace(tzinfo=None)
     rows = await crud.categories_over_limit(
         session, start, end, current_user.account_id
     )
@@ -95,12 +95,12 @@ async def forecast(
     current_user: User = Depends(get_current_user),
 ):
     """Прогноз расходов по категориям."""
-    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    start = datetime(year, month, 1, tzinfo=timezone.utc).replace(tzinfo=None)
     end = (
         datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         if month == 12
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
-    )
+    ).replace(tzinfo=None)
     rows = await crud.forecast_by_category(session, start, end, current_user.account_id)
     return [
         schemas.ForecastItem(category=r[0], spent=float(r[1]), forecast=float(r[2]))
@@ -122,12 +122,12 @@ async def summary_by_day(
     current_user: User = Depends(get_current_user),
 ):
     """Траты по дням за месяц."""
-    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    start = datetime(year, month, 1, tzinfo=timezone.utc).replace(tzinfo=None)
     end = (
         datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         if month == 12
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
-    )
+    ).replace(tzinfo=None)
     rows = await crud.daily_expenses(session, start, end, current_user.account_id)
     result: list[schemas.DailySummary] = []
     for r in rows:
@@ -154,12 +154,12 @@ async def balance_overview(
     current_user: User = Depends(get_current_user),
 ):
     """Сколько уже потрачено и прогноз расходов."""
-    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    start = datetime(year, month, 1, tzinfo=timezone.utc).replace(tzinfo=None)
     end = (
         datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         if month == 12
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
-    )
+    ).replace(tzinfo=None)
     spent, forecast_val = await crud.monthly_overview(
         session, start, end, current_user.account_id
     )
