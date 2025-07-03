@@ -101,4 +101,3 @@ async def test_post_entry_mismatched_totals(session):
     async with async_session() as db:
         with pytest.raises(Exception):
             await ledger.post_entry(db, txn, postings, user.account_id, user.id)
-
