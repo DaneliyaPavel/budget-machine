@@ -17,6 +17,26 @@ make ci   # локальный запуск ruff, black, mypy и pytest
 make devcontainer
 ```
 
+### Миграции и документация
+
+Перед первым запуском выполните миграции базы данных:
+
+```bash
+alembic upgrade head
+```
+
+Файл OpenAPI можно сгенерировать командой:
+
+```bash
+make openapi
+```
+
+Для создания демонстрационного пользователя выполните:
+
+```bash
+make demo_user
+```
+
 Полные примеры запросов смотрите в [docs/examples.md](docs/examples.md). Инструкции по развёртыванию доступны в [docs/deployment.md](docs/deployment.md).
 
 ## Структура проекта
@@ -29,6 +49,20 @@ make devcontainer
 - `frontend/web` — веб-клиент на Next.js
 - `services/` — дополнительные сервисы
 - `docs/` — документация
+
+## gRPC
+
+Сервис LedgerService можно запустить командой:
+
+```bash
+python -m backend.app.grpc.server
+```
+
+Пример запроса с использованием `grpcurl`:
+
+```bash
+grpcurl -plaintext -d '{"account_id":"<uuid>"}' localhost:50051 ledger.LedgerService.GetBalance
+```
 
 ## Дополнительные зависимости
 

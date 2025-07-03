@@ -1,4 +1,5 @@
-.PHONY: dev ci lint test devcontainer proto openapi
+.PHONY: dev ci lint test devcontainer proto openapi demo_user
+
 
 dev:
 	python -m webbrowser http://localhost:8000/docs &
@@ -23,3 +24,6 @@ proto:
 
 openapi:
 	python -m backend.scripts.generate_openapi
+
+demo_user:
+	python -m backend.scripts.create_demo_user

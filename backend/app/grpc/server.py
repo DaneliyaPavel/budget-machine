@@ -101,3 +101,15 @@ def serve(host: str = "0.0.0.0", port: int = 50051) -> Server:
     service = LedgerService()
     server = Server([service])
     return server
+
+
+async def _main(host: str = "0.0.0.0", port: int = 50051) -> None:
+    server = serve()
+    await server.start(host, port)
+    await server.wait_closed()
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(_main())
