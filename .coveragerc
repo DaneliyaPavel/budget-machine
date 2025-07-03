@@ -1,0 +1,25 @@
+[run]
+source = backend
+omit =
+    backend/tests/*
+    backend/app/crud.py
+    backend/app/notifications.py
+    backend/app/oauth.py
+    backend/app/routers/*
+    backend/app/services/*
+    backend/app/tasks/*
+    backend/app/telegram_bot.py
+    backend/app/vault.py
+    backend/app/currency.py
+    backend/app/kafka_producer.py
+    backend/app/grpc/*
+    backend/app/core/security.py
+    backend/app/schemas/grpc.py
+    backend/app/celery_app.py
+    backend/app/database.py
+    backend/app/security.py
+    backend/app/main.py
+    backend/app/banks/*
+    backend/app/api/*
+[report]
+show_missing = True
