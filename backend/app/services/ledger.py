@@ -31,7 +31,7 @@ async def post_entry(
         tx_data = {
             k: v
             for k, v in txn.model_dump(exclude_unset=True).items()
-            if k in {"posted_at", "payee", "note", "external_id"}
+            if k in {"posted_at", "payee", "note", "external_id", "category_id"}
         }
         posted = tx_data.get("posted_at")
         if posted is None:
