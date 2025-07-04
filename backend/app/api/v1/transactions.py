@@ -41,7 +41,7 @@ async def read_transactions(
     """Вернуть список операций с указанными фильтрами."""
     return await crud.get_transactions(
         session,
-        current_user.account_id,
+        current_user.id,
         date_from=date_from,
         date_to=date_to,
         category_id=category_id,
@@ -58,10 +58,19 @@ async def create_transaction(
     """Создать новую операцию."""
     if current_user.role == "readonly":
         raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
+    postings = [
+        schemas.PostingCreate(
+            amount=p.amount,
+            side=p.side,
+            account_id=p.account_id,
+            currency_code=p.currency_code or tx.currency,
+        )
+        for p in tx.postings
+    ]
     return await ledger.post_entry(
         session,
         tx,
-        tx.postings,
+        postings,
         current_user.account_id,
         current_user.id,
     )
@@ -72,8 +81,8 @@ def _parse_rows(rows: Iterable[dict]) -> list[schemas.TransactionCreate]:
     for row in rows:
         try:
             posted_at = (
-                datetime.fromisoformat(str(row.get("posted_at")))
-                if row.get("posted_at")
+                datetime.fromisoformat(str(row.get("created_at") or row.get("posted_at")))
+                if row.get("created_at") or row.get("posted_at")
                 else None
             )
         except ValueError:
@@ -81,7 +90,9 @@ def _parse_rows(rows: Iterable[dict]) -> list[schemas.TransactionCreate]:
         parsed.append(
             schemas.TransactionCreate(
                 payee=row.get("payee"),
-                note=row.get("note"),
+                note=row.get("note") or row.get("description"),
+                amount=float(row.get("amount")) if row.get("amount") is not None else None,
+                currency=row.get("currency"),
                 category_id=str(row["category_id"]),
                 posted_at=posted_at,
             )
@@ -132,30 +143,33 @@ async def export_transactions(
     """Экспортировать операции в CSV."""
     rows = await crud.get_transactions(
         session,
-        current_user.account_id,
+        current_user.id,
         date_from=date_from,
         date_to=date_to,
         category_id=category_id,
     )
     fieldnames = [
         "id",
-        "payee",
-        "note",
+        "amount",
+        "currency",
+        "description",
         "category_id",
-        "posted_at",
+        "created_at",
         "user_id",
     ]
     buffer = io.StringIO()
     writer = csv.DictWriter(buffer, fieldnames=fieldnames)
     writer.writeheader()
     for tx in rows:
+        debit = next((p for p in tx.postings if p.side.value == "debit"), None)
         writer.writerow(
             {
                 "id": tx.id,
-                "payee": tx.payee or "",
-                "note": tx.note or "",
+                "amount": float(debit.amount) if debit else 0,
+                "currency": debit.currency_code if debit else "",
+                "description": tx.note or "",
                 "category_id": tx.category_id,
-                "posted_at": tx.posted_at.isoformat(),
+                "created_at": tx.posted_at.isoformat(),
                 "user_id": tx.user_id,
             }
         )
@@ -173,7 +187,7 @@ async def read_transaction(
     current_user: User = Depends(get_current_user),
 ):
     """Получить одну операцию."""
-    tx = await crud.get_transaction(session, tx_id, current_user.account_id)
+    tx = await crud.get_transaction(session, tx_id, current_user.id)
     if not tx:
         raise api_error(404, "Transaction not found", "TRANSACTION_NOT_FOUND")
     return tx
@@ -192,7 +206,7 @@ async def update_transaction(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"detail": "Forbidden", "code": "FORBIDDEN"},
         )
-    tx = await crud.update_transaction(session, tx_id, data, current_user.account_id)
+    tx = await crud.update_transaction(session, tx_id, data, current_user.id)
     if not tx:
         raise api_error(404, "Transaction not found", "TRANSACTION_NOT_FOUND")
     return tx
@@ -207,5 +221,5 @@ async def delete_transaction(
     """Удалить операцию."""
     if current_user.role == "readonly":
         raise api_error(status.HTTP_403_FORBIDDEN, "Forbidden", "FORBIDDEN")
-    await crud.delete_transaction(session, tx_id, current_user.account_id)
+    await crud.delete_transaction(session, tx_id, current_user.id)
     return None

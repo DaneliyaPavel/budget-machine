@@ -5,14 +5,16 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .posting import PostingCreate
 
-STRICT = ConfigDict(strict=True)
-ORM_STRICT = ConfigDict(from_attributes=True, strict=True)
+STRICT = ConfigDict(strict=True, populate_by_name=True)
+ORM_STRICT = ConfigDict(from_attributes=True, strict=True, populate_by_name=True)
 
 
 class TransactionBase(BaseModel):
-    posted_at: datetime | None = None
+    posted_at: datetime | None = Field(
+        None, alias="created_at"
+    )
     payee: str | None = None
-    note: str | None = None
+    note: str | None = Field(None, alias="description")
     external_id: str | None = None
     category_id: UUID | None = None
 
@@ -26,6 +28,8 @@ class TransactionBase(BaseModel):
 
 
 class TransactionCreate(TransactionBase):
+    amount: float | None = None
+    currency: str | None = None
     postings: list[PostingCreate] = Field(default_factory=list)
 
     model_config = STRICT
@@ -38,9 +42,9 @@ class TransactionCreate(TransactionBase):
 
 
 class TransactionUpdate(BaseModel):
-    posted_at: datetime | None = None
+    posted_at: datetime | None = Field(None, alias="created_at")
     payee: str | None = None
-    note: str | None = None
+    note: str | None = Field(None, alias="description")
     external_id: str | None = None
     category_id: UUID | None = None
 
@@ -50,6 +54,6 @@ class TransactionUpdate(BaseModel):
 class Transaction(TransactionBase):
     id: UUID
     user_id: UUID
-    posted_at: datetime
+    posted_at: datetime = Field(alias="created_at")
 
     model_config = ORM_STRICT

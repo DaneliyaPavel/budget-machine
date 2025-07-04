@@ -4,9 +4,11 @@ from datetime import datetime, timezone
 import secrets
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
+from sqlalchemy.orm import selectinload
 import uuid
 
 from . import models, schemas, vault
+from .services import ledger
 from .security import get_password_hash
 
 
@@ -241,7 +243,6 @@ async def delete_category(
         .select_from(models.Transaction)
         .where(
             models.Transaction.category_id == category_id,
-            models.Transaction.account_id == account_id,
         )
     )
     result = await db.execute(count_stmt)
@@ -264,7 +265,7 @@ async def delete_category(
 
 async def get_transactions(
     db: AsyncSession,
-    account_id: uuid.UUID,
+    user_id: uuid.UUID,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     category_id: uuid.UUID | None = None,
@@ -272,8 +273,8 @@ async def get_transactions(
 ):
     stmt = (
         select(models.Transaction)
-        .join(models.Posting)
-        .where(models.Posting.account_id == account_id)
+        .options(selectinload(models.Transaction.postings))
+        .where(models.Transaction.user_id == user_id)
     )
     if date_from:
         stmt = stmt.where(models.Transaction.posted_at >= date_from)
@@ -290,14 +291,12 @@ async def get_transactions(
     return result.scalars().all()
 
 
-async def get_transaction(db: AsyncSession, tx_id: uuid.UUID, account_id: uuid.UUID):
+async def get_transaction(db: AsyncSession, tx_id: uuid.UUID, user_id: uuid.UUID):
 
     result = await db.execute(
-        select(models.Transaction)
-        .join(models.Posting)
-        .where(
+        select(models.Transaction).where(
             models.Transaction.id == tx_id,
-            models.Posting.account_id == account_id,
+            models.Transaction.user_id == user_id,
         )
     )
     return result.scalar_one_or_none()
@@ -324,25 +323,37 @@ async def create_transactions_bulk(
     account_id: uuid.UUID,
     user_id: uuid.UUID,
 ):
-    objects = []
+    created: list[models.Transaction] = []
     for tx in txs:
-        data = tx.model_dump(exclude_unset=True)
-        data.pop("postings", None)
-        objects.append(models.Transaction(**data, user_id=user_id))
-    db.add_all(objects)
-    await db.commit()
-    for obj in objects:
-        await db.refresh(obj)
-    return objects
+        postings = tx.postings
+        if not postings and tx.amount is not None:
+            currency = tx.currency or "RUB"
+            postings = [
+                schemas.PostingCreate(
+                    amount=tx.amount,
+                    side="debit",
+                    account_id=account_id,
+                    currency_code=currency,
+                ),
+                schemas.PostingCreate(
+                    amount=tx.amount,
+                    side="credit",
+                    account_id=account_id,
+                    currency_code=currency,
+                ),
+            ]
+        obj = await ledger.post_entry(db, tx, postings, account_id, user_id)
+        created.append(obj)
+    return created
 
 
 async def update_transaction(
     db: AsyncSession,
     tx_id: uuid.UUID,
     data: schemas.TransactionUpdate,
-    account_id: uuid.UUID,
+    user_id: uuid.UUID,
 ) -> models.Transaction | None:
-    tx_obj = await get_transaction(db, tx_id, account_id)
+    tx_obj = await get_transaction(db, tx_id, user_id)
     if not tx_obj:
         return None
     update_data = data.model_dump(exclude_unset=True)
@@ -354,16 +365,12 @@ async def update_transaction(
 
 
 async def delete_transaction(
-    db: AsyncSession, tx_id: uuid.UUID, account_id: uuid.UUID
+    db: AsyncSession, tx_id: uuid.UUID, user_id: uuid.UUID
 ) -> None:
     await db.execute(
         delete(models.Transaction).where(
             models.Transaction.id == tx_id,
-            models.Transaction.id.in_(
-                select(models.Posting.transaction_id).where(
-                    models.Posting.account_id == account_id
-                )
-            ),
+            models.Transaction.user_id == user_id,
         )
     )
     await db.commit()
@@ -457,15 +464,18 @@ async def delete_goal(
 
 
 async def transactions_summary_by_category(
-    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
+    db: AsyncSession, start: datetime, end: datetime, user_id: uuid.UUID
 ):
     stmt = (
-        select(models.Category.name, func.sum(models.Transaction.amount_rub))
-        .join(models.Transaction)
+        select(models.Category.name, func.sum(models.Posting.amount))
+        .select_from(models.Transaction)
+        .join(models.Category, models.Transaction.category_id == models.Category.id)
+        .join(models.Posting, models.Posting.transaction_id == models.Transaction.id)
         .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < end,
-            models.Transaction.account_id == account_id,
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < end,
+            models.Transaction.user_id == user_id,
+            models.Posting.side == models.PostingSide.debit,
         )
         .group_by(models.Category.name)
     )
@@ -474,20 +484,23 @@ async def transactions_summary_by_category(
 
 
 async def categories_over_limit(
-    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
+    db: AsyncSession, start: datetime, end: datetime, user_id: uuid.UUID
 ):
     stmt = (
         select(
             models.Category.name,
             models.Category.monthly_limit,
-            func.sum(models.Transaction.amount_rub).label("spent"),
+            func.sum(models.Posting.amount).label("spent"),
         )
-        .join(models.Transaction)
+        .select_from(models.Transaction)
+        .join(models.Category, models.Transaction.category_id == models.Category.id)
+        .join(models.Posting, models.Posting.transaction_id == models.Transaction.id)
         .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < end,
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < end,
             models.Category.monthly_limit.isnot(None),
-            models.Transaction.account_id == account_id,
+            models.Transaction.user_id == user_id,
+            models.Posting.side == models.PostingSide.debit,
         )
         .group_by(models.Category.id)
     )
@@ -497,7 +510,7 @@ async def categories_over_limit(
 
 
 async def forecast_by_category(
-    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
+    db: AsyncSession, start: datetime, end: datetime, user_id: uuid.UUID
 ):
     now = datetime.now(timezone.utc)
     if now < start:
@@ -507,13 +520,16 @@ async def forecast_by_category(
     stmt = (
         select(
             models.Category.name,
-            func.sum(models.Transaction.amount_rub).label("spent"),
+            func.sum(models.Posting.amount).label("spent"),
         )
-        .join(models.Transaction)
+        .select_from(models.Transaction)
+        .join(models.Category, models.Transaction.category_id == models.Category.id)
+        .join(models.Posting, models.Posting.transaction_id == models.Transaction.id)
         .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < now,
-            models.Transaction.account_id == account_id,
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < now,
+            models.Transaction.user_id == user_id,
+            models.Posting.side == models.PostingSide.debit,
         )
         .group_by(models.Category.name)
     )
@@ -527,15 +543,17 @@ async def forecast_by_category(
 
 
 async def daily_expenses(
-    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
+    db: AsyncSession, start: datetime, end: datetime, user_id: uuid.UUID
 ):
-    day = func.date(models.Transaction.created_at)
+    day = func.date(models.Transaction.posted_at)
     stmt = (
-        select(day.label("day"), func.sum(models.Transaction.amount_rub))
+        select(day.label("day"), func.sum(models.Posting.amount))
+        .join(models.Posting)
         .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < end,
-            models.Transaction.account_id == account_id,
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < end,
+            models.Transaction.user_id == user_id,
+            models.Posting.side == models.PostingSide.debit,
         )
         .group_by(day)
         .order_by(day)
@@ -545,14 +563,20 @@ async def daily_expenses(
 
 
 async def monthly_overview(
-    db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
+    db: AsyncSession, start: datetime, end: datetime, user_id: uuid.UUID
 ):
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     cutoff = min(now, end)
-    stmt = select(func.sum(models.Transaction.amount_rub)).where(
-        models.Transaction.created_at >= start,
-        models.Transaction.created_at < cutoff,
-        models.Transaction.account_id == account_id,
+    stmt = (
+        select(func.sum(models.Posting.amount))
+        .select_from(models.Transaction)
+        .join(models.Posting)
+        .where(
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < cutoff,
+            models.Transaction.user_id == user_id,
+            models.Posting.side == models.PostingSide.debit,
+        )
     )
     result = await db.execute(stmt)
     spent = float(result.scalar() or 0)

@@ -33,7 +33,7 @@ async def summary_by_category(
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
     ).replace(tzinfo=None)
     rows = await crud.transactions_summary_by_category(
-        session, start, end, current_user.account_id
+        session, start, end, current_user.id
     )
     return [
         schemas.CategorySummary(category=r[0], total=float(r[1] or 0)) for r in rows
@@ -63,7 +63,7 @@ async def limits_check(
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
     ).replace(tzinfo=None)
     rows = await crud.categories_over_limit(
-        session, start, end, current_user.account_id
+        session, start, end, current_user.id
     )
     result = [
         schemas.LimitExceed(category=r[0], limit=float(r[1]), spent=float(r[2]))
@@ -101,7 +101,7 @@ async def forecast(
         if month == 12
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
     ).replace(tzinfo=None)
-    rows = await crud.forecast_by_category(session, start, end, current_user.account_id)
+    rows = await crud.forecast_by_category(session, start, end, current_user.id)
     return [
         schemas.ForecastItem(category=r[0], spent=float(r[1]), forecast=float(r[2]))
         for r in rows
@@ -128,7 +128,7 @@ async def summary_by_day(
         if month == 12
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
     ).replace(tzinfo=None)
-    rows = await crud.daily_expenses(session, start, end, current_user.account_id)
+    rows = await crud.daily_expenses(session, start, end, current_user.id)
     result: list[schemas.DailySummary] = []
     for r in rows:
         day = r[0]
@@ -161,7 +161,7 @@ async def balance_overview(
         else datetime(year, month + 1, 1, tzinfo=timezone.utc)
     ).replace(tzinfo=None)
     spent, forecast_val = await crud.monthly_overview(
-        session, start, end, current_user.account_id
+        session, start, end, current_user.id
     )
     return schemas.MonthlySummary(spent=spent, forecast=forecast_val)
 

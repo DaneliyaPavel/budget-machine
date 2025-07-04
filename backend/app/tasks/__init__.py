@@ -4,6 +4,7 @@ import os
 
 from ..celery_app import celery_app
 from .. import notifications, banks, crud, database, schemas
+from ..services import ledger
 from clickhouse_connect import get_client
 import uuid
 
@@ -135,8 +136,26 @@ def process_recurring_task(date: str) -> int:
                     payee=p.name,
                     note=p.description,
                     category_id=p.category_id,
+                    amount=p.amount,
+                    currency=p.currency,
                 )
-                await crud.create_transaction(session, tx, p.account_id, p.user_id)
+                postings = [
+                    schemas.PostingCreate(
+                        amount=p.amount,
+                        side="debit",
+                        account_id=p.account_id,
+                        currency_code=p.currency,
+                    ),
+                    schemas.PostingCreate(
+                        amount=p.amount,
+                        side="credit",
+                        account_id=p.account_id,
+                        currency_code=p.currency,
+                    ),
+                ]
+                await ledger.post_entry(
+                    session, tx, postings, p.account_id, p.user_id
+                )
                 created += 1
             return created
 

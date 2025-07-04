@@ -30,6 +30,8 @@ async def post_entry(
     async with ctx:
         tx_data = txn.model_dump(exclude_unset=True)
         tx_data.pop("postings", None)
+        tx_data.pop("amount", None)
+        tx_data.pop("currency", None)
         posted = tx_data.get("posted_at")
         if posted is None:
             posted = datetime.now().replace(tzinfo=None)
