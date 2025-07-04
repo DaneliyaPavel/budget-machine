@@ -39,12 +39,29 @@ async def post_entry(
         tx_obj = models.Transaction(**tx_data, user_id=user_id)
         db.add(tx_obj)
         await db.flush()
+        # prefetch currencies for accounts with missing currency codes
+        missing = {p.account_id for p in postings if p.currency_code is None}
+        currencies: dict[UUID, str] = {}
+        if missing:
+            rows = await db.execute(
+                select(models.Account.id, models.Account.currency_code).where(
+                    models.Account.id.in_(missing)
+                )
+            )
+            currencies = dict(rows.all())
+
         for item in postings:
+            cur = item.currency_code or currencies.get(item.account_id)
+            if cur is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Currency code required",
+                )
             db.add(
                 models.Posting(
                     amount=item.amount,
                     side=item.side,
-                    currency_code=item.currency_code,
+                    currency_code=cur,
                     account_id=item.account_id,
                     transaction_id=tx_obj.id,
                 )

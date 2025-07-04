@@ -239,9 +239,10 @@ async def delete_category(
     count_stmt = (
         select(func.count())
         .select_from(models.Transaction)
+        .join(models.Posting)
         .where(
             models.Transaction.category_id == category_id,
-            models.Transaction.account_id == account_id,
+            models.Posting.account_id == account_id,
         )
     )
     result = await db.execute(count_stmt)
@@ -460,12 +461,14 @@ async def transactions_summary_by_category(
     db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
 ):
     stmt = (
-        select(models.Category.name, func.sum(models.Transaction.amount_rub))
-        .join(models.Transaction)
+        select(models.Category.name, func.sum(models.Posting.amount))
+        .join(models.Transaction, models.Transaction.category_id == models.Category.id)
+        .join(models.Posting, models.Posting.transaction_id == models.Transaction.id)
         .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < end,
-            models.Transaction.account_id == account_id,
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < end,
+            models.Posting.account_id == account_id,
+            models.Posting.side == models.PostingSide.debit,
         )
         .group_by(models.Category.name)
     )
@@ -480,14 +483,16 @@ async def categories_over_limit(
         select(
             models.Category.name,
             models.Category.monthly_limit,
-            func.sum(models.Transaction.amount_rub).label("spent"),
+            func.sum(models.Posting.amount).label("spent"),
         )
-        .join(models.Transaction)
+        .join(models.Transaction, models.Transaction.category_id == models.Category.id)
+        .join(models.Posting, models.Posting.transaction_id == models.Transaction.id)
         .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < end,
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < end,
             models.Category.monthly_limit.isnot(None),
-            models.Transaction.account_id == account_id,
+            models.Posting.account_id == account_id,
+            models.Posting.side == models.PostingSide.debit,
         )
         .group_by(models.Category.id)
     )
@@ -507,13 +512,15 @@ async def forecast_by_category(
     stmt = (
         select(
             models.Category.name,
-            func.sum(models.Transaction.amount_rub).label("spent"),
+            func.sum(models.Posting.amount).label("spent"),
         )
-        .join(models.Transaction)
+        .join(models.Transaction, models.Transaction.category_id == models.Category.id)
+        .join(models.Posting, models.Posting.transaction_id == models.Transaction.id)
         .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < now,
-            models.Transaction.account_id == account_id,
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < now,
+            models.Posting.account_id == account_id,
+            models.Posting.side == models.PostingSide.debit,
         )
         .group_by(models.Category.name)
     )
@@ -529,13 +536,15 @@ async def forecast_by_category(
 async def daily_expenses(
     db: AsyncSession, start: datetime, end: datetime, account_id: uuid.UUID
 ):
-    day = func.date(models.Transaction.created_at)
+    day = func.date(models.Transaction.posted_at)
     stmt = (
-        select(day.label("day"), func.sum(models.Transaction.amount_rub))
+        select(day.label("day"), func.sum(models.Posting.amount))
+        .join(models.Posting, models.Posting.transaction_id == models.Transaction.id)
         .where(
-            models.Transaction.created_at >= start,
-            models.Transaction.created_at < end,
-            models.Transaction.account_id == account_id,
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < end,
+            models.Posting.account_id == account_id,
+            models.Posting.side == models.PostingSide.debit,
         )
         .group_by(day)
         .order_by(day)
@@ -549,10 +558,15 @@ async def monthly_overview(
 ):
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     cutoff = min(now, end)
-    stmt = select(func.sum(models.Transaction.amount_rub)).where(
-        models.Transaction.created_at >= start,
-        models.Transaction.created_at < cutoff,
-        models.Transaction.account_id == account_id,
+    stmt = (
+        select(func.sum(models.Posting.amount))
+        .join(models.Posting, models.Posting.transaction_id == models.Transaction.id)
+        .where(
+            models.Transaction.posted_at >= start,
+            models.Transaction.posted_at < cutoff,
+            models.Posting.account_id == account_id,
+            models.Posting.side == models.PostingSide.debit,
+        )
     )
     result = await db.execute(stmt)
     spent = float(result.scalar() or 0)
