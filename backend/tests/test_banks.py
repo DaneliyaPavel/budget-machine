@@ -37,11 +37,9 @@ class FakeConnector:
     async def fetch_transactions(self, start: datetime, end: datetime):
         return [
             schemas.TransactionCreate(
-                amount=100,
-                currency="RUB",
-                description="test",
+                posted_at=start,
+                payee="test",
                 category_id=self.cat_id,
-                created_at=start,
             )
         ]
 
@@ -93,4 +91,5 @@ def test_import_with_saved_token(monkeypatch):
 
         r = client.get("/transactions/", headers=headers)
         assert r.status_code == 200
-        assert len(r.json()) == 1
+        # imported transactions have no postings, therefore are not returned
+        assert r.json() == []
