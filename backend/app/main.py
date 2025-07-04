@@ -41,6 +41,7 @@ tags_metadata = [
     {"name": "Auth", "description": "Signup and JWT auth"},
     {"name": "Валюты", "description": "Курсы и конвертация"},
     {"name": "Уведомления", "description": "Web Push подписки"},
+    {"name": "Сервис", "description": "Системные маршруты"},
 ]
 
 
@@ -80,3 +81,9 @@ app.include_router(oauth.router)
 app.include_router(auth_v1.router)
 app.include_router(currencies_v1.router)
 app.include_router(push.router)
+
+
+@app.get("/health", tags=["Сервис"])
+async def health() -> dict[str, str]:
+    """Проверка работоспособности приложения."""
+    return {"status": "ok"}
