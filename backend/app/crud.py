@@ -463,7 +463,9 @@ async def transactions_summary_by_category(
     stmt = (
         select(models.Category.name, func.sum(models.Posting.amount))
         .select_from(models.Posting)
-        .join(models.Transaction, models.Posting.transaction_id == models.Transaction.id)
+        .join(
+            models.Transaction, models.Posting.transaction_id == models.Transaction.id
+        )
         .join(models.Category, models.Transaction.category_id == models.Category.id)
         .where(
             models.Transaction.posted_at >= start,
@@ -487,7 +489,9 @@ async def categories_over_limit(
             func.sum(models.Posting.amount).label("spent"),
         )
         .select_from(models.Posting)
-        .join(models.Transaction, models.Posting.transaction_id == models.Transaction.id)
+        .join(
+            models.Transaction, models.Posting.transaction_id == models.Transaction.id
+        )
         .join(models.Category, models.Transaction.category_id == models.Category.id)
         .where(
             models.Transaction.posted_at >= start,
@@ -517,7 +521,9 @@ async def forecast_by_category(
             func.sum(models.Posting.amount).label("spent"),
         )
         .select_from(models.Posting)
-        .join(models.Transaction, models.Posting.transaction_id == models.Transaction.id)
+        .join(
+            models.Transaction, models.Posting.transaction_id == models.Transaction.id
+        )
         .join(models.Category, models.Transaction.category_id == models.Category.id)
         .where(
             models.Transaction.posted_at >= start,
@@ -543,7 +549,9 @@ async def daily_expenses(
     stmt = (
         select(day.label("day"), func.sum(models.Posting.amount))
         .select_from(models.Posting)
-        .join(models.Transaction, models.Posting.transaction_id == models.Transaction.id)
+        .join(
+            models.Transaction, models.Posting.transaction_id == models.Transaction.id
+        )
         .where(
             models.Transaction.posted_at >= start,
             models.Transaction.posted_at < end,
@@ -565,7 +573,9 @@ async def monthly_overview(
     stmt = (
         select(func.sum(models.Posting.amount))
         .select_from(models.Posting)
-        .join(models.Transaction, models.Posting.transaction_id == models.Transaction.id)
+        .join(
+            models.Transaction, models.Posting.transaction_id == models.Transaction.id
+        )
         .where(
             models.Transaction.posted_at >= start,
             models.Transaction.posted_at < cutoff,

@@ -2756,119 +2756,110 @@ components:
       title: TokenPair
     Transaction:
       properties:
-        amount:
-          type: number
-          title: Amount
-        currency:
-          type: string
-          title: Currency
-          default: RUB
-        amount_rub:
-          type: number
-          title: Amount Rub
-        description:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Description
-        category_id:
-          type: string
-          format: uuid
-          title: Category Id
-        id:
-          type: string
-          format: uuid
-          title: Id
-        created_at:
+        posted_at:
           type: string
           format: date-time
-          title: Created At
-        account_id:
-          type: string
-          format: uuid
-          title: Account Id
-        user_id:
-          type: string
-          format: uuid
-          title: User Id
-      type: object
-      required:
-      - amount
-      - amount_rub
-      - category_id
-      - id
-      - created_at
-      - account_id
-      - user_id
-      title: Transaction
-    TransactionCreate:
-      properties:
-        amount:
-          type: number
-          title: Amount
-        currency:
-          type: string
-          title: Currency
-          default: RUB
-        amount_rub:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Amount Rub
-        description:
+          title: Posted At
+        payee:
           anyOf:
           - type: string
           - type: 'null'
-          title: Description
-        category_id:
-          type: string
-          format: uuid
-          title: Category Id
-        created_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Created At
-        postings:
-          items:
-            $ref: '#/components/schemas/PostingCreate'
-          type: array
-          title: Postings
-      type: object
-      required:
-      - amount
-      - category_id
-      title: TransactionCreate
-    TransactionUpdate:
-      properties:
-        amount:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Amount
-        currency:
+          title: Payee
+        note:
           anyOf:
           - type: string
           - type: 'null'
-          title: Currency
-        description:
+          title: Note
+        external_id:
           anyOf:
           - type: string
           - type: 'null'
-          title: Description
+          title: External Id
         category_id:
           anyOf:
           - type: string
             format: uuid
           - type: 'null'
           title: Category Id
-        created_at:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - posted_at
+      - id
+      - user_id
+      title: Transaction
+    TransactionCreate:
+      properties:
+        posted_at:
           anyOf:
           - type: string
             format: date-time
           - type: 'null'
-          title: Created At
+          title: Posted At
+        payee:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Payee
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+        external_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: External Id
+        category_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Category Id
+        postings:
+          items:
+            $ref: '#/components/schemas/PostingCreate'
+          type: array
+          title: Postings
+      type: object
+      title: TransactionCreate
+    TransactionUpdate:
+      properties:
+        posted_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Posted At
+        payee:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Payee
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+        external_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: External Id
+        category_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Category Id
       type: object
       title: TransactionUpdate
     User:
