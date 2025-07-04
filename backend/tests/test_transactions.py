@@ -103,12 +103,14 @@ def test_import_transactions_excel():
 
         wb = Workbook()
         ws = wb.active
-        ws.append([
-            "payee",
-            "note",
-            "category_id",
-            "posted_at",
-        ])
+        ws.append(
+            [
+                "payee",
+                "note",
+                "category_id",
+                "posted_at",
+            ]
+        )
         ws.append(["Row1", "", cat_id, "2025-06-01T12:00:00"])
         ws.append(["Row2", "", cat_id, "2025-06-02T12:00:00"])
         buf = io.BytesIO()
