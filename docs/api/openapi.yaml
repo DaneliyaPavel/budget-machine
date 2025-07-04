@@ -150,7 +150,7 @@ paths:
       security:
       - OAuth2PasswordBearer: []
       parameters:
-      - name: start
+      - name: date_from
         in: query
         required: false
         schema:
@@ -159,9 +159,9 @@ paths:
             format: date-time
           - type: 'null'
           description: Start date
-          title: Start
+          title: Date From
         description: Start date
-      - name: end
+      - name: date_to
         in: query
         required: false
         schema:
@@ -170,7 +170,7 @@ paths:
             format: date-time
           - type: 'null'
           description: End date
-          title: End
+          title: Date To
         description: End date
       - name: category_id
         in: query
@@ -272,7 +272,7 @@ paths:
       security:
       - OAuth2PasswordBearer: []
       parameters:
-      - name: start
+      - name: date_from
         in: query
         required: false
         schema:
@@ -281,9 +281,9 @@ paths:
             format: date-time
           - type: 'null'
           description: Start date
-          title: Start
+          title: Date From
         description: Start date
-      - name: end
+      - name: date_to
         in: query
         required: false
         schema:
@@ -292,7 +292,7 @@ paths:
             format: date-time
           - type: 'null'
           description: End date
-          title: End
+          title: Date To
         description: End date
       - name: category_id
         in: query
