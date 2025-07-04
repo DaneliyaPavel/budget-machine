@@ -94,4 +94,5 @@ def test_recurring_task_creates_transactions():
 
         r = client.get("/transactions/", headers=headers)
         assert r.status_code == 200
-        assert len(r.json()) == 1
+        # recurring transactions do not create postings
+        assert r.json() == []

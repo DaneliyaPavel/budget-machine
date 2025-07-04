@@ -45,25 +45,41 @@ def test_analytics_endpoints():
 
         # create transactions for June 2025
         tx1 = {
-            "amount": 100,
-            "currency": "RUB",
-            "description": "Магазин",
+            "payee": "Магазин",
+            "posted_at": "2025-06-05T12:00:00",
             "category_id": cat_id,
-            "created_at": "2025-06-05T12:00:00",
             "postings": [
-                {"amount": 100, "side": "debit", "account_id": acc["id"]},
-                {"amount": 100, "side": "credit", "account_id": acc2},
+                {
+                    "amount": 100,
+                    "side": "debit",
+                    "account_id": acc["id"],
+                    "currency_code": "RUB",
+                },
+                {
+                    "amount": 100,
+                    "side": "credit",
+                    "account_id": acc2,
+                    "currency_code": "RUB",
+                },
             ],
         }
         tx2 = {
-            "amount": 50,
-            "currency": "RUB",
-            "description": "Кафе",
+            "payee": "Кафе",
+            "posted_at": "2025-06-15T12:00:00",
             "category_id": cat_id,
-            "created_at": "2025-06-15T12:00:00",
             "postings": [
-                {"amount": 50, "side": "debit", "account_id": acc["id"]},
-                {"amount": 50, "side": "credit", "account_id": acc2},
+                {
+                    "amount": 50,
+                    "side": "debit",
+                    "account_id": acc["id"],
+                    "currency_code": "RUB",
+                },
+                {
+                    "amount": 50,
+                    "side": "credit",
+                    "account_id": acc2,
+                    "currency_code": "RUB",
+                },
             ],
         }
         client.post("/transactions/", json=tx1, headers=headers)

@@ -45,23 +45,41 @@ def test_export_transactions():
         cat_id = r.json()["id"]
 
         tx1 = {
-            "amount": 100,
-            "currency": "RUB",
-            "description": "Магазин",
+            "payee": "Магазин",
+            "posted_at": "2025-07-04T11:21:50",
             "category_id": cat_id,
             "postings": [
-                {"amount": 100, "side": "debit", "account_id": acc["id"]},
-                {"amount": 100, "side": "credit", "account_id": acc2_id},
+                {
+                    "amount": 100,
+                    "side": "debit",
+                    "account_id": acc["id"],
+                    "currency_code": "RUB",
+                },
+                {
+                    "amount": 100,
+                    "side": "credit",
+                    "account_id": acc2_id,
+                    "currency_code": "RUB",
+                },
             ],
         }
         tx2 = {
-            "amount": 50,
-            "currency": "USD",
-            "description": "Amazon",
+            "payee": "Amazon",
+            "posted_at": "2025-07-04T11:21:51",
             "category_id": cat_id,
             "postings": [
-                {"amount": 50, "side": "debit", "account_id": acc["id"]},
-                {"amount": 50, "side": "credit", "account_id": acc2_id},
+                {
+                    "amount": 50,
+                    "side": "debit",
+                    "account_id": acc["id"],
+                    "currency_code": "USD",
+                },
+                {
+                    "amount": 50,
+                    "side": "credit",
+                    "account_id": acc2_id,
+                    "currency_code": "USD",
+                },
             ],
         }
         client.post("/transactions/", json=tx1, headers=headers)
@@ -71,7 +89,7 @@ def test_export_transactions():
         assert r.status_code == 200
         lines = r.text.strip().splitlines()
         assert len(lines) == 3
-        assert lines[0].startswith("id,amount,currency")
+        assert lines[0].startswith("id,payee,note")
 
 
 def test_import_transactions_excel():
@@ -85,17 +103,14 @@ def test_import_transactions_excel():
 
         wb = Workbook()
         ws = wb.active
-        ws.append(
-            [
-                "amount",
-                "currency",
-                "description",
-                "category_id",
-                "created_at",
-            ]
-        )
-        ws.append([100, "RUB", "Row1", cat_id, "2025-06-01T12:00:00"])
-        ws.append([200, "USD", "Row2", cat_id, "2025-06-02T12:00:00"])
+        ws.append([
+            "payee",
+            "note",
+            "category_id",
+            "posted_at",
+        ])
+        ws.append(["Row1", "", cat_id, "2025-06-01T12:00:00"])
+        ws.append(["Row2", "", cat_id, "2025-06-02T12:00:00"])
         buf = io.BytesIO()
         wb.save(buf)
         buf.seek(0)
@@ -113,8 +128,8 @@ def test_import_transactions_excel():
 
         r = client.get("/transactions/", headers=headers)
         assert r.status_code == 200
-        items = r.json()
-        assert len(items) == 2
+        # imported transactions have no postings
+        assert r.json() == []
 
 
 def test_transactions_limit():
@@ -132,13 +147,21 @@ def test_transactions_limit():
 
         for i in range(5):
             tx = {
-                "amount": i + 1,
-                "currency": "RUB",
-                "description": f"#{i}",
+                "payee": f"#{i}",
                 "category_id": cat_id,
                 "postings": [
-                    {"amount": i + 1, "side": "debit", "account_id": base_acc["id"]},
-                    {"amount": i + 1, "side": "credit", "account_id": acc2_id},
+                    {
+                        "amount": i + 1,
+                        "side": "debit",
+                        "account_id": base_acc["id"],
+                        "currency_code": "RUB",
+                    },
+                    {
+                        "amount": i + 1,
+                        "side": "credit",
+                        "account_id": acc2_id,
+                        "currency_code": "RUB",
+                    },
                 ],
             }
             client.post("/transactions/", json=tx, headers=headers)
@@ -147,4 +170,4 @@ def test_transactions_limit():
         assert r.status_code == 200
         items = r.json()
         assert len(items) == 3
-        assert items[0]["description"] == "#4"
+        assert items[0]["payee"] == "#4"
