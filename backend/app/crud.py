@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 import uuid
 
-from . import models, schemas, currency, vault
+from . import models, schemas, vault
 from .security import get_password_hash
 
 
@@ -270,15 +270,19 @@ async def get_transactions(
     category_id: uuid.UUID | None = None,
     limit: int | None = None,
 ):
-    stmt = select(models.Transaction).where(models.Transaction.account_id == account_id)
+    stmt = (
+        select(models.Transaction)
+        .join(models.Posting)
+        .where(models.Posting.account_id == account_id)
+    )
     if date_from:
-        stmt = stmt.where(models.Transaction.created_at >= date_from)
+        stmt = stmt.where(models.Transaction.posted_at >= date_from)
     if date_to:
-        stmt = stmt.where(models.Transaction.created_at < date_to)
+        stmt = stmt.where(models.Transaction.posted_at < date_to)
     if category_id:
         stmt = stmt.where(models.Transaction.category_id == category_id)
     stmt = stmt.order_by(
-        models.Transaction.created_at.desc() if limit else models.Transaction.created_at
+        models.Transaction.posted_at.desc() if limit else models.Transaction.posted_at
     )
     if limit:
         stmt = stmt.limit(limit)
@@ -289,9 +293,11 @@ async def get_transactions(
 async def get_transaction(db: AsyncSession, tx_id: uuid.UUID, account_id: uuid.UUID):
 
     result = await db.execute(
-        select(models.Transaction).where(
+        select(models.Transaction)
+        .join(models.Posting)
+        .where(
             models.Transaction.id == tx_id,
-            models.Transaction.account_id == account_id,
+            models.Posting.account_id == account_id,
         )
     )
     return result.scalar_one_or_none()
@@ -303,13 +309,9 @@ async def create_transaction(
     account_id: uuid.UUID,
     user_id: uuid.UUID,
 ) -> models.Transaction:
-    rate = await currency.get_rate(tx.currency)
-    db_obj = models.Transaction(
-        **tx.model_dump(exclude_unset=True),
-        amount_rub=tx.amount * rate,
-        account_id=account_id,
-        user_id=user_id,
-    )
+    data = tx.model_dump(exclude_unset=True)
+    data.pop("postings", None)
+    db_obj = models.Transaction(**data, user_id=user_id)
     db.add(db_obj)
     await db.commit()
     await db.refresh(db_obj)
@@ -324,15 +326,9 @@ async def create_transactions_bulk(
 ):
     objects = []
     for tx in txs:
-        rate = await currency.get_rate(tx.currency)
-        objects.append(
-            models.Transaction(
-                **tx.model_dump(exclude_unset=True),
-                amount_rub=tx.amount * rate,
-                account_id=account_id,
-                user_id=user_id,
-            )
-        )
+        data = tx.model_dump(exclude_unset=True)
+        data.pop("postings", None)
+        objects.append(models.Transaction(**data, user_id=user_id))
     db.add_all(objects)
     await db.commit()
     for obj in objects:
@@ -350,11 +346,6 @@ async def update_transaction(
     if not tx_obj:
         return None
     update_data = data.model_dump(exclude_unset=True)
-    if "currency" in update_data or "amount" in update_data:
-        currency_code = update_data.get("currency", tx_obj.currency)
-        amount_val = update_data.get("amount", tx_obj.amount)
-        rate = await currency.get_rate(currency_code)
-        update_data["amount_rub"] = amount_val * rate
     for key, value in update_data.items():
         setattr(tx_obj, key, value)
     await db.commit()
@@ -368,7 +359,11 @@ async def delete_transaction(
     await db.execute(
         delete(models.Transaction).where(
             models.Transaction.id == tx_id,
-            models.Transaction.account_id == account_id,
+            models.Transaction.id.in_(
+                select(models.Posting.transaction_id).where(
+                    models.Posting.account_id == account_id
+                )
+            ),
         )
     )
     await db.commit()

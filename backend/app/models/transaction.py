@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Numeric
+from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -11,17 +11,13 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    amount = Column(Numeric(20, 6), nullable=False)
-    currency = Column(String, nullable=True)
-    amount_rub = Column(Numeric(20, 6), nullable=False)
-    description = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-    category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"))
-    account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
+    posted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    payee = Column(String, nullable=True)
+    note = Column(String, nullable=True)
+    external_id = Column(String, nullable=True)
 
     user = relationship("User", back_populates="transactions")
     category = relationship("Category")
-    account = relationship("Account")
     postings = relationship("Posting", back_populates="transaction")
