@@ -31,8 +31,8 @@ router = APIRouter(prefix="/transactions", tags=["Операции"])
 
 @router.get("/", response_model=list[schemas.Transaction])
 async def read_transactions(
-    start: datetime | None = Query(None, description="Start date"),
-    end: datetime | None = Query(None, description="End date"),
+    date_from: datetime | None = Query(None, description="Start date"),
+    date_to: datetime | None = Query(None, description="End date"),
     category_id: str | None = Query(None, description="Category"),
     limit: int | None = Query(None, description="Limit"),
     session: AsyncSession = Depends(database.get_session),
@@ -42,8 +42,8 @@ async def read_transactions(
     return await crud.get_transactions(
         session,
         current_user.account_id,
-        start=start,
-        end=end,
+        date_from=date_from,
+        date_to=date_to,
         category_id=category_id,
         limit=limit,
     )
@@ -124,8 +124,8 @@ async def import_transactions(
 
 @router.get("/export")
 async def export_transactions(
-    start: datetime | None = Query(None, description="Start date"),
-    end: datetime | None = Query(None, description="End date"),
+    date_from: datetime | None = Query(None, description="Start date"),
+    date_to: datetime | None = Query(None, description="End date"),
     category_id: str | None = Query(None, description="Category"),
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
@@ -134,8 +134,8 @@ async def export_transactions(
     rows = await crud.get_transactions(
         session,
         current_user.account_id,
-        start=start,
-        end=end,
+        date_from=date_from,
+        date_to=date_to,
         category_id=category_id,
     )
     fieldnames = [

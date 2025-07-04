@@ -265,16 +265,16 @@ async def delete_category(
 async def get_transactions(
     db: AsyncSession,
     account_id: uuid.UUID,
-    start: datetime | None = None,
-    end: datetime | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     category_id: uuid.UUID | None = None,
     limit: int | None = None,
 ):
     stmt = select(models.Transaction).where(models.Transaction.account_id == account_id)
-    if start:
-        stmt = stmt.where(models.Transaction.created_at >= start)
-    if end:
-        stmt = stmt.where(models.Transaction.created_at < end)
+    if date_from:
+        stmt = stmt.where(models.Transaction.created_at >= date_from)
+    if date_to:
+        stmt = stmt.where(models.Transaction.created_at < date_to)
     if category_id:
         stmt = stmt.where(models.Transaction.category_id == category_id)
     stmt = stmt.order_by(

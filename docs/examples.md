@@ -48,7 +48,7 @@ curl -X POST "http://127.0.0.1:8000/transactions/import" \
 ## Получить операции за период
 
 ```bash
-curl "http://127.0.0.1:8000/transactions/?start=2025-06-01T00:00:00&end=2025-06-30T23:59:59" \
+curl "http://127.0.0.1:8000/transactions/?date_from=2025-06-01T00:00:00&date_to=2025-06-30T23:59:59" \
      -H "Authorization: Bearer <token>"
 ```
 Можно указать `category_id`, чтобы вывести операции только по конкретной категории.
