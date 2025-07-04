@@ -120,7 +120,7 @@ async def _prepare_entities(session: AsyncSession):
 async def test_post_entry_and_stream():
     async with database.async_session() as session:
         acc1, acc2, user, cat = await _prepare_entities(session)
-        tx = schemas.TransactionCreate(amount=100, currency="RUB", category_id=cat.id)
+        tx = schemas.TransactionCreate(category_id=cat.id)
         postings = [
             schemas.PostingCreate(amount=100, side="debit", account_id=acc1.id),
             schemas.PostingCreate(amount=100, side="credit", account_id=acc2.id),
@@ -142,7 +142,7 @@ async def test_post_entry_and_stream():
 async def test_post_entry_atomicity():
     async with database.async_session() as session:
         acc1, acc2, user, cat = await _prepare_entities(session)
-        tx = schemas.TransactionCreate(amount=100, currency="RUB", category_id=cat.id)
+        tx = schemas.TransactionCreate(category_id=cat.id)
         postings = [
             schemas.PostingCreate(amount=100, side="debit", account_id=acc1.id),
             schemas.PostingCreate(amount=50, side="credit", account_id=acc2.id),

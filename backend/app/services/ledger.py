@@ -28,8 +28,11 @@ async def post_entry(
     started = not db.in_transaction()
     ctx = db.begin() if started else contextlib.nullcontext()
     async with ctx:
-        tx_data = txn.model_dump(exclude_unset=True)
-        tx_data.pop("postings", None)
+        tx_data = {
+            k: v
+            for k, v in txn.model_dump(exclude_unset=True).items()
+            if k in {"posted_at", "payee", "note", "external_id"}
+        }
         posted = tx_data.get("posted_at")
         if posted is None:
             posted = datetime.now().replace(tzinfo=None)
