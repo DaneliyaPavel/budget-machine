@@ -18,7 +18,14 @@ def upgrade() -> None:
         batch.drop_column("description")
         batch.drop_column("created_at")
         batch.drop_column("account_id")
-        batch.add_column(sa.Column("posted_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")))
+        batch.add_column(
+            sa.Column(
+                "posted_at",
+                sa.DateTime(timezone=True),
+                nullable=False,
+                server_default=sa.text("now()"),
+            )
+        )
         batch.add_column(sa.Column("payee", sa.String(), nullable=True))
         batch.add_column(sa.Column("note", sa.String(), nullable=True))
         batch.add_column(sa.Column("external_id", sa.String(), nullable=True))
@@ -30,8 +37,17 @@ def downgrade() -> None:
         batch.drop_column("note")
         batch.drop_column("payee")
         batch.drop_column("posted_at")
-        batch.add_column(sa.Column("account_id", sa.dialects.postgresql.UUID(as_uuid=True)))
-        batch.add_column(sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")))
+        batch.add_column(
+            sa.Column("account_id", sa.dialects.postgresql.UUID(as_uuid=True))
+        )
+        batch.add_column(
+            sa.Column(
+                "created_at",
+                sa.DateTime(timezone=True),
+                nullable=False,
+                server_default=sa.text("now()"),
+            )
+        )
         batch.add_column(sa.Column("description", sa.String(), nullable=True))
         batch.add_column(sa.Column("amount_rub", sa.Numeric(20, 6), nullable=False))
         batch.add_column(sa.Column("currency", sa.String(), nullable=True))
