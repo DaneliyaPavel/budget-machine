@@ -2004,6 +2004,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /health:
+    get:
+      tags:
+      - Сервис
+      summary: Health
+      description: Проверка работоспособности приложения.
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Health Get
 components:
   schemas:
     Account:
@@ -2973,3 +2990,5 @@ tags:
   description: Курсы и конвертация
 - name: Уведомления
   description: Web Push подписки
+- name: Сервис
+  description: Системные маршруты
