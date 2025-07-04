@@ -30,11 +30,9 @@ class LedgerService(ledger_grpc.LedgerServiceBase):
         request = await stream.recv_message()
         assert request is not None
         txn = schemas.TransactionCreate(
-            amount=request.amount,
-            currency=request.currency,
-            description=request.description or None,
+            note=request.description or None,
             category_id=UUID(request.category_id),
-            created_at=_ts_to_dt(request.created_at),
+            posted_at=_ts_to_dt(request.created_at),
         )
         postings = [
             schemas.PostingCreate(
@@ -77,13 +75,13 @@ class LedgerService(ledger_grpc.LedgerServiceBase):
                 await stream.send_message(
                     ledger_pb2.Txn(
                         id=str(tx.id),
-                        amount=tx.amount,
-                        currency=tx.currency,
-                        amount_rub=tx.amount_rub,
-                        description=tx.description or "",
-                        category_id=str(tx.category_id),
-                        created_at=_dt_to_ts(tx.created_at),
-                        account_id=str(tx.account_id),
+                        amount=0,
+                        currency="",
+                        amount_rub=0,
+                        description=tx.note or "",
+                        category_id=str(tx.category_id) if tx.category_id else "",
+                        created_at=_dt_to_ts(tx.posted_at),
+                        account_id="",
                         user_id=str(tx.user_id),
                     )
                 )

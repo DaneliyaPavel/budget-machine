@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .posting import PostingCreate
@@ -9,47 +10,46 @@ ORM_STRICT = ConfigDict(from_attributes=True, strict=True)
 
 
 class TransactionBase(BaseModel):
-    amount: float
-    currency: str = "RUB"
-    amount_rub: float | None = None
-    description: str | None = None
-    category_id: UUID
+    posted_at: datetime | None = None
+    payee: str | None = None
+    note: str | None = None
+    external_id: str | None = None
+    category_id: UUID | None = None
 
     model_config = STRICT
 
     @field_validator("category_id", mode="before")
     def _validate_category(cls, v):
+        if v is None:
+            return None
         return UUID(str(v))
 
 
 class TransactionCreate(TransactionBase):
-    created_at: datetime | None = None
     postings: list[PostingCreate] = Field(default_factory=list)
 
     model_config = STRICT
 
-    @field_validator("created_at", mode="before")
-    def _parse_created_at(cls, v):
+    @field_validator("posted_at", mode="before")
+    def _parse_posted_at(cls, v):
         if v is None or isinstance(v, datetime):
             return v
         return datetime.fromisoformat(str(v))
 
 
 class TransactionUpdate(BaseModel):
-    amount: float | None = None
-    currency: str | None = None
-    description: str | None = None
+    posted_at: datetime | None = None
+    payee: str | None = None
+    note: str | None = None
+    external_id: str | None = None
     category_id: UUID | None = None
-    created_at: datetime | None = None
 
     model_config = STRICT
 
 
 class Transaction(TransactionBase):
     id: UUID
-    created_at: datetime
-    amount_rub: float
-    account_id: UUID
     user_id: UUID
+    posted_at: datetime
 
     model_config = ORM_STRICT

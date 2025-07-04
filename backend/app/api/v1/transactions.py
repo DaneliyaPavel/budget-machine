@@ -71,20 +71,19 @@ def _parse_rows(rows: Iterable[dict]) -> list[schemas.TransactionCreate]:
     parsed: list[schemas.TransactionCreate] = []
     for row in rows:
         try:
-            created_at = (
-                datetime.fromisoformat(str(row.get("created_at")))
-                if row.get("created_at")
+            posted_at = (
+                datetime.fromisoformat(str(row.get("posted_at")))
+                if row.get("posted_at")
                 else None
             )
         except ValueError:
-            created_at = None
+            posted_at = None
         parsed.append(
             schemas.TransactionCreate(
-                amount=float(row["amount"]),
-                currency=row.get("currency", "RUB"),
-                description=row.get("description"),
+                payee=row.get("payee"),
+                note=row.get("note"),
                 category_id=str(row["category_id"]),
-                created_at=created_at,
+                posted_at=posted_at,
             )
         )
     return parsed
@@ -140,13 +139,10 @@ async def export_transactions(
     )
     fieldnames = [
         "id",
-        "amount",
-        "currency",
-        "amount_rub",
-        "description",
+        "payee",
+        "note",
         "category_id",
-        "created_at",
-        "account_id",
+        "posted_at",
         "user_id",
     ]
     buffer = io.StringIO()
@@ -156,13 +152,10 @@ async def export_transactions(
         writer.writerow(
             {
                 "id": tx.id,
-                "amount": float(tx.amount),
-                "currency": tx.currency,
-                "amount_rub": float(tx.amount_rub),
-                "description": tx.description,
+                "payee": tx.payee or "",
+                "note": tx.note or "",
                 "category_id": tx.category_id,
-                "created_at": tx.created_at.isoformat(),
-                "account_id": tx.account_id,
+                "posted_at": tx.posted_at.isoformat(),
                 "user_id": tx.user_id,
             }
         )

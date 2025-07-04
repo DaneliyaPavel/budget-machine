@@ -131,11 +131,10 @@ def process_recurring_task(date: str) -> int:
             created = 0
             for p in payments:
                 tx = schemas.TransactionCreate(
-                    amount=float(p.amount),
-                    currency=p.currency,
-                    description=p.description or p.name,
+                    posted_at=datetime.fromisoformat(date),
+                    payee=p.name,
+                    note=p.description,
                     category_id=p.category_id,
-                    created_at=datetime.fromisoformat(date),
                 )
                 await crud.create_transaction(session, tx, p.account_id, p.user_id)
                 created += 1
