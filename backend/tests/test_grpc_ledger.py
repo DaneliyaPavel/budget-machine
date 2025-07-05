@@ -125,9 +125,9 @@ async def test_grpc_post_entry_and_stream():
             acc1, acc2, user, cat = await _prepare_entities(session)
 
         req = ledger_pb2.PostEntryRequest(
-            amount=100,
-            currency="RUB",
-            description="test",
+            payee="Test",
+            note="test",
+            external_id="ext",
             category_id=str(cat.id),
             postings=[
                 ledger_pb2.Posting(amount=100, side="debit", account_id=str(acc1.id)),
