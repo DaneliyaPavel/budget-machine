@@ -9,10 +9,11 @@ from google.protobuf import symbol_database as _symbol_database
 
 # @@protoc_insertion_point(imports)
 
+from google.protobuf import (
+    timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2,  # noqa: F401
+)
+
 _sym_db = _symbol_database.Default()
-
-
-from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
@@ -21,23 +22,23 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "proto.ledger_pb2", globals())
-if _descriptor._USE_C_DESCRIPTORS == False:
+if not _descriptor._USE_C_DESCRIPTORS:
 
     DESCRIPTOR._options = None
-    _POSTING._serialized_start = 63
-    _POSTING._serialized_end = 147
-    _POSTENTRYREQUEST._serialized_start = 150
-    _POSTENTRYREQUEST._serialized_end = 434
-    _TXN._serialized_start = 437
-    _TXN._serialized_end = 648
-    _TXNID._serialized_start = 650
-    _TXNID._serialized_end = 673
-    _BALANCEREQUEST._serialized_start = 675
-    _BALANCEREQUEST._serialized_end = 766
-    _BALANCERESPONSE._serialized_start = 768
-    _BALANCERESPONSE._serialized_end = 809
-    _STREAMREQUEST._serialized_start = 812
-    _STREAMREQUEST._serialized_end = 954
-    _LEDGERSERVICE._serialized_start = 957
-    _LEDGERSERVICE._serialized_end = 1141
+    _POSTING._serialized_start = 63  # noqa: F821
+    _POSTING._serialized_end = 147  # noqa: F821
+    _POSTENTRYREQUEST._serialized_start = 150  # noqa: F821
+    _POSTENTRYREQUEST._serialized_end = 434  # noqa: F821
+    _TXN._serialized_start = 437  # noqa: F821
+    _TXN._serialized_end = 648  # noqa: F821
+    _TXNID._serialized_start = 650  # noqa: F821
+    _TXNID._serialized_end = 673  # noqa: F821
+    _BALANCEREQUEST._serialized_start = 675  # noqa: F821
+    _BALANCEREQUEST._serialized_end = 766  # noqa: F821
+    _BALANCERESPONSE._serialized_start = 768  # noqa: F821
+    _BALANCERESPONSE._serialized_end = 809  # noqa: F821
+    _STREAMREQUEST._serialized_start = 812  # noqa: F821
+    _STREAMREQUEST._serialized_end = 954  # noqa: F821
+    _LEDGERSERVICE._serialized_start = 957  # noqa: F821
+    _LEDGERSERVICE._serialized_end = 1141  # noqa: F821
 # @@protoc_insertion_point(module_scope)
