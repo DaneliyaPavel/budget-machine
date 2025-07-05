@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -32,9 +32,13 @@ class TransactionCreate(TransactionBase):
 
     @field_validator("posted_at", mode="before")
     def _parse_posted_at(cls, v):
-        if v is None or isinstance(v, datetime):
+        if v is None:
             return v
-        return datetime.fromisoformat(str(v))
+        if not isinstance(v, datetime):
+            v = datetime.fromisoformat(str(v))
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
 
 
 class TransactionUpdate(BaseModel):

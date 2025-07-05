@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import AsyncGenerator
 from uuid import UUID
 
@@ -35,9 +35,11 @@ async def post_entry(
         }
         posted = tx_data.get("posted_at")
         if posted is None:
-            posted = datetime.now().replace(tzinfo=None)
-        elif posted.tzinfo is not None:
-            posted = posted.replace(tzinfo=None)
+            posted = datetime.now(timezone.utc)
+        elif posted.tzinfo is None:
+            posted = posted.replace(tzinfo=timezone.utc)
+        else:
+            posted = posted.astimezone(timezone.utc)
         tx_data["posted_at"] = posted
         tx_obj = models.Transaction(**tx_data, user_id=user_id)
         db.add(tx_obj)

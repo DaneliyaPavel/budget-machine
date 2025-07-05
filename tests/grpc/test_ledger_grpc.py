@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from datetime import timezone
 import pytest
 from grpclib.testing import ChannelFor
 
@@ -61,3 +62,4 @@ async def test_grpc_post_entry(session, monkeypatch):
         )
         assert len(txns) == 1
         assert txns[0].id == resp.id
+        assert txns[0].posted_at.ToDatetime(tzinfo=timezone.utc).tzinfo == timezone.utc

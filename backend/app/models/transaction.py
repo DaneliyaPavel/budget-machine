@@ -13,7 +13,9 @@ class Transaction(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
-    posted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    posted_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
     payee = Column(String, nullable=True)
     note = Column(String, nullable=True)
     external_id = Column(String, nullable=True)

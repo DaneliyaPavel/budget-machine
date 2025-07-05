@@ -1,4 +1,5 @@
 import pytest
+from datetime import timezone
 from fastapi import HTTPException
 
 from backend.app import schemas, crud
@@ -32,7 +33,7 @@ async def test_post_entry_and_balance(session):
     ]
     async with async_session() as db:
         tx = await ledger.post_entry(db, txn, postings, user.account_id, user.id)
-        assert tx.posted_at.tzinfo is None
+        assert tx.posted_at.tzinfo == timezone.utc
 
         balance = await ledger.get_balance(db, user.account_id)
         assert balance == 100

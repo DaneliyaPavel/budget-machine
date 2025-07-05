@@ -16,7 +16,7 @@ def test_transaction_posted_at_tz():
         user_id=uuid4(),
         posted_at=datetime.now(timezone.utc),
     )
-    assert tx.posted_at.tzinfo is not None
+    assert tx.posted_at.tzinfo == timezone.utc
 
 
 def test_transaction_create_validators():
@@ -26,6 +26,7 @@ def test_transaction_create_validators():
         category_id=str(cat_id),
     )
     assert isinstance(tx.posted_at, datetime)
+    assert tx.posted_at.tzinfo == timezone.utc
     assert tx.category_id == cat_id
 
 
@@ -38,3 +39,4 @@ def test_transaction_from_orm():
     data = schemas.Transaction.model_validate(obj)
     assert data.id == obj.id
     assert data.posted_at == obj.posted_at
+    assert data.posted_at.tzinfo == timezone.utc
