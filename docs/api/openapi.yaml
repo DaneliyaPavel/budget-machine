@@ -158,9 +158,9 @@ paths:
           - type: string
             format: date-time
           - type: 'null'
-          description: Start date
+          description: Start date (posted_at)
           title: Date From
-        description: Start date
+        description: Start date (posted_at)
       - name: date_to
         in: query
         required: false
@@ -169,9 +169,9 @@ paths:
           - type: string
             format: date-time
           - type: 'null'
-          description: End date
+          description: End date (posted_at)
           title: Date To
-        description: End date
+        description: End date (posted_at)
       - name: category_id
         in: query
         required: false
@@ -280,9 +280,9 @@ paths:
           - type: string
             format: date-time
           - type: 'null'
-          description: Start date
+          description: Start date (posted_at)
           title: Date From
-        description: Start date
+        description: Start date (posted_at)
       - name: date_to
         in: query
         required: false
@@ -291,9 +291,9 @@ paths:
           - type: string
             format: date-time
           - type: 'null'
-          description: End date
+          description: End date (posted_at)
           title: Date To
-        description: End date
+        description: End date (posted_at)
       - name: category_id
         in: query
         required: false

@@ -31,8 +31,8 @@ router = APIRouter(prefix="/transactions", tags=["Операции"])
 
 @router.get("/", response_model=list[schemas.Transaction])
 async def read_transactions(
-    date_from: datetime | None = Query(None, description="Start date"),
-    date_to: datetime | None = Query(None, description="End date"),
+    date_from: datetime | None = Query(None, description="Start date (posted_at)"),
+    date_to: datetime | None = Query(None, description="End date (posted_at)"),
     category_id: str | None = Query(None, description="Category"),
     limit: int | None = Query(None, description="Limit"),
     session: AsyncSession = Depends(database.get_session),
@@ -123,8 +123,8 @@ async def import_transactions(
 
 @router.get("/export")
 async def export_transactions(
-    date_from: datetime | None = Query(None, description="Start date"),
-    date_to: datetime | None = Query(None, description="End date"),
+    date_from: datetime | None = Query(None, description="Start date (posted_at)"),
+    date_to: datetime | None = Query(None, description="End date (posted_at)"),
     category_id: str | None = Query(None, description="Category"),
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),

@@ -68,12 +68,28 @@ def test_notification_stream():
             )
             cat_id = r.json()["id"]
 
+            base_acc = client.get("/accounts/me", headers=headers).json()
+            r = client.post("/accounts/", json={"name": "Income"}, headers=headers)
+            acc2_id = r.json()["id"]
+
             tx = {
-                "amount": 150,
-                "currency": "RUB",
-                "description": "Магазин",
+                "payee": "Магазин",
+                "posted_at": "2025-06-15T12:00:00",
                 "category_id": cat_id,
-                "created_at": "2025-06-15T12:00:00",
+                "postings": [
+                    {
+                        "amount": 150,
+                        "side": "debit",
+                        "account_id": base_acc["id"],
+                        "currency_code": "RUB",
+                    },
+                    {
+                        "amount": 150,
+                        "side": "credit",
+                        "account_id": acc2_id,
+                        "currency_code": "RUB",
+                    },
+                ],
             }
             client.post("/transactions/", json=tx, headers=headers)
 

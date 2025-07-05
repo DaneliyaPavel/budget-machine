@@ -37,7 +37,7 @@ curl -X POST "http://127.0.0.1:8000/categories/" \
 
 ## Импорт операций из CSV
 
-CSV-файл должен содержать колонки `amount`, `currency`, `description`, `category_id` и опционально `created_at` в ISO-формате.
+CSV-файл должен содержать колонки `payee`, `note`, `category_id` и опционально `posted_at` в ISO-формате.
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/transactions/import" \
