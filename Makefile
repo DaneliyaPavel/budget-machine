@@ -11,7 +11,7 @@ lint:
 	mypy backend/app
 
 test:
-	pytest backend/tests
+	pytest --cov=backend --cov-fail-under=90 tests
 
 ci: lint test
 
