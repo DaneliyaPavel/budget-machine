@@ -60,6 +60,10 @@ async def post_entry(
     else:
         await db.commit()
         await db.refresh(tx_obj)
+    if tx_obj.posted_at.tzinfo is None:
+        tx_obj.posted_at = tx_obj.posted_at.replace(tzinfo=timezone.utc)
+    else:
+        tx_obj.posted_at = tx_obj.posted_at.astimezone(timezone.utc)
     return tx_obj
 
 
@@ -113,4 +117,8 @@ async def stream_transactions(
     stmt = stmt.order_by(models.Transaction.posted_at)
     result = await db.stream_scalars(stmt)
     async for row in result:
+        if row.posted_at.tzinfo is None:
+            row.posted_at = row.posted_at.replace(tzinfo=timezone.utc)
+        else:
+            row.posted_at = row.posted_at.astimezone(timezone.utc)
         yield row
