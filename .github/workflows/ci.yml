@@ -55,7 +55,7 @@ jobs:
       - name: Generate OpenAPI spec
         run: make openapi
       - name: Commit updated spec
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: EndBug/add-and-commit@v9
         with:
-          commit_message: 'chore: update openapi spec'
-          file_pattern: docs/api/openapi.yaml
+          message: 'chore: update openapi spec [skip ci]'
+          add: docs/api/openapi.yaml
