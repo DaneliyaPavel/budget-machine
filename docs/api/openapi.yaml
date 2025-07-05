@@ -182,6 +182,17 @@ paths:
           description: Category
           title: Category Id
         description: Category
+      - name: account_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Account
+          title: Account Id
+        description: Account
       - name: limit
         in: query
         required: false
