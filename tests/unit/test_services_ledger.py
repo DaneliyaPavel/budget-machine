@@ -1,24 +1,19 @@
 import pytest
 from fastapi import HTTPException
 
-from backend.app import schemas, crud, currency
+from backend.app import schemas, crud
 from backend.app.database import async_session
 from backend.app.services import ledger
 
 
 @pytest.mark.asyncio
-async def test_post_entry_and_balance(session, monkeypatch):
+async def test_post_entry_and_balance(session):
     user = await crud.create_user(
-        session, schemas.UserCreate(email="a@b.c", password="Pwd123$")
+        session, schemas.UserCreate(email="a@b.c", password="ComplexPass123$")
     )
     category = await crud.create_category(
         session, schemas.CategoryCreate(name="Food"), user.account_id, user.id
     )
-
-    async def fake_rate(code: str) -> float:
-        return 1.0
-
-    monkeypatch.setattr(currency, "get_rate", fake_rate)
 
     # create second account for postings
     account2 = await crud.create_account(
@@ -26,14 +21,18 @@ async def test_post_entry_and_balance(session, monkeypatch):
         schemas.AccountCreate(name="Income", currency_code="RUB", user_id=user.id),
     )
 
-    txn = schemas.TransactionCreate(amount=100, currency="RUB", category_id=category.id)
+    txn = schemas.TransactionCreate(category_id=category.id)
     postings = [
-        schemas.PostingCreate(amount=100, side="debit", account_id=user.account_id),
-        schemas.PostingCreate(amount=100, side="credit", account_id=account2.id),
+        schemas.PostingCreate(
+            amount=100, side="debit", account_id=user.account_id, currency_code="RUB"
+        ),
+        schemas.PostingCreate(
+            amount=100, side="credit", account_id=account2.id, currency_code="RUB"
+        ),
     ]
     async with async_session() as db:
         tx = await ledger.post_entry(db, txn, postings, user.account_id, user.id)
-        assert tx.amount == 100
+        assert tx.posted_at.tzinfo is None
 
         balance = await ledger.get_balance(db, user.account_id)
         assert balance == 100
@@ -46,14 +45,16 @@ async def test_post_entry_and_balance(session, monkeypatch):
 @pytest.mark.asyncio
 async def test_post_entry_requires_two_postings(session):
     user = await crud.create_user(
-        session, schemas.UserCreate(email="b@b.c", password="Pwd123$")
+        session, schemas.UserCreate(email="b@b.c", password="ComplexPass123$")
     )
     category = await crud.create_category(
         session, schemas.CategoryCreate(name="Misc"), user.account_id, user.id
     )
-    txn = schemas.TransactionCreate(amount=50, currency="RUB", category_id=category.id)
+    txn = schemas.TransactionCreate(category_id=category.id)
     postings = [
-        schemas.PostingCreate(amount=50, side="debit", account_id=user.account_id)
+        schemas.PostingCreate(
+            amount=50, side="debit", account_id=user.account_id, currency_code="RUB"
+        )
     ]
     async with async_session() as db:
         with pytest.raises(HTTPException):
@@ -83,7 +84,7 @@ async def test_post_entry_mismatched_totals(session):
         )
 
     user = await crud.create_user(
-        session, schemas.UserCreate(email="c@b.c", password="Pwd123$")
+        session, schemas.UserCreate(email="c@b.c", password="ComplexPass123$")
     )
     category = await crud.create_category(
         session, schemas.CategoryCreate(name="Err"), user.account_id, user.id
@@ -93,10 +94,14 @@ async def test_post_entry_mismatched_totals(session):
         schemas.AccountCreate(name="Income", currency_code="RUB", user_id=user.id),
     )
 
-    txn = schemas.TransactionCreate(amount=100, currency="RUB", category_id=category.id)
+    txn = schemas.TransactionCreate(category_id=category.id)
     postings = [
-        schemas.PostingCreate(amount=100, side="debit", account_id=user.account_id),
-        schemas.PostingCreate(amount=50, side="credit", account_id=account2.id),
+        schemas.PostingCreate(
+            amount=100, side="debit", account_id=user.account_id, currency_code="RUB"
+        ),
+        schemas.PostingCreate(
+            amount=50, side="credit", account_id=account2.id, currency_code="RUB"
+        ),
     ]
     async with async_session() as db:
         with pytest.raises(Exception):

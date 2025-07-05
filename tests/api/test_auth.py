@@ -28,7 +28,7 @@ async def test_jwt_cycle():
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            user = {"email": "jwt@example.com", "password": "Password123$"}
+            user = {"email": "jwt@example.com", "password": "ComplexPass123$"}
             r = await client.post("/auth/signup", json=user)
             assert r.status_code == 200
             r = await client.post("/auth/login", json=user)
@@ -54,7 +54,7 @@ async def test_signup_duplicate():
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            data = {"email": "dup@example.com", "password": "Password123$"}
+            data = {"email": "dup@example.com", "password": "ComplexPass123$"}
             r = await client.post("/auth/signup", json=data)
             assert r.status_code == 200
             r = await client.post("/auth/signup", json=data)
@@ -66,7 +66,7 @@ async def test_update_user_me():
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            data = {"email": "update@example.com", "password": "Password123$"}
+            data = {"email": "update@example.com", "password": "ComplexPass123$"}
             await client.post("/auth/signup", json=data)
             r = await client.post("/auth/login", json=data)
             token = r.json()["access_token"]
