@@ -10,7 +10,6 @@ import grpclib.client
 if typing.TYPE_CHECKING:
     import grpclib.server
 
-import google.protobuf.timestamp_pb2
 from . import ledger_pb2
 
 
