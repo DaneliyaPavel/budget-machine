@@ -1,12 +1,18 @@
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, field_validator
+from decimal import Decimal
+from pydantic import BaseModel, ConfigDict, field_validator, condecimal
 
-STRICT = ConfigDict(strict=True)
-ORM_STRICT = ConfigDict(from_attributes=True, strict=True)
+STRICT = ConfigDict(strict=True, json_encoders={Decimal: lambda v: float(v)})
+ORM_STRICT = ConfigDict(
+    from_attributes=True, strict=True, json_encoders={Decimal: lambda v: float(v)}
+)
+
+
+Amount = condecimal(max_digits=20, decimal_places=6, strict=False)
 
 
 class PostingBase(BaseModel):
-    amount: float
+    amount: Amount
     side: str
     account_id: UUID
     currency_code: str | None = None
