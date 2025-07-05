@@ -6,6 +6,7 @@ from uuid import UUID
 
 import contextlib
 from sqlalchemy import select, func, case
+from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
@@ -66,7 +67,7 @@ async def get_balance(
     db: AsyncSession,
     account_id: UUID,
     at: datetime | None = None,
-) -> float:
+) -> Decimal:
     """Return account balance at moment `at`."""
     stmt = (
         select(
@@ -89,7 +90,8 @@ async def get_balance(
     if at:
         stmt = stmt.where(models.Transaction.posted_at <= at)
     result = await db.execute(stmt)
-    return float(result.scalar() or 0)
+    value = result.scalar()
+    return Decimal(value) if value is not None else Decimal("0")
 
 
 async def stream_transactions(

@@ -66,7 +66,7 @@ class LedgerService(ledger_grpc.LedgerServiceBase):
                 UUID(request.account_id),
                 _ts_to_dt(request.at),
             )
-        await stream.send_message(ledger_pb2.BalanceResponse(amount=amount))
+        await stream.send_message(ledger_pb2.BalanceResponse(amount=float(amount)))
 
     async def StreamTxns(self, stream) -> None:
         request = await stream.recv_message()
