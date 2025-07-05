@@ -22,9 +22,12 @@ entity categories {
 }
 entity transactions {
   *id UUID
-  category_id UUID
-  account_id UUID
   user_id UUID
+  category_id UUID
+  posted_at
+  payee
+  note
+  external_id
 }
 entity postings {
   *id UUID
@@ -61,11 +64,11 @@ users ||--o{ recurring_payments
 users ||--o{ bank_tokens
 users ||--o{ push_subscriptions
 accounts ||--o{ categories
-accounts ||--o{ transactions
 accounts ||--o{ goals
 accounts ||--o{ recurring_payments
 accounts ||--o{ bank_tokens
 accounts ||--o{ push_subscriptions
+accounts ||--o{ postings
 currencies ||--o{ accounts
 currencies ||--o{ postings
 categories ||--o{ transactions
