@@ -1860,9 +1860,26 @@ paths:
     get:
       tags:
       - Валюты
+      summary: List Currencies
+      description: Список валют.
+      operationId: list_currencies_currencies__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Currency'
+                type: array
+                title: Response List Currencies Currencies  Get
+  /currencies/rates:
+    get:
+      tags:
+      - Валюты
       summary: Read Rates
       description: Вернуть текущие курсы валют.
-      operationId: read_rates_currencies__get
+      operationId: read_rates_currencies_rates_get
       parameters:
       - name: base
         in: query
@@ -1882,7 +1899,7 @@ paths:
                 type: object
                 additionalProperties:
                   type: number
-                title: Response Read Rates Currencies  Get
+                title: Response Read Rates Currencies Rates Get
         '422':
           description: Validation Error
           content:
@@ -2292,6 +2309,27 @@ components:
           title: Parent Id
       type: object
       title: CategoryUpdate
+    Currency:
+      properties:
+        code:
+          type: string
+          title: Code
+        name:
+          type: string
+          title: Name
+        symbol:
+          type: string
+          title: Symbol
+        precision:
+          type: integer
+          title: Precision
+          default: 2
+      type: object
+      required:
+      - code
+      - name
+      - symbol
+      title: Currency
     DailySummary:
       properties:
         date:

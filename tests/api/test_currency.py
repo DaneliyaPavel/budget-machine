@@ -12,7 +12,9 @@ if DB_PATH.exists():
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
 from backend.app.main import app  # noqa: E402
-from backend.app import currency  # noqa: E402
+from backend.app import currency, database  # noqa: E402
+from backend.scripts.load_currencies import load_currencies
+import asyncio
 
 
 async def fake_get_rate(code: str) -> float:
@@ -25,7 +27,7 @@ def test_currency_endpoints(monkeypatch):
     currency._rates = {"RUB": 1.0, "USD": 90.0, "EUR": 100.0}
 
     with TestClient(app) as client:
-        r = client.get("/currencies/?base=USD")
+        r = client.get("/currencies/rates?base=USD")
         assert r.status_code == 200
         data = r.json()
         assert abs(data["EUR"] - (100.0 / 90.0)) < 0.01
@@ -33,3 +35,20 @@ def test_currency_endpoints(monkeypatch):
         r = client.get("/currencies/convert?amount=100&from=USD&to=EUR")
         assert r.status_code == 200
         assert abs(r.json()["result"] - 90.0) < 0.01
+
+
+def test_currencies_list(monkeypatch):
+    monkeypatch.setattr(currency, "get_rate", fake_get_rate)
+    currency._rates = {"RUB": 1.0}
+
+    async def seed():
+        async with database.async_session() as session:
+            await load_currencies(session)
+
+    asyncio.run(seed())
+
+    with TestClient(app) as client:
+        r = client.get("/currencies")
+        assert r.status_code == 200
+        data = r.json()
+        assert any(c["code"] == "USD" for c in data)

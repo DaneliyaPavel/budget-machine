@@ -18,6 +18,7 @@ from .recurring_payment import (
     RecurringPayment,
 )
 from .bank_token import BankTokenBase, BankTokenCreate, BankToken
+from .currency import CurrencyCreate, Currency
 from .user import (
     UserBase,
     UserCreate,
@@ -72,6 +73,8 @@ __all__ = [
     "BankTokenBase",
     "BankTokenCreate",
     "BankToken",
+    "CurrencyCreate",
+    "Currency",
     "UserBase",
     "UserCreate",
     "UserUpdate",
