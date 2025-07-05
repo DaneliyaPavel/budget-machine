@@ -21,7 +21,7 @@ jobs:
       - name: Run linters
         run: make lint
       - name: Run tests
-        run: pytest --cov=backend --cov-fail-under=90 backend/tests
+        run: pytest --cov=backend --cov-fail-under=90 tests
 
   codeql:
     permissions:
