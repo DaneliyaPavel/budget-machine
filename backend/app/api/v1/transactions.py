@@ -34,6 +34,7 @@ async def read_transactions(
     date_from: datetime | None = Query(None, description="Start date (posted_at)"),
     date_to: datetime | None = Query(None, description="End date (posted_at)"),
     category_id: str | None = Query(None, description="Category"),
+    account_id: UUID | None = Query(None, description="Account"),
     limit: int = Query(50, description="Limit"),
     session: AsyncSession = Depends(database.get_session),
     current_user: User = Depends(get_current_user),
@@ -41,7 +42,7 @@ async def read_transactions(
     """Вернуть список операций с указанными фильтрами."""
     return await crud.get_transactions(
         session,
-        current_user.account_id,
+        account_id or current_user.account_id,
         date_from=date_from,
         date_to=date_to,
         category_id=category_id,

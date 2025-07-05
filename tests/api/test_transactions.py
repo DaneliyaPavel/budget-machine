@@ -173,3 +173,51 @@ def test_transactions_limit():
         items = r.json()
         assert len(items) == 3
         assert items[0]["payee"] == "#4"
+
+
+def test_transactions_filter_by_account():
+    with TestClient(app) as client:
+        token = _login(client, email="filter@example.com")
+        headers = {"Authorization": f"Bearer {token}"}
+
+        base_acc = client.get("/accounts/me", headers=headers).json()
+        r = client.post("/accounts/", json={"name": "Income"}, headers=headers)
+        acc2_id = r.json()["id"]
+        r = client.post("/accounts/", json={"name": "Savings"}, headers=headers)
+        acc3_id = r.json()["id"]
+
+        r = client.post("/categories/", json={"name": "Filt"}, headers=headers)
+        cat_id = r.json()["id"]
+
+        def make_tx(acc_id):
+            return {
+                "payee": "t",
+                "category_id": cat_id,
+                "postings": [
+                    {
+                        "amount": 1,
+                        "side": "debit",
+                        "account_id": base_acc["id"],
+                        "currency_code": "RUB",
+                    },
+                    {
+                        "amount": 1,
+                        "side": "credit",
+                        "account_id": acc_id,
+                        "currency_code": "RUB",
+                    },
+                ],
+            }
+
+        for _ in range(2):
+            client.post("/transactions/", json=make_tx(acc2_id), headers=headers)
+        for _ in range(2):
+            client.post("/transactions/", json=make_tx(acc3_id), headers=headers)
+
+        r = client.get(f"/transactions/?account_id={acc2_id}", headers=headers)
+        assert r.status_code == 200
+        assert len(r.json()) == 2
+
+        r = client.get(f"/transactions/?account_id={acc3_id}", headers=headers)
+        assert r.status_code == 200
+        assert len(r.json()) == 2
