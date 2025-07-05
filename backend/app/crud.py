@@ -779,3 +779,19 @@ async def delete_push_subscription(
         )
     )
     await db.commit()
+
+
+# ----------------------------------------------------------------------------
+# Валюты
+# ----------------------------------------------------------------------------
+
+
+async def get_currencies(db: AsyncSession) -> list[models.Currency]:
+    result = await db.execute(select(models.Currency))
+    return result.scalars().all()
+
+
+async def add_currency(db: AsyncSession, currency: schemas.CurrencyCreate) -> None:
+    if await db.get(models.Currency, currency.code) is None:
+        db.add(models.Currency(**currency.model_dump()))
+        await db.commit()
