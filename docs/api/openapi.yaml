@@ -2192,7 +2192,7 @@ components:
           title: Name
         monthly_limit:
           anyOf:
-          - type: number
+          - type: string
           - type: 'null'
           title: Monthly Limit
         icon:
@@ -2233,6 +2233,7 @@ components:
         monthly_limit:
           anyOf:
           - type: number
+          - type: string
           - type: 'null'
           title: Monthly Limit
         icon:
@@ -2276,6 +2277,7 @@ components:
         monthly_limit:
           anyOf:
           - type: number
+          - type: string
           - type: 'null'
           title: Monthly Limit
         icon:
@@ -2535,7 +2537,9 @@ components:
     PostingCreate:
       properties:
         amount:
-          type: number
+          anyOf:
+          - type: number
+          - type: string
           title: Amount
         side:
           type: string
