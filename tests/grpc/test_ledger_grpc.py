@@ -14,7 +14,7 @@ from backend.app.grpc import ledger_grpc, ledger_pb2, server
 @pytest.mark.asyncio
 async def test_grpc_post_entry(session, monkeypatch):
     user = await crud.create_user(
-        session, schemas.UserCreate(email="g@e.com", password="Pwd123$")
+        session, schemas.UserCreate(email="g@e.com", password="ComplexPass123$")
     )
     category = await crud.create_category(
         session, schemas.CategoryCreate(name="Food"), user.account_id, user.id
