@@ -4,14 +4,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app import crud, database, schemas
 
 BASE_CURRENCIES = [
-    schemas.CurrencyCreate(code="RUB", name="Российский рубль", symbol="₽", precision=2),
+    schemas.CurrencyCreate(
+        code="RUB", name="Российский рубль", symbol="₽", precision=2
+    ),
     schemas.CurrencyCreate(code="USD", name="Доллар США", symbol="$", precision=2),
     schemas.CurrencyCreate(code="EUR", name="Евро", symbol="€", precision=2),
     schemas.CurrencyCreate(code="GBP", name="Британский фунт", symbol="£", precision=2),
     schemas.CurrencyCreate(code="JPY", name="Иена", symbol="¥", precision=0),
     schemas.CurrencyCreate(code="CNY", name="Китайский юань", symbol="¥", precision=2),
-    schemas.CurrencyCreate(code="CHF", name="Швейцарский франк", symbol="CHF", precision=2),
-    schemas.CurrencyCreate(code="KZT", name="Казахстанский тенге", symbol="₸", precision=2),
+    schemas.CurrencyCreate(
+        code="CHF", name="Швейцарский франк", symbol="CHF", precision=2
+    ),
+    schemas.CurrencyCreate(
+        code="KZT", name="Казахстанский тенге", symbol="₸", precision=2
+    ),
 ]
 
 
