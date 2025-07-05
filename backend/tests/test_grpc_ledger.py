@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 import uuid
+from datetime import timezone
 
 import pytest
 from sqlalchemy import text
@@ -150,3 +151,4 @@ async def test_grpc_post_entry_and_stream():
         ):
             txns.append(item)
         assert len(txns) == 1
+        assert txns[0].posted_at.ToDatetime(tzinfo=timezone.utc).tzinfo == timezone.utc
