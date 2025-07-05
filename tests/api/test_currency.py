@@ -13,8 +13,8 @@ os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 
 from backend.app.main import app  # noqa: E402
 from backend.app import currency, database  # noqa: E402
-from backend.scripts.load_currencies import load_currencies
-import asyncio
+from backend.scripts.load_currencies import load_currencies  # noqa: E402
+import asyncio  # noqa: E402
 
 
 async def fake_get_rate(code: str) -> float:
