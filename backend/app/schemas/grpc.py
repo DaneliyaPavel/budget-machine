@@ -14,11 +14,11 @@ class Posting(BaseModel):
 
 
 class PostEntryRequest(BaseModel):
-    amount: float
-    currency: str
-    description: str | None = None
+    payee: str | None = None
+    note: str | None = None
+    external_id: str | None = None
     category_id: UUID
-    created_at: datetime | None = None
+    posted_at: datetime | None = None
     postings: list[Posting]
     account_id: UUID
     user_id: UUID
@@ -28,13 +28,11 @@ class PostEntryRequest(BaseModel):
 
 class Txn(BaseModel):
     id: UUID
-    amount: float
-    currency: str
-    amount_rub: float
-    description: str | None = None
-    category_id: UUID
-    created_at: datetime
-    account_id: UUID
+    posted_at: datetime
+    payee: str | None = None
+    note: str | None = None
+    external_id: str | None = None
+    category_id: UUID | None = None
     user_id: UUID
 
     model_config = STRICT

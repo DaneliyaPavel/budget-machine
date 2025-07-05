@@ -7,7 +7,7 @@ from grpclib.server import Server
 from google.protobuf.timestamp_pb2 import Timestamp
 
 from ..database import async_session
-from .. import schemas
+from .. import schemas, crud
 from ..services import ledger
 
 from . import ledger_grpc, ledger_pb2
@@ -30,19 +30,25 @@ class LedgerService(ledger_grpc.LedgerServiceBase):
         request = await stream.recv_message()
         assert request is not None
         txn = schemas.TransactionCreate(
-            note=request.description or None,
+            payee=request.payee or None,
+            note=request.note or None,
+            external_id=request.external_id or None,
             category_id=UUID(request.category_id),
-            posted_at=_ts_to_dt(request.created_at),
+            posted_at=_ts_to_dt(request.posted_at),
         )
-        postings = [
-            schemas.PostingCreate(
-                amount=p.amount,
-                side=p.side,
-                account_id=UUID(p.account_id),
-            )
-            for p in request.postings
-        ]
         async with async_session() as session:
+            postings = []
+            for p in request.postings:
+                acc = await crud.get_account(session, UUID(p.account_id))
+                currency_code = acc.currency_code if acc else "RUB"
+                postings.append(
+                    schemas.PostingCreate(
+                        amount=p.amount,
+                        side=p.side,
+                        account_id=UUID(p.account_id),
+                        currency_code=currency_code,
+                    )
+                )
             tx = await ledger.post_entry(
                 session, txn, postings, UUID(request.account_id), UUID(request.user_id)
             )
@@ -75,13 +81,11 @@ class LedgerService(ledger_grpc.LedgerServiceBase):
                 await stream.send_message(
                     ledger_pb2.Txn(
                         id=str(tx.id),
-                        amount=0,
-                        currency="",
-                        amount_rub=0,
-                        description=tx.note or "",
+                        posted_at=_dt_to_ts(tx.posted_at),
+                        payee=tx.payee or "",
+                        note=tx.note or "",
+                        external_id=tx.external_id or "",
                         category_id=str(tx.category_id) if tx.category_id else "",
-                        created_at=_dt_to_ts(tx.posted_at),
-                        account_id="",
                         user_id=str(tx.user_id),
                     )
                 )

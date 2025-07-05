@@ -10,11 +10,11 @@ message Posting {
 }
 
 message PostEntryRequest {
-    double amount = 1;
-    string currency = 2;
-    string description = 3;
+    string payee = 1;
+    string note = 2;
+    string external_id = 3;
     string category_id = 4;
-    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp posted_at = 5;
     repeated Posting postings = 6;
     string account_id = 7; // account for tx
     string user_id = 8;
@@ -22,14 +22,12 @@ message PostEntryRequest {
 
 message Txn {
     string id = 1;
-    double amount = 2;
-    string currency = 3;
-    double amount_rub = 4;
-    string description = 5;
+    google.protobuf.Timestamp posted_at = 2;
+    string payee = 3;
+    string note = 4;
+    string external_id = 5;
     string category_id = 6;
-    google.protobuf.Timestamp created_at = 7;
-    string account_id = 8;
-    string user_id = 9;
+    string user_id = 7;
 }
 
 message TxnId {
