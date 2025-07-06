@@ -93,3 +93,47 @@ def test_subcategory_creation():
         data = {c["id"]: c for c in r.json()}
         assert parent_id in data and sub_id in data
         assert data[sub_id]["parent_id"] == parent_id
+
+
+def test_delete_category_in_use():
+    with TestClient(app) as client:
+        user = {"email": "cat3@example.com", "password": "ComplexPass123$"}
+        r = client.post("/users/", json=user)
+        assert r.status_code == 200
+        token = _login(client, user)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        r = client.post("/categories/", json={"name": "InUse"}, headers=headers)
+        assert r.status_code == 200
+        cat_id = r.json()["id"]
+
+        base_acc = client.get("/accounts/me", headers=headers).json()
+        r = client.post("/accounts/", json={"name": "Income"}, headers=headers)
+        acc2_id = r.json()["id"]
+
+        tx = {
+            "category_id": cat_id,
+            "postings": [
+                {
+                    "amount": 1,
+                    "side": "debit",
+                    "account_id": base_acc["id"],
+                    "currency_code": "RUB",
+                },
+                {
+                    "amount": 1,
+                    "side": "credit",
+                    "account_id": acc2_id,
+                    "currency_code": "RUB",
+                },
+            ],
+        }
+        r = client.post("/transactions/", json=tx, headers=headers)
+        assert r.status_code == 200
+
+        r = client.delete(f"/categories/{cat_id}", headers=headers)
+        assert r.status_code == 409
+        assert r.json() == {
+            "detail": "Category has transactions",
+            "code": "CATEGORY_IN_USE",
+        }
