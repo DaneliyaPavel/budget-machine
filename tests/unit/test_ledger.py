@@ -1,7 +1,6 @@
 import os
 import sys
 from pathlib import Path
-import uuid
 import pytest
 from sqlalchemy import select, func, text
 import pytest_asyncio
