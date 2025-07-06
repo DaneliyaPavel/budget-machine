@@ -11,3 +11,13 @@ name = "cz_conventional_commits"
 version = "0.1.0"
 tag_format = "v$version"
 
+[project]
+name = "budget-machine"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[project.entry-points."bank_bridge.connectors"]
+tinkoff = "services.bank_bridge.connectors.tinkoff:TinkoffConnector"
+sber = "services.bank_bridge.connectors.sber:SberConnector"
+gazprom = "services.bank_bridge.connectors.gazprom:GazpromConnector"
+
