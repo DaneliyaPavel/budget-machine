@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 import pytest
 from httpx import AsyncClient
+from uuid import uuid4
 from asgi_lifespan import LifespanManager
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -55,3 +56,28 @@ async def test_account_read_and_update():
             r = await client.get(f"/accounts/{data['id']}/balance", headers=headers)
             assert r.status_code == 200
             assert "balance" in r.json()
+
+
+@pytest.mark.asyncio
+async def test_account_balance_not_found():
+    async with LifespanManager(app):
+        async with AsyncClient(app=app, base_url="http://test") as client:
+            user = {"email": "missing@example.com", "password": "Password123$"}
+            r = await client.post("/users/", json=user)
+            assert r.status_code == 200
+            token = (
+                await client.post(
+                    "/users/token",
+                    data={"username": user["email"], "password": user["password"]},
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                )
+            ).json()["access_token"]
+            headers = {"Authorization": f"Bearer {token}"}
+
+            fake_id = uuid4()
+            r = await client.get(f"/accounts/{fake_id}/balance", headers=headers)
+            assert r.status_code == 404
+            assert r.json() == {
+                "detail": "Account not found",
+                "code": "ACCOUNT_NOT_FOUND",
+            }
