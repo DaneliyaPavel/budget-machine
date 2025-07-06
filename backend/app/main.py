@@ -21,7 +21,7 @@ from .api.v1 import (
     users as users_v1,
     currencies as currencies_v1,
 )
-from .database import engine, Base
+from .database import engine
 from .kafka_producer import close as close_producer
 from contextlib import asynccontextmanager
 
@@ -48,8 +48,11 @@ tags_metadata = [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events using lifespan."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    async with engine.begin() as _conn:
+        # База данных инициализируется миграциями Alembic. Таблицы не
+        # создаются автоматически при запуске приложения.
+        # await conn.run_sync(Base.metadata.create_all)
+        pass
     try:
         Instrumentator().instrument(app).expose(app)
     except RuntimeError:
