@@ -23,15 +23,9 @@ scheduler: "Scheduler" | None = None
 FETCH_LATENCY_MS = Histogram(
     "bankbridge_fetch_latency_ms", "Latency of external bank requests in ms"
 )
-TXN_COUNT = Counter(
-    "bankbridge_txn_count", "Number of bank transactions processed"
-)
-ERROR_TOTAL = Counter(
-    "bankbridge_error_total", "Total errors when calling bank APIs"
-)
-RATE_LIMITED = Counter(
-    "bankbridge_rate_limited", "Count of rate limited responses"
-)
+TXN_COUNT = Counter("bankbridge_txn_count", "Number of bank transactions processed")
+ERROR_TOTAL = Counter("bankbridge_error_total", "Total errors when calling bank APIs")
+RATE_LIMITED = Counter("bankbridge_rate_limited", "Count of rate limited responses")
 
 
 class JsonFormatter(logging.Formatter):
