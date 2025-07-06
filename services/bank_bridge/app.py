@@ -36,7 +36,9 @@ async def external_request(method: str, url: str, **kwargs: Any) -> Any:
 @app.post("/connect/{bank}")
 async def connect(bank: str) -> dict[str, str]:
     assert scheduler
-    await scheduler.spawn(external_request("POST", f"https://api.example.com/{bank}/connect"))
+    await scheduler.spawn(
+        external_request("POST", f"https://api.example.com/{bank}/connect")
+    )
     return {"status": "connecting"}
 
 
@@ -49,5 +51,7 @@ async def status(bank: str) -> dict[str, Any]:
 @app.post("/sync/{bank}")
 async def sync(bank: str) -> dict[str, str]:
     assert scheduler
-    await scheduler.spawn(external_request("POST", f"https://api.example.com/{bank}/sync"))
+    await scheduler.spawn(
+        external_request("POST", f"https://api.example.com/{bank}/sync")
+    )
     return {"status": "scheduled"}
