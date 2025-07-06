@@ -36,13 +36,8 @@ jobs:
           pip install -r requirements.txt
           pip install -r backend/requirements-dev.txt
           pip install jsonschema respx
-      - name: Start services
-        run: docker compose -f tests/bank_bridge/docker-compose.yml up -d
       - name: Run bankbridge tests
         run: make bankbridge-tests
-      - name: Stop services
-        if: always()
-        run: docker compose -f tests/bank_bridge/docker-compose.yml down
       - name: Build bankbridge image
         run: docker build -t bankbridge:${{ github.sha }} -f services/bank_bridge/Dockerfile .
       - name: Scan image with Trivy
