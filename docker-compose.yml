@@ -64,5 +64,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  bank-bridge:
+    build:
+      context: .
+      dockerfile: services/bank_bridge/Dockerfile
+    env_file: .env
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512m
 volumes:
   db_data:
