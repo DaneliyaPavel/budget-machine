@@ -8,6 +8,10 @@ build:
       context: .
       docker:
         dockerfile: backend/Dockerfile
+    - image: bank-bridge
+      context: .
+      docker:
+        dockerfile: services/bank_bridge/Dockerfile
 
 deploy:
   helm:
@@ -28,3 +32,7 @@ portForward:
     resourceName: budget-machine-budget-machine
     port: 80
     localPort: 8000
+  - resourceType: Service
+    resourceName: bank-bridge-bank-bridge
+    port: 8080
+    localPort: 8080
