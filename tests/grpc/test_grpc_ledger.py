@@ -36,13 +36,11 @@ async def setup_db():
             await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
             await conn.execute(text("CREATE SCHEMA public"))
             await conn.run_sync(database.Base.metadata.create_all)
-            uid = uuid.uuid4()
             await conn.execute(
                 text(
-                    "INSERT INTO currencies(id, code, name, symbol, precision) "
-                    "VALUES(:id, 'RUB', 'Ruble', '₽', 2)"
-                ),
-                {"id": uid},
+                    "INSERT INTO currencies(code, name, symbol, precision) "
+                    "VALUES ('RUB', 'Ruble', '₽', 2)"
+                )
             )
             await conn.execute(
                 text(
