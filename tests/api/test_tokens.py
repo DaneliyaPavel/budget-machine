@@ -15,7 +15,7 @@ from backend.app import vault  # noqa: E402
 
 
 def _login(client):
-    user = {"email": "tok@example.com", "password": "pass"}
+    user = {"email": "tok@example.com", "password": "ComplexPass123$"}
     r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(

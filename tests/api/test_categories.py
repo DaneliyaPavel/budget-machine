@@ -15,7 +15,7 @@ from backend.app.main import app  # noqa: E402
 
 
 def _create_user(client):
-    user = {"email": "cat@example.com", "password": "pass"}
+    user = {"email": "cat@example.com", "password": "ComplexPass123$"}
     r = client.post("/users/", json=user)
     assert r.status_code == 200
     assert r.json()["role"] == "owner"
@@ -71,7 +71,7 @@ def test_category_crud():
 
 def test_subcategory_creation():
     with TestClient(app) as client:
-        user = {"email": "cat2@example.com", "password": "pass"}
+        user = {"email": "cat2@example.com", "password": "ComplexPass123$"}
         r = client.post("/users/", json=user)
         assert r.status_code == 200
         token = _login(client, user)

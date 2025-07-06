@@ -15,7 +15,7 @@ from backend.app.main import app  # noqa: E402
 
 def test_create_and_login_user():
     with TestClient(app) as client:
-        user = {"email": "u@example.com", "password": "pass"}
+        user = {"email": "u@example.com", "password": "ComplexPass123$"}
         r = client.post("/users/", json=user)
         assert r.status_code == 200
         data = r.json()
@@ -35,7 +35,7 @@ def test_create_and_login_user():
 def test_join_account():
     with TestClient(app) as client:
         # create first user (owner of account)
-        owner = {"email": "owner@example.com", "password": "pass"}
+        owner = {"email": "owner@example.com", "password": "ComplexPass123$"}
         r = client.post("/users/", json=owner)
         assert r.status_code == 200
         owner_data = r.json()
@@ -46,7 +46,7 @@ def test_join_account():
         )
 
         # create second user
-        member = {"email": "member@example.com", "password": "pass"}
+        member = {"email": "member@example.com", "password": "ComplexPass123$"}
         r = client.post("/users/", json=member)
         assert r.status_code == 200
         member_token = client.post(
@@ -70,7 +70,7 @@ def test_join_account():
 
 def test_members_list_and_remove():
     with TestClient(app) as client:
-        owner = {"email": "own2@example.com", "password": "pass"}
+        owner = {"email": "own2@example.com", "password": "ComplexPass123$"}
         r = client.post("/users/", json=owner)
         assert r.status_code == 200
         owner_data = r.json()
@@ -81,7 +81,7 @@ def test_members_list_and_remove():
         ).json()["access_token"]
         headers_owner = {"Authorization": f"Bearer {owner_token}"}
 
-        member = {"email": "mem2@example.com", "password": "pass"}
+        member = {"email": "mem2@example.com", "password": "ComplexPass123$"}
         r = client.post("/users/", json=member)
         assert r.status_code == 200
         member_token = client.post(
@@ -113,7 +113,7 @@ def test_members_list_and_remove():
 
 def test_update_user_profile():
     with TestClient(app) as client:
-        user = {"email": "prof@example.com", "password": "pass"}
+        user = {"email": "prof@example.com", "password": "ComplexPass123$"}
         r = client.post("/users/", json=user)
         assert r.status_code == 200
 

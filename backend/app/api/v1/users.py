@@ -41,6 +41,10 @@ async def create_user(
     user: schemas.UserCreate, session: AsyncSession = Depends(database.get_session)
 ):
     """Зарегистрировать нового пользователя."""
+    try:
+        security.validate_password(user.password)
+    except ValueError as exc:
+        raise api_error(400, str(exc), "INVALID_PASSWORD") from exc
     db_user = await crud.get_user_by_email(session, user.email)
     if db_user:
         raise api_error(400, "Email already registered", "EMAIL_EXISTS")

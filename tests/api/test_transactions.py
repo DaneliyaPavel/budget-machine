@@ -16,7 +16,7 @@ from backend.app.main import app  # noqa: E402
 
 
 def _login(client, email="tx@example.com"):
-    user = {"email": email, "password": "pass"}
+    user = {"email": email, "password": "ComplexPass123$"}
     r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(

@@ -25,7 +25,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def _login(client):
-    user = {"email": "notif@example.com", "password": "pass"}
+    user = {"email": "notif@example.com", "password": "ComplexPass123$"}
     r = client.post("/users/", json=user)
     assert r.status_code == 200
     r = client.post(
