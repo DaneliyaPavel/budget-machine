@@ -1,7 +1,7 @@
 """Initial schema with timescaledb and postings balance trigger
 
 Revision ID: dda846dd5702
-Revises: 
+Revises:
 Create Date: 2025-07-06 00:16:51.171807
 
 """
