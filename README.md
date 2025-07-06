@@ -19,7 +19,7 @@ pip install -r backend/requirements-dev.txt  # для разработки
 ## Быстрый старт
 
 ```bash
-make dev  # запускает docker-compose и открывает http://localhost:8000/docs
+make dev  # запускает docker compose и открывает http://localhost:8000/docs
 make ci   # локальный запуск ruff, black, mypy и pytest
 ```
 
