@@ -8,6 +8,9 @@ entity accounts {
   *id UUID
   user_id UUID
 }
+note right of accounts
+  accounts_user_id_idx (user_id)
+end note
 entity currencies {
   *code VARCHAR(3)
   name
@@ -20,6 +23,9 @@ entity categories {
   account_id UUID
   user_id UUID
 }
+note right of categories
+  categories_user_id_idx (user_id)
+end note
 entity transactions {
   *id UUID
   user_id UUID
@@ -29,11 +35,17 @@ entity transactions {
   note
   external_id
 }
+note right of transactions
+  transactions_user_posted_idx (user_id, posted_at)
+end note
 entity postings {
   *id UUID
   transaction_id UUID
   account_id UUID
 }
+note right of postings
+  postings_txn_id_idx (transaction_id)
+end note
 entity goals {
   *id UUID
   account_id UUID
