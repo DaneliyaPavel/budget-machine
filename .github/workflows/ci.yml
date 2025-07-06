@@ -46,7 +46,7 @@ jobs:
       - name: Build bankbridge image
         run: docker build -t bankbridge:${{ github.sha }} -f services/bank_bridge/Dockerfile .
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@v0.32.0
+        uses: aquasecurity/trivy-action@0.32.0
         with:
           image-ref: bankbridge:${{ github.sha }}
           severity: CRITICAL
