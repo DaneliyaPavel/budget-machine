@@ -8,7 +8,9 @@ import contextlib
 from sqlalchemy import select, func, case
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, status
+from fastapi import status
+
+from ..api.utils import api_error
 
 from .. import models, schemas
 
@@ -22,9 +24,10 @@ async def post_entry(
 ) -> models.Transaction:
     """Insert transaction and postings atomically."""
     if len(postings) < 2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least two postings required",
+        raise api_error(
+            status.HTTP_400_BAD_REQUEST,
+            "At least two postings required",
+            "INVALID_POSTINGS",
         )
     started = not db.in_transaction()
     ctx = db.begin() if started else contextlib.nullcontext()

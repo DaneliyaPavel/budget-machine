@@ -221,3 +221,32 @@ def test_transactions_filter_by_account():
         r = client.get(f"/transactions/?account_id={acc3_id}", headers=headers)
         assert r.status_code == 200
         assert len(r.json()) == 2
+
+
+def test_create_transaction_requires_two_postings():
+    with TestClient(app) as client:
+        token = _login(client, email="invalidpost@example.com")
+        headers = {"Authorization": f"Bearer {token}"}
+
+        base_acc = client.get("/accounts/me", headers=headers).json()
+        r = client.post("/categories/", json={"name": "Err"}, headers=headers)
+        cat_id = r.json()["id"]
+
+        tx = {
+            "category_id": cat_id,
+            "postings": [
+                {
+                    "amount": 1,
+                    "side": "debit",
+                    "account_id": base_acc["id"],
+                    "currency_code": "RUB",
+                }
+            ],
+        }
+
+        r = client.post("/transactions/", json=tx, headers=headers)
+        assert r.status_code == 400
+        assert r.json() == {
+            "detail": "At least two postings required",
+            "code": "INVALID_POSTINGS",
+        }
