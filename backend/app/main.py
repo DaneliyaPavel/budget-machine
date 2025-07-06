@@ -1,6 +1,9 @@
 """Точка входа FastAPI-приложения."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import HTTPException as FastAPIHTTPException
+from fastapi.exception_handlers import http_exception_handler
+from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from .routers import (
     goals,
@@ -67,6 +70,20 @@ app = FastAPI(
     openapi_tags=tags_metadata,
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(FastAPIHTTPException)
+async def custom_http_exception_handler(
+    request: Request, exc: FastAPIHTTPException
+) -> JSONResponse:
+    """Return errors in a consistent JSON format."""
+    if isinstance(exc.detail, dict) and {"detail", "code"} <= exc.detail.keys():
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail["detail"], "code": exc.detail["code"]},
+            headers=exc.headers,
+        )
+    return await http_exception_handler(request, exc)
 
 
 app.include_router(categories_v1.router)
