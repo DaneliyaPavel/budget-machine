@@ -12,10 +12,15 @@ class SberConnector(BaseConnector):
     name = "sber"
     display = "Сбербанк"
 
+    def __init__(self, user_id: str, token: str | None = None) -> None:
+        super().__init__(user_id, token)
+
     async def auth(self) -> str:
+        await self._save_token()
         return "https://example.com/sber/auth"
 
     async def refresh(self) -> str:
+        await self._save_token()
         return ""
 
     async def fetch_accounts(self) -> list[dict[str, Any]]:

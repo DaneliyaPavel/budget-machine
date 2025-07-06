@@ -20,8 +20,8 @@ class TinkoffConnector(BaseConnector):
     AUTH_URL = "https://id.tinkoff.ru/auth/authorize"
     TOKEN_URL = "https://id.tinkoff.ru/auth/token"
 
-    def __init__(self, token: str | None = None) -> None:
-        super().__init__(token)
+    def __init__(self, user_id: str, token: str | None = None) -> None:
+        super().__init__(user_id, token)
         self.client_id = os.getenv("TINKOFF_CLIENT_ID", "")
         self.client_secret = os.getenv("TINKOFF_CLIENT_SECRET", "")
         self.redirect_uri = os.getenv("TINKOFF_REDIRECT_URI", "")
@@ -35,6 +35,7 @@ class TinkoffConnector(BaseConnector):
             "redirect_uri": self.redirect_uri,
             "scope": "openid profile payments accounts",
         }
+        await self._save_token()
         return self.AUTH_URL + "?" + urlencode(params)
 
     async def refresh(self) -> str:
@@ -55,6 +56,7 @@ class TinkoffConnector(BaseConnector):
         self.refresh_token = data.get("refresh_token", self.refresh_token)
         if not self.token:
             raise RuntimeError("no access token")
+        await self._save_token()
         return self.token
 
     async def fetch_accounts(self) -> list[dict[str, Any]]:
