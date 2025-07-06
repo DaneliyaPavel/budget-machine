@@ -8,8 +8,11 @@ import os
 # строка подключения берется из переменной окружения
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
 
+# если переменная окружения DB_ECHO установлена в true/1/yes, включаем логгирование SQL
+DB_ECHO = os.getenv("DB_ECHO", "0").lower() in {"1", "true", "yes"}
+
 # создаём движок и фабрику сессий
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(DATABASE_URL, echo=DB_ECHO)
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
