@@ -23,6 +23,35 @@ jobs:
       - name: Run tests
         run: pytest --cov=backend --cov-fail-under=90 tests
 
+  bankbridge-tests:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r backend/requirements-dev.txt
+          pip install jsonschema respx
+      - name: Start services
+        run: docker-compose -f tests/bank_bridge/docker-compose.yml up -d
+      - name: Run bankbridge tests
+        run: make bankbridge-tests
+      - name: Stop services
+        if: always()
+        run: docker-compose -f tests/bank_bridge/docker-compose.yml down
+      - name: Build bankbridge image
+        run: docker build -t bankbridge:${{ github.sha }} -f services/bank_bridge/Dockerfile .
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@v0.32.0
+        with:
+          image-ref: bankbridge:${{ github.sha }}
+          severity: CRITICAL
+          exit-code: '1'
+
   codeql:
     permissions:
       contents: read

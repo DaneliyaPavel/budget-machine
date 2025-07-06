@@ -1,10 +1,7 @@
-import os
 from datetime import datetime
-from uuid import uuid4
 
 import pytest
 import respx
-from httpx import Response
 
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 
@@ -53,7 +50,9 @@ async def test_refresh_success(monkeypatch):
 
     monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
     with respx.mock(assert_all_called=True) as rsx:
-        rsx.post(c.TOKEN_URL).respond(200, json={"access_token": "at", "refresh_token": "r2"})
+        rsx.post(c.TOKEN_URL).respond(
+            200, json={"access_token": "at", "refresh_token": "r2"}
+        )
         token = await c.refresh()
     assert token == "at"
     assert c.token == "at"
@@ -75,6 +74,7 @@ async def test_fetch_accounts(monkeypatch):
 async def test_fetch_accounts_refresh(monkeypatch):
     c = make_connector()
     c.refresh_token = "r1"
+
     async def noop(self):
         pass
 
@@ -101,6 +101,7 @@ async def test_fetch_txns(monkeypatch):
 async def test_fetch_txns_refresh(monkeypatch):
     c = make_connector()
     c.refresh_token = "r1"
+
     async def noop(self):
         pass
 

@@ -35,7 +35,7 @@ async def test_openapi_contract():
         @schema.parametrize()
         async def run(case):
             transport = ASGITransport(app=app)
-            async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with AsyncClient(transport=transport, base_url="http://test"):
                 response = await case.call_asgi()
             case.validate_response(response)
 
