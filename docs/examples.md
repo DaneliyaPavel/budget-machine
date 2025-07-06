@@ -9,6 +9,12 @@ pip install -r requirements.txt
 uvicorn backend.app.main:app --reload
 ```
 
+Перед запуском приложения выполните миграции базы данных:
+
+```bash
+alembic upgrade head
+```
+
 Переменные окружения:
 - `DATABASE_URL` — строка подключения к PostgreSQL (по умолчанию SQLite);
 - `SECRET_KEY` — ключ для подписи JWT;
