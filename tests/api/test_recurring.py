@@ -13,7 +13,7 @@ os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 from backend.app.main import app  # noqa: E402
 
 
-def _login(client, email="test@example.com", password="pass"):
+def _login(client, email="test@example.com", password="ComplexPass123$"):
     user = {"email": email, "password": password}
     r = client.post("/users/", json=user)
     assert r.status_code == 200
