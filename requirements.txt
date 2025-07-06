@@ -32,4 +32,4 @@ protobuf>=6.31
 PyYAML
 
 aiohttp
-asyncio-jobs
+aiojobs

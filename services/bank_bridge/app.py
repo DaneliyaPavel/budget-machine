@@ -2,18 +2,17 @@ from typing import Any
 
 import aiohttp
 from fastapi import FastAPI
-from asyncio_jobs import Job, JobScheduler
+from aiojobs import create_scheduler, Scheduler
 
 app = FastAPI(title="Bank Bridge")
 
-scheduler: JobScheduler | None = None
+scheduler: "Scheduler" | None = None
 
 
 @app.on_event("startup")
 async def startup() -> None:
     global scheduler
-    scheduler = JobScheduler()
-    scheduler.start()
+    scheduler = await create_scheduler()
 
 
 @app.on_event("shutdown")
@@ -36,9 +35,8 @@ async def external_request(method: str, url: str, **kwargs: Any) -> Any:
 
 @app.post("/connect/{bank}")
 async def connect(bank: str) -> dict[str, str]:
-    job = Job(coro=external_request("POST", f"https://api.example.com/{bank}/connect"))
     assert scheduler
-    scheduler.spawn(job)
+    await scheduler.spawn(external_request("POST", f"https://api.example.com/{bank}/connect"))
     return {"status": "connecting"}
 
 
@@ -50,7 +48,6 @@ async def status(bank: str) -> dict[str, Any]:
 
 @app.post("/sync/{bank}")
 async def sync(bank: str) -> dict[str, str]:
-    job = Job(coro=external_request("POST", f"https://api.example.com/{bank}/sync"))
     assert scheduler
-    scheduler.spawn(job)
+    await scheduler.spawn(external_request("POST", f"https://api.example.com/{bank}/sync"))
     return {"status": "scheduled"}
