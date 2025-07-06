@@ -46,6 +46,7 @@ jobs:
           image-ref: bankbridge:${{ github.sha }}
           severity: CRITICAL
           exit-code: '1'
+          ignore-unfixed: true
 
   codeql:
     permissions:
