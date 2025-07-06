@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  kafka:
+    image: bitnami/kafka:3
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports:
+      - "9092:9092"
+  stub-bank:
+    image: ghcr.io/vintasoftware/stubs-http:latest
+    environment:
+      - PORT=8081
+    volumes:
+      - ./stubs:/stubs:ro
+    command: stubs 0.0.0.0 8081 /stubs
+    ports:
+      - "8081:8081"
+  core-mock:
+    image: ghcr.io/vintasoftware/stubs-http:latest
+    environment:
+      - PORT=8082
+    volumes:
+      - ./core:/stubs:ro
+    command: stubs 0.0.0.0 8082 /stubs
+    ports:
+      - "8082:8082"
