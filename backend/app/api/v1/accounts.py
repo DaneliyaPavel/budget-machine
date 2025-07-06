@@ -126,5 +126,8 @@ async def account_balance(
     session: AsyncSession = Depends(database.get_session),
 ):
     """Текущий баланс указанного счёта."""
+    account = await crud.get_account(session, account_id)
+    if not account:
+        raise api_error(404, "Account not found", "ACCOUNT_NOT_FOUND")
     balance = await ledger.get_balance(session, account_id)
     return {"balance": balance}
