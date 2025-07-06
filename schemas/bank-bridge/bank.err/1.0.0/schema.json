@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "bank.err",
+  "type": "object",
+  "properties": {
+    "user_id": {"type": "string", "format": "uuid"},
+    "bank_txn_id": {"type": "string"},
+    "error": {"type": "string"},
+    "data": {"type": "object"}
+  },
+  "required": ["user_id", "bank_txn_id", "error"]
+}

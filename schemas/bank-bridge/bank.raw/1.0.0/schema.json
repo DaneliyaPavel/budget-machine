@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "bank.raw",
+  "type": "object",
+  "properties": {
+    "user_id": {"type": "string", "format": "uuid"},
+    "bank_txn_id": {"type": "string"},
+    "payload": {"type": "object"}
+  },
+  "required": ["user_id", "bank_txn_id", "payload"]
+}
