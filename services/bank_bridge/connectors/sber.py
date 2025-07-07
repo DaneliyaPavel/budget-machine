@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
+from datetime import date, datetime
+from typing import Any, AsyncGenerator
 
-from .base import BaseConnector
+from .base import Account, BaseConnector, RawTxn, TokenPair
 
 
 class SberConnector(BaseConnector):
@@ -12,21 +12,28 @@ class SberConnector(BaseConnector):
     name = "sber"
     display = "Сбербанк"
 
-    def __init__(self, user_id: str, token: str | None = None) -> None:
+    def __init__(self, user_id: str, token: TokenPair | None = None) -> None:
         super().__init__(user_id, token)
 
-    async def auth(self) -> str:
-        await self._save_token()
-        return "https://example.com/sber/auth"
+    async def auth(self, code: str | None, **kwargs: Any) -> TokenPair:
+        token = TokenPair(access_token="https://example.com/sber/auth")
+        await self._save_token(token)
+        return token
 
-    async def refresh(self) -> str:
-        await self._save_token()
-        return ""
+    async def refresh(self, token: TokenPair) -> TokenPair:
+        await self._save_token(token)
+        return token
 
-    async def fetch_accounts(self) -> list[dict[str, Any]]:
+    async def fetch_accounts(self, token: TokenPair) -> list[Account]:
         return []
 
     async def fetch_txns(
-        self, account_id: str, start: datetime, end: datetime
-    ) -> list[dict[str, Any]]:
-        return []
+        self,
+        token: TokenPair,
+        account: Account,
+        date_from: date,
+        date_to: date,
+    ) -> AsyncGenerator[RawTxn, None]:
+        if False:
+            yield
+        return
