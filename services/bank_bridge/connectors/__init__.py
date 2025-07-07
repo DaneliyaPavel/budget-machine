@@ -3,7 +3,7 @@ from __future__ import annotations
 from importlib.metadata import entry_points
 from typing import Type
 
-from .base import BaseConnector
+from .base import BaseConnector, TokenPair
 
 
 def _load_connectors() -> dict[str, Type[BaseConnector]]:
@@ -30,4 +30,4 @@ def get_connector(name: str) -> Type[BaseConnector]:
         raise ValueError(f"Unknown connector: {name}")
 
 
-__all__ = ["BaseConnector", "get_connector", "CONNECTORS"]
+__all__ = ["BaseConnector", "TokenPair", "get_connector", "CONNECTORS"]
