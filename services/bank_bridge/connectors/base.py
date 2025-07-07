@@ -5,9 +5,13 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, AsyncGenerator
 
+import asyncio
 import json
 
+import httpx
+
 from .. import vault
+from ..limits import LeakyBucket, CircuitBreaker
 
 
 @dataclass
@@ -37,6 +41,9 @@ class RawTxn:
 class BaseConnector(ABC):
     """Abstract base class for bank connectors."""
 
+    #: shared rate limiter for all connectors
+    rate_limiter = LeakyBucket(rate=1.0, capacity=5)
+
     #: machine-readable identifier
     name: str
     #: human friendly title
@@ -47,6 +54,7 @@ class BaseConnector(ABC):
         self.token = token.access_token if token else None
         self.refresh_token = token.refresh_token if token else None
         self.vault = vault.get_vault_client()
+        self.circuit_breaker = CircuitBreaker()
 
     async def _save_token(self, token: TokenPair) -> None:
         self.token = token.access_token
@@ -57,6 +65,79 @@ class BaseConnector(ABC):
         await self.vault.write(
             f"bank_tokens/{self.name}/{self.user_id}", json.dumps(data)
         )
+
+    async def _request(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        timeout: float = 10,
+        auth: bool = True,
+    ) -> httpx.Response:
+        """Perform HTTP request with retry, refresh and circuit breaker."""
+
+        await self.rate_limiter.acquire()
+        await self.circuit_breaker.before_request()
+
+        hdrs = dict(headers or {})
+        if auth and self.token:
+            hdrs.setdefault("Authorization", f"Bearer {self.token}")
+
+        backoff = 0.5
+        refreshed = False
+        for attempt in range(5):
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.request(
+                        method,
+                        url,
+                        headers=hdrs,
+                        params=params,
+                        json=json,
+                        data=data,
+                        timeout=timeout,
+                    )
+            except Exception:  # pragma: no cover - network errors
+                await self.circuit_breaker.failure()
+                if attempt == 4:
+                    raise
+            else:
+                if (
+                    resp.status_code == 401
+                    and auth
+                    and self.refresh_token
+                    and not refreshed
+                ):
+                    try:
+                        pair = await self.refresh(
+                            TokenPair(self.token or "", self.refresh_token)
+                        )
+                    except Exception:
+                        await self.circuit_breaker.failure()
+                        raise
+                    await self._save_token(pair)
+                    hdrs["Authorization"] = f"Bearer {pair.access_token}"
+                    refreshed = True
+                    continue
+
+                if resp.status_code >= 500:
+                    await self.circuit_breaker.failure()
+                    if attempt == 4:
+                        resp.raise_for_status()
+                    # prepare for retry
+                else:
+                    resp.raise_for_status()
+                    await self.circuit_breaker.success()
+                    return resp
+
+            await asyncio.sleep(backoff)
+            backoff *= 2
+
+        raise RuntimeError("max retries exceeded")
 
     @abstractmethod
     async def auth(self, code: str | None, **kwargs: Any) -> TokenPair:

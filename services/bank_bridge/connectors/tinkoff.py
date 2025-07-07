@@ -5,8 +5,6 @@ from datetime import date, datetime
 from urllib.parse import urlencode
 from typing import Any, AsyncGenerator
 
-import httpx
-
 from .base import Account, BaseConnector, RawTxn, TokenPair
 
 
@@ -50,10 +48,8 @@ class TinkoffConnector(BaseConnector):
             "code": code,
             "redirect_uri": self.redirect_uri,
         }
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(self.TOKEN_URL, data=payload, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
+        resp = await self._request("POST", self.TOKEN_URL, data=payload, auth=False)
+        data = resp.json()
         pair = TokenPair(
             access_token=data.get("access_token", ""),
             refresh_token=data.get("refresh_token"),
@@ -71,10 +67,8 @@ class TinkoffConnector(BaseConnector):
             "client_secret": self.client_secret,
             "refresh_token": token.refresh_token,
         }
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(self.TOKEN_URL, data=payload, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
+        resp = await self._request("POST", self.TOKEN_URL, data=payload, auth=False)
+        data = resp.json()
         pair = TokenPair(
             access_token=data.get("access_token", ""),
             refresh_token=data.get("refresh_token", token.refresh_token),
@@ -89,13 +83,12 @@ class TinkoffConnector(BaseConnector):
         if not current and token.refresh_token:
             token = await self.refresh(token)
             current = token.access_token
-        headers = {"Authorization": f"Bearer {current}"}
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                self.BASE_URL + "accounts", headers=headers, timeout=10
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        resp = await self._request(
+            "GET",
+            self.BASE_URL + "accounts",
+            headers={"Authorization": f"Bearer {current}"},
+        )
+        data = resp.json()
         return [Account(id=str(a.get("id"))) for a in data.get("payload", [])]
 
     async def fetch_txns(
@@ -119,14 +112,12 @@ class TinkoffConnector(BaseConnector):
                 datetime.combine(date_to, datetime.min.time()).timestamp() * 1000
             ),
         }
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                self.BASE_URL + "transactions",
-                params=params,
-                headers=headers,
-                timeout=10,
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        resp = await self._request(
+            "GET",
+            self.BASE_URL + "transactions",
+            headers=headers,
+            params=params,
+        )
+        data = resp.json()
         for item in data.get("payload", []):
             yield RawTxn(data=item)
