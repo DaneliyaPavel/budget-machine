@@ -33,5 +33,5 @@ def test_examples_match_schema():
 
 @pytest.mark.asyncio
 async def test_openapi_contract():
-    schemathesis = pytest.importorskip("schemathesis")
+    pytest.importorskip("schemathesis")
     pytest.skip("schemathesis execution is not available")
