@@ -1,6 +1,7 @@
 import json
 import subprocess
 from types import SimpleNamespace
+import shutil
 
 import pytest
 from httpx import AsyncClient, ASGITransport
@@ -13,11 +14,18 @@ from services.bank_bridge.connectors.base import Account, RawTxn, TokenPair
 
 COMPOSE_FILE = "tests/bank_bridge/docker-compose.yml"
 
+# Skip tests if Docker is not available. This allows the suite to run in
+# environments where Docker isn't installed, such as certain CI pipelines.
+docker_available = shutil.which("docker") is not None
+pytestmark = pytest.mark.skipif(not docker_available, reason="Docker is not available")
+
+
 @pytest.fixture(scope="module", autouse=True)
 def compose_env():
     subprocess.run(["docker", "compose", "-f", COMPOSE_FILE, "up", "-d"], check=False)
     yield
     subprocess.run(["docker", "compose", "-f", COMPOSE_FILE, "down", "-v"], check=False)
+
 
 @pytest.fixture(scope="module")
 async def client(monkeypatch):
@@ -32,12 +40,14 @@ async def client(monkeypatch):
         return [Account(id="acc1")]
 
     async def fetch_txns(self, token, account, start, end):
-        yield RawTxn({
-            "id": 1,
-            "amount": 100,
-            "date": "2024-01-01T00:00:00",
-            "account_id": account.id,
-        })
+        yield RawTxn(
+            {
+                "id": 1,
+                "amount": 100,
+                "date": "2024-01-01T00:00:00",
+                "account_id": account.id,
+            }
+        )
 
     monkeypatch.setattr(TinkoffConnector, "fetch_accounts", fetch_accounts)
     monkeypatch.setattr(TinkoffConnector, "fetch_txns", fetch_txns)
@@ -51,6 +61,7 @@ async def client(monkeypatch):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
             yield cl
+
 
 @pytest.mark.asyncio
 async def test_sync_cycle(client):
