@@ -1,9 +1,12 @@
 import json
 import subprocess
+import socket
+import time
 from types import SimpleNamespace
 import shutil
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from asgi_lifespan import LifespanManager
 from aiokafka import AIOKafkaConsumer
@@ -14,20 +17,46 @@ from services.bank_bridge.connectors.base import Account, RawTxn, TokenPair
 
 COMPOSE_FILE = "tests/bank_bridge/docker-compose.yml"
 
-# Skip tests if Docker is not available. This allows the suite to run in
-# environments where Docker isn't installed, such as certain CI pipelines.
+# Skip tests if Docker is not available or the daemon isn't running. This allows
+# the suite to run in environments where Docker isn't installed or accessible.
 docker_available = shutil.which("docker") is not None
-pytestmark = pytest.mark.skipif(not docker_available, reason="Docker is not available")
+if docker_available:
+    try:
+        docker_available = (
+            subprocess.run(
+                ["docker", "info"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            ).returncode
+            == 0
+        )
+    except Exception:
+        docker_available = False
+
+pytestmark = pytest.mark.skipif(
+    not docker_available, reason="Docker is not available or not running"
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
 def compose_env():
     subprocess.run(["docker", "compose", "-f", COMPOSE_FILE, "up", "-d"], check=False)
+    # Wait for Kafka to become available
+    for _ in range(30):
+        sock = socket.socket()
+        try:
+            sock.settimeout(1)
+            sock.connect(("localhost", 9092))
+            sock.close()
+            break
+        except OSError:
+            time.sleep(1)
     yield
     subprocess.run(["docker", "compose", "-f", COMPOSE_FILE, "down", "-v"], check=False)
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture()
 async def client(monkeypatch):
     monkeypatch.setenv("KAFKA_BROKER_URL", "localhost:9092")
 
