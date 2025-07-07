@@ -29,13 +29,17 @@ class TinkoffConnector(BaseConnector):
     async def auth(self, code: str | None, **kwargs: Any) -> TokenPair:
         """Return OAuth token pair using provided authorization code."""
         if code is None:
-            url = self.AUTH_URL + "?" + urlencode(
-                {
-                    "response_type": "code",
-                    "client_id": self.client_id,
-                    "redirect_uri": self.redirect_uri,
-                    "scope": "openid profile payments accounts",
-                }
+            url = (
+                self.AUTH_URL
+                + "?"
+                + urlencode(
+                    {
+                        "response_type": "code",
+                        "client_id": self.client_id,
+                        "redirect_uri": self.redirect_uri,
+                        "scope": "openid profile payments accounts",
+                    }
+                )
             )
             return TokenPair(access_token=url)
 
@@ -108,8 +112,12 @@ class TinkoffConnector(BaseConnector):
         headers = {"Authorization": f"Bearer {current}"}
         params = {
             "account": account.id,
-            "from": int(datetime.combine(date_from, datetime.min.time()).timestamp() * 1000),
-            "to": int(datetime.combine(date_to, datetime.min.time()).timestamp() * 1000),
+            "from": int(
+                datetime.combine(date_from, datetime.min.time()).timestamp() * 1000
+            ),
+            "to": int(
+                datetime.combine(date_to, datetime.min.time()).timestamp() * 1000
+            ),
         }
         async with httpx.AsyncClient() as client:
             resp = await client.get(
