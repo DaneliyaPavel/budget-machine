@@ -182,5 +182,7 @@ async def test_process_calls_normalize(monkeypatch):
 
     monkeypatch.setattr(normalizer, "normalize_record", fake_norm)
     monkeypatch.setattr(normalizer.kafka, "publish", fake_publish)
-    await normalizer.process({"user_id": str(uuid4()), "bank_txn_id": "11", "payload": {}})
+    await normalizer.process(
+        {"user_id": str(uuid4()), "bank_txn_id": "11", "payload": {}}
+    )
     assert called

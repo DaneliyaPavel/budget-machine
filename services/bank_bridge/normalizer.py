@@ -14,7 +14,9 @@ from backend.app.schemas.posting import PostingCreate
 from . import kafka
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-with open(BASE_DIR / "schemas/bank-bridge/bank.raw/1.0.0/schema.json", "r", encoding="utf-8") as f:
+with open(
+    BASE_DIR / "schemas/bank-bridge/bank.raw/1.0.0/schema.json", "r", encoding="utf-8"
+) as f:
     _schema = json.load(f)
 
 VALIDATOR = Draft202012Validator(_schema)
