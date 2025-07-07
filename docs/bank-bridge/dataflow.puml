@@ -1,0 +1,9 @@
+@startuml
+actor Client
+node "Bank Bridge" as Bridge
+queue "Kafka" as Kafka
+
+Client -> Kafka : bank.raw
+Kafka -> Bridge : consume
+Bridge -> Kafka : bank.norm / bank.err
+@enduml
