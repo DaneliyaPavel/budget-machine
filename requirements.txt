@@ -34,3 +34,4 @@ PyYAML
 
 aiohttp
 aiojobs
+jsonschema

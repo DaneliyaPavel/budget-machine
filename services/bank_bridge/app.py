@@ -55,9 +55,14 @@ async def _full_sync(bank: str, user_id: str) -> None:
     for account in accounts:
         try:
             async for raw in connector.fetch_txns(token, account, start, end):
-                payload = dict(raw.data)
-                payload.setdefault("user_id", user_id)
-                await normalizer.process(payload)
+                msg = {
+                    "user_id": user_id,
+                    "bank_txn_id": str(
+                        raw.data.get("id") or raw.data.get("bank_txn_id", "")
+                    ),
+                    "payload": dict(raw.data),
+                }
+                await normalizer.process(msg)
                 TXN_COUNT.inc()
         except Exception:
             ERROR_TOTAL.inc()
