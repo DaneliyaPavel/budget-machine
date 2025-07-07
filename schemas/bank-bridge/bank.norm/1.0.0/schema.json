@@ -3,9 +3,33 @@
   "title": "bank.norm",
   "type": "object",
   "properties": {
+    "txn_id": {"type": "string", "format": "uuid"},
     "user_id": {"type": "string", "format": "uuid"},
-    "bank_txn_id": {"type": "string"},
-    "transaction": {"type": "object"}
+    "bank_id": {"type": "string"},
+    "posted_at": {"type": "string", "format": "date-time"},
+    "amount": {
+      "type": "object",
+      "properties": {
+        "value": {"type": "string"},
+        "currency": {"type": "string"}
+      },
+      "required": ["value", "currency"]
+    },
+    "mcc": {"type": "integer"},
+    "direction": {"type": "string", "enum": ["in", "out"]},
+    "description": {"type": "string"},
+    "account_external": {"type": "string"},
+    "external_id": {"type": "string"},
+    "raw": {"type": "object"}
   },
-  "required": ["user_id", "bank_txn_id", "transaction"]
+  "required": [
+    "txn_id",
+    "user_id",
+    "bank_id",
+    "posted_at",
+    "amount",
+    "direction",
+    "external_id",
+    "raw"
+  ]
 }

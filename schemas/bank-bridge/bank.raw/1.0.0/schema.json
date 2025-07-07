@@ -4,8 +4,9 @@
   "type": "object",
   "properties": {
     "user_id": {"type": "string", "format": "uuid"},
-    "bank_txn_id": {"type": "string"},
+    "external_id": {"type": "string"},
+    "bank_id": {"type": "string"},
     "payload": {"type": "object"}
   },
-  "required": ["user_id", "bank_txn_id", "payload"]
+  "required": ["user_id", "external_id", "bank_id", "payload"]
 }
