@@ -29,7 +29,9 @@ async def test_auth(monkeypatch):
     monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
     c = make_connector()
     with respx.mock(assert_all_called=True) as rsx:
-        rsx.post(c.TOKEN_URL).respond(200, json={"access_token": "at", "refresh_token": "rt"})
+        rsx.post(c.TOKEN_URL).respond(
+            200, json={"access_token": "at", "refresh_token": "rt"}
+        )
         pair = await c.auth("code")
     assert pair.access_token == "at"
     assert pair.refresh_token == "rt"
@@ -95,7 +97,10 @@ async def test_fetch_txns(monkeypatch):
     with respx.mock(assert_all_called=True) as rsx:
         rsx.get(c.BASE_URL + "transactions").respond(200, json={"payload": txns})
         result = [
-            t async for t in c.fetch_txns(TokenPair("t1"), Account(id="acc"), start.date(), end.date())
+            t
+            async for t in c.fetch_txns(
+                TokenPair("t1"), Account(id="acc"), start.date(), end.date()
+            )
         ]
     assert [tx.data for tx in result] == txns
 
@@ -114,7 +119,10 @@ async def test_fetch_txns_refresh(monkeypatch):
         rsx.post(c.TOKEN_URL).respond(200, json={"access_token": "at"})
         rsx.get(c.BASE_URL + "transactions").respond(200, json={"payload": []})
         result = [
-            t async for t in c.fetch_txns(TokenPair("", "r1"), Account(id="acc"), start.date(), end.date())
+            t
+            async for t in c.fetch_txns(
+                TokenPair("", "r1"), Account(id="acc"), start.date(), end.date()
+            )
         ]
     assert result == []
 
@@ -146,5 +154,8 @@ async def test_fetch_txns_error(monkeypatch):
         rsx.get(c.BASE_URL + "transactions").respond(401)
         with pytest.raises(Exception):
             [
-                t async for t in c.fetch_txns(TokenPair("at"), Account(id="acc"), start.date(), end.date())
+                t
+                async for t in c.fetch_txns(
+                    TokenPair("at"), Account(id="acc"), start.date(), end.date()
+                )
             ]
