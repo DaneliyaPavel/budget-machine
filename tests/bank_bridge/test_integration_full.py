@@ -27,7 +27,7 @@ def compose_env():
     subprocess.run(["docker", "compose", "-f", COMPOSE_FILE, "down", "-v"], check=False)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 async def client(monkeypatch):
     monkeypatch.setenv("KAFKA_BROKER_URL", "localhost:9092")
 
