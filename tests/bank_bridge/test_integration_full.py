@@ -41,8 +41,15 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(scope="module", autouse=True)
 def compose_env():
-    subprocess.run(["docker", "compose", "-f", COMPOSE_FILE, "up", "-d"], check=False)
-    # Wait for Kafka to become available
+    if not docker_available:
+        pytest.skip("Docker is not available or not running")
+
+    result = subprocess.run(
+        ["docker", "compose", "-f", COMPOSE_FILE, "up", "-d"], check=False
+    )
+    if result.returncode != 0:
+        pytest.skip("Failed to start docker compose services")
+
     for _ in range(30):
         sock = socket.socket()
         try:
@@ -52,7 +59,14 @@ def compose_env():
             break
         except OSError:
             time.sleep(1)
+    else:
+        subprocess.run(
+            ["docker", "compose", "-f", COMPOSE_FILE, "down", "-v"], check=False
+        )
+        pytest.skip("Kafka did not become available")
+
     yield
+
     subprocess.run(["docker", "compose", "-f", COMPOSE_FILE, "down", "-v"], check=False)
 
 
