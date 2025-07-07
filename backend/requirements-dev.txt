@@ -7,4 +7,4 @@ pytest-cov
 asgi_lifespan
 commitizen
 jsonschema
-respx<0.22
+respx<0.23
