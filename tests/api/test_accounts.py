@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import sys
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from uuid import uuid4
 from asgi_lifespan import LifespanManager
 
@@ -19,7 +19,8 @@ from backend.app.main import app  # noqa: E402
 @pytest.mark.asyncio
 async def test_account_read_and_update():
     async with LifespanManager(app):
-        async with AsyncClient(app=app, base_url="http://test") as client:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             user = {"email": "acc@example.com", "password": "Password123$"}
             r = await client.post("/users/", json=user)
             assert r.status_code == 200
@@ -61,7 +62,8 @@ async def test_account_read_and_update():
 @pytest.mark.asyncio
 async def test_account_balance_not_found():
     async with LifespanManager(app):
-        async with AsyncClient(app=app, base_url="http://test") as client:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
             user = {"email": "missing@example.com", "password": "Password123$"}
             r = await client.post("/users/", json=user)
             assert r.status_code == 200
