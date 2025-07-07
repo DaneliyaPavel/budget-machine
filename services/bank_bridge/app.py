@@ -1,13 +1,16 @@
 from typing import Any
 
-import aiohttp
 import json
 import logging
 import sys
-import time
+from datetime import date, timedelta
+
 from fastapi import FastAPI
 from fastapi.responses import Response
 from aiojobs import create_scheduler, Scheduler
+
+from . import normalizer, vault, kafka
+from .connectors import get_connector, TokenPair
 from prometheus_client import (
     Histogram,
     Counter,
@@ -18,6 +21,47 @@ from prometheus_client import (
 app = FastAPI(title="Bank Bridge")
 
 scheduler: "Scheduler" | None = None
+
+
+async def _load_token(bank: str, user_id: str) -> TokenPair | None:
+    data = await vault.get_vault_client().read(f"bank_tokens/{bank}/{user_id}")
+    if not data:
+        return None
+    obj = json.loads(data)
+    return TokenPair(
+        access_token=obj.get("access_token", ""),
+        refresh_token=obj.get("refresh_token"),
+    )
+
+
+async def _full_sync(bank: str, user_id: str) -> None:
+    token = await _load_token(bank, user_id)
+    if token is None:
+        logger.error("missing token", extra={"bank": bank})
+        return
+
+    connector_cls = get_connector(bank)
+    connector = connector_cls(user_id, token)
+
+    try:
+        accounts = await connector.fetch_accounts(token)
+    except Exception:
+        ERROR_TOTAL.inc()
+        logger.error("accounts_error", extra={"bank": bank})
+        return
+
+    end = date.today()
+    start = end - timedelta(days=30)
+    for account in accounts:
+        try:
+            async for raw in connector.fetch_txns(token, account, start, end):
+                payload = dict(raw.data)
+                payload.setdefault("user_id", user_id)
+                await normalizer.process(payload)
+                TXN_COUNT.inc()
+        except Exception:
+            ERROR_TOTAL.inc()
+            logger.error("sync_error", extra={"bank": bank})
 
 
 FETCH_LATENCY_MS = Histogram(
@@ -55,6 +99,7 @@ async def startup() -> None:
 async def shutdown() -> None:
     if scheduler:
         await scheduler.close()
+    await kafka.close()
 
 
 @app.get("/healthz")
@@ -62,49 +107,38 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-async def external_request(bank: str, method: str, url: str, **kwargs: Any) -> Any:
-    """Make HTTP request to external bank API with metrics and logging."""
-    start = time.perf_counter()
-    logger.info("request", extra={"bank": bank})
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.request(method, url, **kwargs) as resp:
-                if resp.status == 429:
-                    RATE_LIMITED.inc()
-                resp.raise_for_status()
-                data = await resp.json()
-                if isinstance(data, list):
-                    TXN_COUNT.inc(len(data))
-                return data
-        except Exception:
-            ERROR_TOTAL.inc()
-            logger.error("error", extra={"bank": bank})
-            raise
-        finally:
-            FETCH_LATENCY_MS.observe((time.perf_counter() - start) * 1000)
-
-
 @app.post("/connect/{bank}")
-async def connect(bank: str) -> dict[str, str]:
-    assert scheduler
-    await scheduler.spawn(
-        external_request(bank, "POST", f"https://api.example.com/{bank}/connect")
-    )
-    return {"status": "connecting"}
+async def connect(bank: str, user_id: str = "default") -> dict[str, str]:
+    """Return authorization URL for the requested bank."""
+    connector_cls = get_connector(bank)
+    connector = connector_cls(user_id)
+    pair = await connector.auth(None)
+    return {"url": pair.access_token}
 
 
 @app.get("/status/{bank}")
-async def status(bank: str) -> dict[str, Any]:
-    data = await external_request(bank, "GET", f"https://api.example.com/{bank}/status")
-    return {"status": data}
+async def status(bank: str, user_id: str = "default") -> dict[str, Any]:
+    """Check if stored token for bank is valid."""
+    token = await _load_token(bank, user_id)
+    if token is None:
+        return {"connected": False}
+
+    connector_cls = get_connector(bank)
+    connector = connector_cls(user_id, token)
+    try:
+        await connector.fetch_accounts(token)
+    except Exception:
+        ERROR_TOTAL.inc()
+        logger.error("status_error", extra={"bank": bank})
+        return {"connected": False}
+    return {"connected": True}
 
 
 @app.post("/sync/{bank}")
-async def sync(bank: str) -> dict[str, str]:
+async def sync(bank: str, user_id: str = "default") -> dict[str, str]:
+    """Schedule full data synchronization with bank."""
     assert scheduler
-    await scheduler.spawn(
-        external_request(bank, "POST", f"https://api.example.com/{bank}/sync")
-    )
+    await scheduler.spawn(_full_sync(bank, user_id))
     return {"status": "scheduled"}
 
 
