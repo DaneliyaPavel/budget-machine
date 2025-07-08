@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from aiojobs import create_scheduler, Scheduler
 
-from . import normalizer, vault, kafka, schema_registry
+from . import kafka, vault, schema_registry
 import os
 from .connectors import get_connector, TokenPair
 from prometheus_client import (
@@ -67,7 +67,7 @@ async def _full_sync(bank: str, user_id: str) -> None:
                     ),
                     "payload": dict(raw.data),
                 }
-                await normalizer.process(msg)
+                await kafka.publish(RAW_TOPIC, user_id, msg["bank_txn_id"], msg)
                 TXN_COUNT.inc()
         except Exception:
             ERROR_TOTAL.inc()

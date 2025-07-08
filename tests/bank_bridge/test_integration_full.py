@@ -11,7 +11,8 @@ from httpx import AsyncClient, ASGITransport
 from asgi_lifespan import LifespanManager
 from aiokafka import AIOKafkaConsumer
 
-from services.bank_bridge.app import app
+from services.bank_bridge.app import app, RAW_TOPIC
+from services.bank_bridge import normalizer
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 from services.bank_bridge.connectors.base import Account, RawTxn, TokenPair
 
@@ -108,22 +109,33 @@ async def client(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_sync_cycle(client):
-    consumer = AIOKafkaConsumer(
+    raw_consumer = AIOKafkaConsumer(
+        RAW_TOPIC,
+        bootstrap_servers="localhost:9092",
+        group_id="test-group-raw",
+        enable_auto_commit=True,
+    )
+    norm_consumer = AIOKafkaConsumer(
         "bank.norm",
         bootstrap_servers="localhost:9092",
-        group_id="test-group",
+        group_id="test-group-norm",
         enable_auto_commit=True,
     )
     try:
-        await consumer.start()
+        await raw_consumer.start()
+        await norm_consumer.start()
     except Exception:
         pytest.skip("Kafka is not available")
     try:
         resp = await client.post("/sync/tinkoff")
         assert resp.status_code == 200
-        msg = await consumer.getone()
+        raw_msg = await raw_consumer.getone()
+        raw_data = json.loads(raw_msg.value.decode())
+        await normalizer.process(raw_data)
+        msg = await norm_consumer.getone()
         data = json.loads(msg.value.decode())
         assert data["postings"][0]["amount"] == 100
         assert data["external_id"] == "1"
     finally:
-        await consumer.stop()
+        await raw_consumer.stop()
+        await norm_consumer.stop()
