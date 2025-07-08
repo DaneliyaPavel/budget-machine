@@ -10,11 +10,10 @@ GROUP = os.getenv("SCHEMA_REGISTRY_GROUP", "bank-bridge")
 BASE_DIR = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = BASE_DIR / "schemas" / "bank-bridge"
 
+
 async def _register(name: str, version: str, schema: dict) -> None:
     artifact_id = f"{name}-{version}"
-    url = (
-        f"{SCHEMA_REGISTRY_URL}/apis/registry/v2/groups/{GROUP}/artifacts"
-    )
+    url = f"{SCHEMA_REGISTRY_URL}/apis/registry/v2/groups/{GROUP}/artifacts"
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             url,
