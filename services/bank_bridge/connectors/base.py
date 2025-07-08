@@ -10,7 +10,7 @@ import time
 import json
 import random
 
-import httpx
+import aiohttp
 
 from .. import vault
 from ..limits import LeakyBucket, CircuitBreaker, get_bucket
@@ -80,7 +80,7 @@ class BaseConnector(ABC):
         data: dict[str, Any] | None = None,
         timeout: float = 10,
         auth: bool = True,
-    ) -> httpx.Response:
+    ) -> dict[str, Any]:
         """Perform HTTP request with retry, refresh and circuit breaker."""
         from ..app import FETCH_LATENCY_MS, RATE_LIMITED
 
@@ -94,10 +94,10 @@ class BaseConnector(ABC):
 
         refreshed = False
         try:
-            for attempt in range(5):
-                try:
-                    async with httpx.AsyncClient() as client:
-                        resp = await client.request(
+            async with aiohttp.ClientSession() as session:
+                for attempt in range(5):
+                    try:
+                        resp = await session.request(
                             method,
                             url,
                             headers=hdrs,
@@ -106,47 +106,49 @@ class BaseConnector(ABC):
                             data=data,
                             timeout=timeout,
                         )
-                except Exception:  # pragma: no cover - network errors
-                    await self.circuit_breaker.failure()
-                    if attempt == 4:
-                        raise
-                else:
-                    if resp.status_code == 429:
-                        RATE_LIMITED.inc()
-                    if (
-                        resp.status_code == 401
-                        and auth
-                        and self.refresh_token
-                        and not refreshed
-                    ):
-                        try:
-                            pair = await self.refresh(
-                                TokenPair(self.token or "", self.refresh_token)
-                            )
-                        except Exception:
-                            await self.circuit_breaker.failure()
-                            raise
-                        await self._save_token(pair)
-                        hdrs["Authorization"] = f"Bearer {pair.access_token}"
-                        refreshed = True
-                        continue
-
-                    if resp.status_code >= 500:
+                    except Exception:  # pragma: no cover - network errors
                         await self.circuit_breaker.failure()
                         if attempt == 4:
-                            resp.raise_for_status()
-                        # prepare for retry
+                            raise
                     else:
-                        resp.raise_for_status()
-                        await self.circuit_breaker.success()
-                        return resp
+                        if resp.status == 429:
+                            RATE_LIMITED.inc()
+                        if (
+                            resp.status == 401
+                            and auth
+                            and self.refresh_token
+                            and not refreshed
+                        ):
+                            try:
+                                pair = await self.refresh(
+                                    TokenPair(self.token or "", self.refresh_token)
+                                )
+                            except Exception:
+                                await self.circuit_breaker.failure()
+                                raise
+                            await self._save_token(pair)
+                            hdrs["Authorization"] = f"Bearer {pair.access_token}"
+                            refreshed = True
+                            await resp.release()
+                            continue
 
-                if attempt == 4:
-                    raise RuntimeError("max retries exceeded")
-                delay = min(512, 2**attempt)
-                jitter = delay * 0.15
-                delay = random.uniform(delay - jitter, delay + jitter)
-                await asyncio.sleep(delay)
+                        if resp.status >= 500:
+                            await self.circuit_breaker.failure()
+                            if attempt == 4:
+                                await resp.release()
+                                resp.raise_for_status()
+                        else:
+                            resp.raise_for_status()
+                            await self.circuit_breaker.success()
+                            data_resp = await resp.json()
+                            return data_resp
+
+                    if attempt == 4:
+                        raise RuntimeError("max retries exceeded")
+                    delay = min(512, 2**attempt)
+                    jitter = delay * 0.15
+                    delay = random.uniform(delay - jitter, delay + jitter)
+                    await asyncio.sleep(delay)
 
         finally:
             FETCH_LATENCY_MS.observe((time.monotonic() - start) * 1000)
