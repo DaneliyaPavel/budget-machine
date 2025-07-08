@@ -6,6 +6,7 @@ from datetime import date
 from typing import Any, AsyncGenerator
 
 import asyncio
+import time
 import json
 
 import httpx
@@ -79,7 +80,9 @@ class BaseConnector(ABC):
         auth: bool = True,
     ) -> httpx.Response:
         """Perform HTTP request with retry, refresh and circuit breaker."""
+        from ..app import FETCH_LATENCY_MS, RATE_LIMITED
 
+        start = time.monotonic()
         await self.rate_limiter.acquire()
         await self.circuit_breaker.before_request()
 
@@ -89,55 +92,62 @@ class BaseConnector(ABC):
 
         backoff = 0.5
         refreshed = False
-        for attempt in range(5):
-            try:
-                async with httpx.AsyncClient() as client:
-                    resp = await client.request(
-                        method,
-                        url,
-                        headers=hdrs,
-                        params=params,
-                        json=json,
-                        data=data,
-                        timeout=timeout,
-                    )
-            except Exception:  # pragma: no cover - network errors
-                await self.circuit_breaker.failure()
-                if attempt == 4:
-                    raise
-            else:
-                if (
-                    resp.status_code == 401
-                    and auth
-                    and self.refresh_token
-                    and not refreshed
-                ):
-                    try:
-                        pair = await self.refresh(
-                            TokenPair(self.token or "", self.refresh_token)
+        try:
+            for attempt in range(5):
+                try:
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.request(
+                            method,
+                            url,
+                            headers=hdrs,
+                            params=params,
+                            json=json,
+                            data=data,
+                            timeout=timeout,
                         )
-                    except Exception:
-                        await self.circuit_breaker.failure()
-                        raise
-                    await self._save_token(pair)
-                    hdrs["Authorization"] = f"Bearer {pair.access_token}"
-                    refreshed = True
-                    continue
-
-                if resp.status_code >= 500:
+                except Exception:  # pragma: no cover - network errors
                     await self.circuit_breaker.failure()
                     if attempt == 4:
-                        resp.raise_for_status()
-                    # prepare for retry
+                        raise
                 else:
-                    resp.raise_for_status()
-                    await self.circuit_breaker.success()
-                    return resp
+                    if resp.status_code == 429:
+                        RATE_LIMITED.inc()
+                    if (
+                        resp.status_code == 401
+                        and auth
+                        and self.refresh_token
+                        and not refreshed
+                    ):
+                        try:
+                            pair = await self.refresh(
+                                TokenPair(self.token or "", self.refresh_token)
+                            )
+                        except Exception:
+                            await self.circuit_breaker.failure()
+                            raise
+                        await self._save_token(pair)
+                        hdrs["Authorization"] = f"Bearer {pair.access_token}"
+                        refreshed = True
+                        continue
 
-            await asyncio.sleep(backoff)
-            backoff *= 2
+                    if resp.status_code >= 500:
+                        await self.circuit_breaker.failure()
+                        if attempt == 4:
+                            resp.raise_for_status()
+                        # prepare for retry
+                    else:
+                        resp.raise_for_status()
+                        await self.circuit_breaker.success()
+                        return resp
 
-        raise RuntimeError("max retries exceeded")
+                await asyncio.sleep(backoff)
+                backoff *= 2
+
+            raise RuntimeError("max retries exceeded")
+        finally:
+            FETCH_LATENCY_MS.observe((time.monotonic() - start) * 1000)
+        
+        
 
     @abstractmethod
     async def auth(self, code: str | None, **kwargs: Any) -> TokenPair:

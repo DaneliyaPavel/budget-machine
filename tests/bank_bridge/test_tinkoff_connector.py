@@ -1,10 +1,13 @@
 from datetime import datetime
+import asyncio
+import httpx
 
 import pytest
 import respx
 
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 from services.bank_bridge.connectors.base import TokenPair, Account
+from services.bank_bridge.app import FETCH_LATENCY_MS, RATE_LIMITED
 
 
 @pytest.fixture(autouse=True)
@@ -161,3 +164,29 @@ async def test_fetch_txns_error(monkeypatch):
                     TokenPair("at"), Account(id="acc"), start.date(), end.date()
                 )
             ]
+
+
+@pytest.mark.asyncio
+async def test_request_metrics(monkeypatch):
+    c = make_connector("t1")
+
+    observed: list[float] = []
+    monkeypatch.setattr(FETCH_LATENCY_MS, "observe", lambda v: observed.append(v))
+
+    calls: list[int] = []
+    monkeypatch.setattr(RATE_LIMITED, "inc", lambda: calls.append(1))
+
+    async def fake_sleep(_):
+        pass
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+    url = "https://example.com/r"  # any URL
+    with respx.mock(assert_all_called=True) as rsx:
+        rsx.get(url).respond(429)
+        with pytest.raises(httpx.HTTPStatusError):
+            await c._request("GET", url, auth=False)
+
+    assert calls == [1]
+    assert len(observed) == 1
+    assert observed[0] >= 0
