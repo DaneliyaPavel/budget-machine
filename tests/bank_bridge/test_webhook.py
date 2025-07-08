@@ -11,12 +11,14 @@ async def test_tinkoff_webhook(monkeypatch):
     captured = {}
 
     async def fake_publish(topic, user_id, bank_txn_id, data):
-        captured.update({
-            "topic": topic,
-            "user_id": user_id,
-            "bank_txn_id": bank_txn_id,
-            "data": data,
-        })
+        captured.update(
+            {
+                "topic": topic,
+                "user_id": user_id,
+                "bank_txn_id": bank_txn_id,
+                "data": data,
+            }
+        )
 
     monkeypatch.setattr(kafka, "publish", fake_publish)
 
