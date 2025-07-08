@@ -146,8 +146,6 @@ class BaseConnector(ABC):
             raise RuntimeError("max retries exceeded")
         finally:
             FETCH_LATENCY_MS.observe((time.monotonic() - start) * 1000)
-        
-        
 
     @abstractmethod
     async def auth(self, code: str | None, **kwargs: Any) -> TokenPair:
