@@ -1,0 +1,11 @@
+[run]
+source = services/bank_bridge
+omit =
+    services/bank_bridge/consumer.py
+    services/bank_bridge/kafka.py
+    services/bank_bridge/connectors/gazprom.py
+    services/bank_bridge/connectors/sber.py
+    services/bank_bridge/vault.py
+
+[report]
+show_missing = True

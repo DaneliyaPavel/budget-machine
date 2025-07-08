@@ -36,6 +36,23 @@ jobs:
           pip install -r requirements.txt
           pip install -r backend/requirements-dev.txt
           pip install jsonschema respx
+      - name: Validate schemas
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          for schema_file in Path("schemas/bank-bridge").rglob("schema.json"):
+              with open(schema_file, "r", encoding="utf-8") as f:
+                  schema = json.load(f)
+              Draft202012Validator.check_schema(schema)
+              example = schema_file.with_name("example.json")
+              if example.exists():
+                  with open(example, "r", encoding="utf-8") as ef:
+                      instance = json.load(ef)
+                  Draft202012Validator(schema).validate(instance)
+          PY
       - name: Start test environment
         run: docker compose -f tests/bank_bridge/docker-compose.yml up -d
       - name: Run bankbridge tests

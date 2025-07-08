@@ -28,4 +28,4 @@ demo_user:
 	python -m backend.scripts.create_demo_user
 
 bankbridge-tests:
-	pytest tests/bank_bridge
+	pytest --cov=services/bank_bridge --cov-config=.coveragerc.bankbridge --cov-fail-under=90 tests/bank_bridge
