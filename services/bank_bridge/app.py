@@ -7,7 +7,7 @@ import logging
 import sys
 from datetime import date, timedelta
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import Response
 from aiojobs import create_scheduler, Scheduler
 
@@ -120,6 +120,17 @@ async def shutdown() -> None:
 
 @app.get("/healthz")
 async def health() -> dict[str, str]:
+    """Return service health status."""
+    try:
+        await kafka.get_producer()
+    except Exception:  # pragma: no cover - network operations
+        raise HTTPException(status_code=503, detail="kafka")
+
+    try:
+        await vault.get_vault_client().read("health-check")
+    except Exception:  # pragma: no cover - network operations
+        raise HTTPException(status_code=503, detail="vault")
+
     return {"status": "ok"}
 
 
@@ -133,11 +144,11 @@ async def connect(bank: str, user_id: str = "default") -> dict[str, str]:
 
 
 @app.get("/status/{bank}")
-async def status(bank: str, user_id: str = "default") -> dict[str, Any]:
-    """Check if stored token for bank is valid."""
+async def status(bank: str, user_id: str = "default") -> dict[str, str]:
+    """Check connection status for the bank."""
     token = await _load_token(bank, user_id)
     if token is None:
-        return {"connected": False}
+        return {"status": "DISCONNECTED"}
 
     connector_cls = get_connector(bank)
     connector = connector_cls(user_id, token)
@@ -146,8 +157,9 @@ async def status(bank: str, user_id: str = "default") -> dict[str, Any]:
     except Exception:
         ERROR_TOTAL.inc()
         logger.error("status_error", extra={"bank": bank})
-        return {"connected": False}
-    return {"connected": True}
+        return {"status": "ERROR"}
+
+    return {"status": "CONNECTED"}
 
 
 @app.post("/sync/{bank}")
