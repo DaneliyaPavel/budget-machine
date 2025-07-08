@@ -7,11 +7,12 @@ import logging
 import sys
 from datetime import date, timedelta
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from aiojobs import create_scheduler, Scheduler
 
 from . import normalizer, vault, kafka, schema_registry
+import os
 from .connectors import get_connector, TokenPair
 from prometheus_client import (
     Histogram,
@@ -23,6 +24,8 @@ from prometheus_client import (
 app = FastAPI(title="Bank Bridge")
 
 scheduler: "Scheduler" | None = None
+
+RAW_TOPIC = os.getenv("BANK_RAW_TOPIC", "bank.raw")
 
 
 async def _load_token(bank: str, user_id: str) -> TokenPair | None:
@@ -153,6 +156,19 @@ async def sync(bank: str, user_id: str = "default") -> dict[str, str]:
     assert scheduler
     await scheduler.spawn(_full_sync(bank, user_id))
     return {"status": "scheduled"}
+
+
+@app.post("/webhook/tinkoff/{user_id}")
+async def tinkoff_webhook(user_id: str, request: Request) -> dict[str, str]:
+    """Handle Tinkoff sandbox operation webhook."""
+    data = await request.json()
+    if data.get("event") != "operation":
+        return {"status": "ignored"}
+    payload = data.get("payload", {})
+    bank_txn_id = str(payload.get("id") or payload.get("bank_txn_id", ""))
+    msg = {"user_id": user_id, "bank_txn_id": bank_txn_id, "payload": payload}
+    await kafka.publish(RAW_TOPIC, user_id, bank_txn_id, msg)
+    return {"status": "ok"}
 
 
 @app.get("/metrics")

@@ -29,13 +29,14 @@ async def test_auth(monkeypatch):
     monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
     c = make_connector()
     with respx.mock(assert_all_called=True) as rsx:
-        rsx.post(c.TOKEN_URL).respond(
+        route = rsx.post(c.TOKEN_URL).respond(
             200, json={"access_token": "at", "refresh_token": "rt"}
         )
         pair = await c.auth("code")
     assert pair.access_token == "at"
     assert pair.refresh_token == "rt"
     assert saved["token"] == "at"
+    assert route.calls.last.request.headers["Authorization"].startswith("Basic")
 
 
 @pytest.mark.asyncio
@@ -55,13 +56,14 @@ async def test_refresh_success(monkeypatch):
 
     monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
     with respx.mock(assert_all_called=True) as rsx:
-        rsx.post(c.TOKEN_URL).respond(
+        route = rsx.post(c.TOKEN_URL).respond(
             200, json={"access_token": "at", "refresh_token": "r2"}
         )
         pair = await c.refresh(TokenPair("", "r1"))
     assert pair.access_token == "at"
     assert pair.refresh_token == "r2"
     assert called.get("save")
+    assert route.calls.last.request.headers["Authorization"].startswith("Basic")
 
 
 @pytest.mark.asyncio
