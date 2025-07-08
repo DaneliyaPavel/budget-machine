@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 from pathlib import Path
 
 import httpx
@@ -9,6 +10,8 @@ GROUP = os.getenv("SCHEMA_REGISTRY_GROUP", "bank-bridge")
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 SCHEMA_DIR = BASE_DIR / "schemas" / "bank-bridge"
+
+logger = logging.getLogger(__name__)
 
 
 async def _register(name: str, version: str, schema: dict) -> None:
@@ -30,4 +33,7 @@ async def register_all() -> None:
         version = path.parent.name
         with open(path, "r", encoding="utf-8") as f:
             schema = json.load(f)
-        await _register(name, version, schema)
+        try:
+            await _register(name, version, schema)
+        except Exception as exc:  # pragma: no cover - network issues
+            logger.warning("failed to register schema: %s", exc)
