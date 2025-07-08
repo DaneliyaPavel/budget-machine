@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import os
 from datetime import date, datetime
 from urllib.parse import urlencode
@@ -24,6 +25,11 @@ class TinkoffConnector(BaseConnector):
         self.client_secret = os.getenv("TINKOFF_CLIENT_SECRET", "")
         self.redirect_uri = os.getenv("TINKOFF_REDIRECT_URI", "")
 
+    def _basic_auth_header(self) -> dict[str, str]:
+        cred = f"{self.client_id}:{self.client_secret}".encode()
+        token = base64.b64encode(cred).decode()
+        return {"Authorization": f"Basic {token}"}
+
     async def auth(self, code: str | None, **kwargs: Any) -> TokenPair:
         """Return OAuth token pair using provided authorization code."""
         if code is None:
@@ -43,12 +49,17 @@ class TinkoffConnector(BaseConnector):
 
         payload = {
             "grant_type": "authorization_code",
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
             "code": code,
             "redirect_uri": self.redirect_uri,
         }
-        resp = await self._request("POST", self.TOKEN_URL, data=payload, auth=False)
+        headers = self._basic_auth_header()
+        resp = await self._request(
+            "POST",
+            self.TOKEN_URL,
+            data=payload,
+            headers=headers,
+            auth=False,
+        )
         data = resp.json()
         pair = TokenPair(
             access_token=data.get("access_token", ""),
@@ -63,11 +74,16 @@ class TinkoffConnector(BaseConnector):
             raise RuntimeError("missing refresh token")
         payload = {
             "grant_type": "refresh_token",
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
             "refresh_token": token.refresh_token,
         }
-        resp = await self._request("POST", self.TOKEN_URL, data=payload, auth=False)
+        headers = self._basic_auth_header()
+        resp = await self._request(
+            "POST",
+            self.TOKEN_URL,
+            data=payload,
+            headers=headers,
+            auth=False,
+        )
         data = resp.json()
         pair = TokenPair(
             access_token=data.get("access_token", ""),
