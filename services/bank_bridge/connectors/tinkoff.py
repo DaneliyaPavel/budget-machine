@@ -53,14 +53,13 @@ class TinkoffConnector(BaseConnector):
             "redirect_uri": self.redirect_uri,
         }
         headers = self._basic_auth_header()
-        resp = await self._request(
+        data = await self._request(
             "POST",
             self.TOKEN_URL,
             data=payload,
             headers=headers,
             auth=False,
         )
-        data = resp.json()
         pair = TokenPair(
             access_token=data.get("access_token", ""),
             refresh_token=data.get("refresh_token"),
@@ -77,14 +76,13 @@ class TinkoffConnector(BaseConnector):
             "refresh_token": token.refresh_token,
         }
         headers = self._basic_auth_header()
-        resp = await self._request(
+        data = await self._request(
             "POST",
             self.TOKEN_URL,
             data=payload,
             headers=headers,
             auth=False,
         )
-        data = resp.json()
         pair = TokenPair(
             access_token=data.get("access_token", ""),
             refresh_token=data.get("refresh_token", token.refresh_token),
@@ -99,12 +97,11 @@ class TinkoffConnector(BaseConnector):
         if not current and token.refresh_token:
             token = await self.refresh(token)
             current = token.access_token
-        resp = await self._request(
+        data = await self._request(
             "GET",
             self.BASE_URL + "accounts",
             headers={"Authorization": f"Bearer {current}"},
         )
-        data = resp.json()
         return [Account(id=str(a.get("id"))) for a in data.get("payload", [])]
 
     async def fetch_txns(
@@ -128,12 +125,11 @@ class TinkoffConnector(BaseConnector):
                 datetime.combine(date_to, datetime.min.time()).timestamp() * 1000
             ),
         }
-        resp = await self._request(
+        data = await self._request(
             "GET",
             self.BASE_URL + "transactions",
             headers=headers,
             params=params,
         )
-        data = resp.json()
         for item in data.get("payload", []):
             yield RawTxn(data=item)

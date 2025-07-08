@@ -1,9 +1,11 @@
 from datetime import datetime
 import asyncio
-import httpx
+import aiohttp
+from yarl import URL
 
 import pytest
-import respx
+from aioresponses import aioresponses
+import re
 
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 from services.bank_bridge.connectors.base import TokenPair, Account
@@ -33,15 +35,18 @@ async def test_auth(monkeypatch):
 
     monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
     c = make_connector()
-    with respx.mock(assert_all_called=True) as rsx:
-        route = rsx.post(c.TOKEN_URL).respond(
-            200, json={"access_token": "at", "refresh_token": "rt"}
+    with aioresponses() as rsx:
+        rsx.post(
+            c.TOKEN_URL,
+            payload={"access_token": "at", "refresh_token": "rt"},
+            status=200,
         )
         pair = await c.auth("code")
+        req = rsx.requests[("POST", URL(c.TOKEN_URL))][0]
     assert pair.access_token == "at"
     assert pair.refresh_token == "rt"
     assert saved["token"] == "at"
-    assert route.calls.last.request.headers["Authorization"].startswith("Basic")
+    assert req.kwargs["headers"]["Authorization"].startswith("Basic")
 
 
 @pytest.mark.asyncio
@@ -60,23 +65,30 @@ async def test_refresh_success(monkeypatch):
         called["save"] = True
 
     monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
-    with respx.mock(assert_all_called=True) as rsx:
-        route = rsx.post(c.TOKEN_URL).respond(
-            200, json={"access_token": "at", "refresh_token": "r2"}
+    with aioresponses() as rsx:
+        rsx.post(
+            c.TOKEN_URL,
+            payload={"access_token": "at", "refresh_token": "r2"},
+            status=200,
         )
         pair = await c.refresh(TokenPair("", "r1"))
+        req = rsx.requests[("POST", URL(c.TOKEN_URL))][0]
     assert pair.access_token == "at"
     assert pair.refresh_token == "r2"
     assert called.get("save")
-    assert route.calls.last.request.headers["Authorization"].startswith("Basic")
+    assert req.kwargs["headers"]["Authorization"].startswith("Basic")
 
 
 @pytest.mark.asyncio
 async def test_fetch_accounts(monkeypatch):
     c = make_connector()
     accounts = [{"id": 1}]
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.get(c.BASE_URL + "accounts").respond(200, json={"payload": accounts})
+    with aioresponses() as rsx:
+        rsx.get(
+            c.BASE_URL + "accounts",
+            payload={"payload": accounts},
+            status=200,
+        )
         result = await c.fetch_accounts(TokenPair("at"))
     assert result == [Account(id="1")]
 
@@ -89,9 +101,9 @@ async def test_fetch_accounts_refresh(monkeypatch):
         pass
 
     monkeypatch.setattr(TinkoffConnector, "_save_token", noop, raising=False)
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.post(c.TOKEN_URL).respond(200, json={"access_token": "at"})
-        rsx.get(c.BASE_URL + "accounts").respond(200, json={"payload": []})
+    with aioresponses() as rsx:
+        rsx.post(c.TOKEN_URL, payload={"access_token": "at"}, status=200)
+        rsx.get(c.BASE_URL + "accounts", payload={"payload": []}, status=200)
         await c.fetch_accounts(TokenPair("", "r1"))
 
 
@@ -101,8 +113,12 @@ async def test_fetch_txns(monkeypatch):
     txns = [{"id": 2}]
     start = datetime(2023, 1, 1)
     end = datetime(2023, 1, 2)
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.get(c.BASE_URL + "transactions").respond(200, json={"payload": txns})
+    with aioresponses() as rsx:
+        rsx.get(
+            re.compile(r"https://api\.tinkoff\.ru/v1/transactions.*"),
+            payload={"payload": txns},
+            status=200,
+        )
         result = [
             t
             async for t in c.fetch_txns(
@@ -122,9 +138,13 @@ async def test_fetch_txns_refresh(monkeypatch):
     monkeypatch.setattr(TinkoffConnector, "_save_token", noop, raising=False)
     start = datetime(2023, 1, 1)
     end = datetime(2023, 1, 2)
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.post(c.TOKEN_URL).respond(200, json={"access_token": "at"})
-        rsx.get(c.BASE_URL + "transactions").respond(200, json={"payload": []})
+    with aioresponses() as rsx:
+        rsx.post(c.TOKEN_URL, payload={"access_token": "at"}, status=200)
+        rsx.get(
+            re.compile(r"https://api\.tinkoff\.ru/v1/transactions.*"),
+            payload={"payload": []},
+            status=200,
+        )
         result = [
             t
             async for t in c.fetch_txns(
@@ -137,8 +157,8 @@ async def test_fetch_txns_refresh(monkeypatch):
 @pytest.mark.asyncio
 async def test_refresh_error(monkeypatch):
     c = make_connector()
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.post(c.TOKEN_URL).respond(400)
+    with aioresponses() as rsx:
+        rsx.post(c.TOKEN_URL, status=400)
         with pytest.raises(Exception):
             await c.refresh(TokenPair("", "r1"))
 
@@ -146,8 +166,8 @@ async def test_refresh_error(monkeypatch):
 @pytest.mark.asyncio
 async def test_fetch_accounts_error(monkeypatch):
     c = make_connector()
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.get(c.BASE_URL + "accounts").respond(500)
+    with aioresponses() as rsx:
+        rsx.get(c.BASE_URL + "accounts", status=500)
         with pytest.raises(Exception):
             await c.fetch_accounts(TokenPair("at"))
 
@@ -157,8 +177,11 @@ async def test_fetch_txns_error(monkeypatch):
     c = make_connector()
     start = datetime(2023, 1, 1)
     end = datetime(2023, 1, 2)
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.get(c.BASE_URL + "transactions").respond(401)
+    with aioresponses() as rsx:
+        rsx.get(
+            re.compile(r"https://api\.tinkoff\.ru/v1/transactions.*"),
+            status=401,
+        )
         with pytest.raises(Exception):
             [
                 t
@@ -184,9 +207,9 @@ async def test_request_metrics(monkeypatch):
     monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
     url = "https://example.com/r"  # any URL
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.get(url).respond(429)
-        with pytest.raises(httpx.HTTPStatusError):
+    with aioresponses() as rsx:
+        rsx.get(url, status=429)
+        with pytest.raises(aiohttp.ClientResponseError):
             await c._request("GET", url, auth=False)
 
     assert calls == [1]
@@ -227,8 +250,9 @@ async def test_request_backoff(monkeypatch):
     monkeypatch.setattr(random, "uniform", fake_uniform)
 
     url = "https://example.com/backoff"
-    with respx.mock(assert_all_called=True) as rsx:
-        rsx.get(url).mock(side_effect=[httpx.Response(500), httpx.Response(200)])
+    with aioresponses() as rsx:
+        rsx.get(url, status=500)
+        rsx.get(url, status=200)
         await c._request("GET", url, auth=False)
 
     assert sleeps == [pytest.approx(0.85)]
