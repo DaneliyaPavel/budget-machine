@@ -20,4 +20,6 @@ requires-python = ">=3.12"
 tinkoff = "services.bank_bridge.connectors.tinkoff:TinkoffConnector"
 sber = "services.bank_bridge.connectors.sber:SberConnector"
 gazprom = "services.bank_bridge.connectors.gazprom:GazpromConnector"
+alfa = "services.bank_bridge.connectors.alfa:AlfaConnector"
+vtb = "services.bank_bridge.connectors.vtb:VTBConnector"
 
