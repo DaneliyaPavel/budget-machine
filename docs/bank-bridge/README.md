@@ -19,6 +19,11 @@ Bank Bridge отвечает за обмен данными с внешними 
 - **bank.err** – информация об ошибке с исходным сообщением.
 
 Каждая схема версионируется и проверяется в тестах `tests/bank_bridge/test_contracts.py`.
+Схемы располагаются в каталогах `<topic>/<version>`. При изменении
+спецификации создаётся новый каталог версии, а изменения вносятся через
+pull request. На старте сервиса все схемы автоматически регистрируются в
+Apicurio Schema Registry, что позволяет воспроизвести состояние схем в
+любом окружении.
 
 ## Лимиты
 
@@ -33,6 +38,27 @@ Bank Bridge отвечает за обмен данными с внешними 
 - `bankbridge_txn_count` – число обработанных банковских операций.
 - `bankbridge_error_total` – количество ошибок при запросах к банкам.
 - `bankbridge_rate_limited` – счётчик ответов с кодом 429.
+
+## Логи
+
+Сервис пишет структурированные логи в stdout в формате JSON. Пример
+минимальной конфигурации Promtail для передачи логов в Loki:
+
+```yaml
+serverPort: 9080
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: bank-bridge
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: bank-bridge
+          __path__: /var/log/containers/*bank-bridge*.log
+```
+Полный пример доступен в файле `promtail-example.yml`.
 
 ## Тестовый контур
 
