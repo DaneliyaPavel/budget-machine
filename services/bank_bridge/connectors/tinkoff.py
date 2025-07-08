@@ -21,9 +21,9 @@ class TinkoffConnector(BaseConnector):
 
     def __init__(self, user_id: str, token: TokenPair | None = None) -> None:
         super().__init__(user_id, token)
-        self.client_id = os.getenv("TINKOFF_CLIENT_ID", "")
-        self.client_secret = os.getenv("TINKOFF_CLIENT_SECRET", "")
-        self.redirect_uri = os.getenv("TINKOFF_REDIRECT_URI", "")
+        self.client_id = os.getenv("BANK_BRIDGE_TINKOFF_CLIENT_ID", "")
+        self.client_secret = os.getenv("BANK_BRIDGE_TINKOFF_CLIENT_SECRET", "")
+        self.redirect_uri = os.getenv("BANK_BRIDGE_TINKOFF_REDIRECT_URI", "")
 
     def _basic_auth_header(self) -> dict[str, str]:
         cred = f"{self.client_id}:{self.client_secret}".encode()

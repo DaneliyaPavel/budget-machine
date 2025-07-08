@@ -2,9 +2,9 @@ from urllib.parse import urlencode
 import os
 import httpx
 
-CLIENT_ID = os.getenv("TINKOFF_CLIENT_ID", "")
-CLIENT_SECRET = os.getenv("TINKOFF_CLIENT_SECRET", "")
-REDIRECT_URI = os.getenv("TINKOFF_REDIRECT_URI", "")
+CLIENT_ID = os.getenv("BANK_BRIDGE_TINKOFF_CLIENT_ID", "")
+CLIENT_SECRET = os.getenv("BANK_BRIDGE_TINKOFF_CLIENT_SECRET", "")
+REDIRECT_URI = os.getenv("BANK_BRIDGE_TINKOFF_REDIRECT_URI", "")
 
 AUTH_URL = "https://id.tinkoff.ru/auth/authorize"
 TOKEN_URL = "https://id.tinkoff.ru/auth/token"

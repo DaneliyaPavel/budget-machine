@@ -16,9 +16,9 @@ from services.bank_bridge.app import FETCH_LATENCY_MS, RATE_LIMITED
 
 @pytest.fixture(autouse=True)
 def env_setup(monkeypatch):
-    monkeypatch.setenv("TINKOFF_CLIENT_ID", "cid")
-    monkeypatch.setenv("TINKOFF_CLIENT_SECRET", "secret")
-    monkeypatch.setenv("TINKOFF_REDIRECT_URI", "https://app/callback")
+    monkeypatch.setenv("BANK_BRIDGE_TINKOFF_CLIENT_ID", "cid")
+    monkeypatch.setenv("BANK_BRIDGE_TINKOFF_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("BANK_BRIDGE_TINKOFF_REDIRECT_URI", "https://app/callback")
 
 
 def make_connector(token=None, refresh=None):
