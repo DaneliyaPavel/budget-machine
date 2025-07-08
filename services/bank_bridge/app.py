@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.responses import Response
 from aiojobs import create_scheduler, Scheduler
 
-from . import normalizer, vault, kafka
+from . import normalizer, vault, kafka, schema_registry
 from .connectors import get_connector, TokenPair
 from prometheus_client import (
     Histogram,
@@ -80,11 +80,16 @@ RATE_LIMITED = Counter("bankbridge_rate_limited", "Count of rate limited respons
 
 
 class JsonFormatter(logging.Formatter):
+    """Format log records as JSON for Loki."""
+
     def format(self, record: logging.LogRecord) -> str:  # type: ignore[override]
-        data = {"level": record.levelname}
+        data = {
+            "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname.lower(),
+            "message": record.getMessage(),
+        }
         if hasattr(record, "bank"):
             data["bank"] = record.bank
-        data["message"] = record.getMessage()
         return json.dumps(data)
 
 
@@ -100,6 +105,7 @@ logger.propagate = False
 async def startup() -> None:
     global scheduler
     scheduler = await create_scheduler()
+    await schema_registry.register_all()
 
 
 @app.on_event("shutdown")
