@@ -28,6 +28,25 @@ class LeakyBucket:
             await asyncio.sleep(delay)
 
 
+#
+# Bucket storage -------------------------------------------------------------
+#
+
+_BUCKETS: dict[tuple[str, str], "LeakyBucket"] = {}
+
+
+def get_bucket(
+    user_id: str, bank: str, *, rate: float = 1.0, capacity: int = 5
+) -> "LeakyBucket":
+    """Return shared bucket for ``user_id``/``bank`` pair."""
+    key = (user_id, bank)
+    bucket = _BUCKETS.get(key)
+    if bucket is None:
+        bucket = LeakyBucket(rate=rate, capacity=capacity)
+        _BUCKETS[key] = bucket
+    return bucket
+
+
 class CircuitBreaker:
     """Minimal circuit breaker implementation."""
 
@@ -58,4 +77,4 @@ class CircuitBreaker:
                 self._opened = time.monotonic()
 
 
-__all__ = ["LeakyBucket", "CircuitBreaker"]
+__all__ = ["LeakyBucket", "CircuitBreaker", "get_bucket"]
