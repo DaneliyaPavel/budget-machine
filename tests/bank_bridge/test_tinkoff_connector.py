@@ -7,6 +7,8 @@ import respx
 
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 from services.bank_bridge.connectors.base import TokenPair, Account
+from services.bank_bridge.limits import get_bucket
+import random
 from services.bank_bridge.app import FETCH_LATENCY_MS, RATE_LIMITED
 
 
@@ -190,3 +192,44 @@ async def test_request_metrics(monkeypatch):
     assert calls == [1]
     assert len(observed) == 1
     assert observed[0] >= 0
+
+
+def test_leaky_bucket_store():
+    b1 = get_bucket("u1", "tinkoff")
+    b2 = get_bucket("u1", "tinkoff")
+    b3 = get_bucket("u2", "tinkoff")
+    assert b1 is b2
+    assert b1 is not b3
+
+
+def test_circuit_breaker_params():
+    c = make_connector()
+    assert c.circuit_breaker.failures == 10
+    assert c.circuit_breaker.reset_timeout == 900
+
+
+@pytest.mark.asyncio
+async def test_request_backoff(monkeypatch):
+    c = make_connector("t1")
+    sleeps: list[float] = []
+
+    async def fake_sleep(d):
+        sleeps.append(d)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+    args: list[tuple[float, float]] = []
+
+    def fake_uniform(a, b):
+        args.append((a, b))
+        return a
+
+    monkeypatch.setattr(random, "uniform", fake_uniform)
+
+    url = "https://example.com/backoff"
+    with respx.mock(assert_all_called=True) as rsx:
+        rsx.get(url).mock(side_effect=[httpx.Response(500), httpx.Response(200)])
+        await c._request("GET", url, auth=False)
+
+    assert sleeps == [pytest.approx(0.85)]
+    assert args == [(0.85, 1.15)]

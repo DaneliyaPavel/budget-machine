@@ -8,11 +8,12 @@ from typing import Any, AsyncGenerator
 import asyncio
 import time
 import json
+import random
 
 import httpx
 
 from .. import vault
-from ..limits import LeakyBucket, CircuitBreaker
+from ..limits import LeakyBucket, CircuitBreaker, get_bucket
 
 
 @dataclass
@@ -43,7 +44,7 @@ class BaseConnector(ABC):
     """Abstract base class for bank connectors."""
 
     #: shared rate limiter for all connectors
-    rate_limiter = LeakyBucket(rate=1.0, capacity=5)
+    rate_limiter: LeakyBucket
 
     #: machine-readable identifier
     name: str
@@ -55,7 +56,8 @@ class BaseConnector(ABC):
         self.token = token.access_token if token else None
         self.refresh_token = token.refresh_token if token else None
         self.vault = vault.get_vault_client()
-        self.circuit_breaker = CircuitBreaker()
+        self.rate_limiter = get_bucket(user_id, self.name)
+        self.circuit_breaker = CircuitBreaker(failures=10, reset_timeout=900)
 
     async def _save_token(self, token: TokenPair) -> None:
         self.token = token.access_token
@@ -90,7 +92,6 @@ class BaseConnector(ABC):
         if auth and self.token:
             hdrs.setdefault("Authorization", f"Bearer {self.token}")
 
-        backoff = 0.5
         refreshed = False
         try:
             for attempt in range(5):
@@ -140,10 +141,13 @@ class BaseConnector(ABC):
                         await self.circuit_breaker.success()
                         return resp
 
-                await asyncio.sleep(backoff)
-                backoff *= 2
+                if attempt == 4:
+                    raise RuntimeError("max retries exceeded")
+                delay = min(512, 2**attempt)
+                jitter = delay * 0.15
+                delay = random.uniform(delay - jitter, delay + jitter)
+                await asyncio.sleep(delay)
 
-            raise RuntimeError("max retries exceeded")
         finally:
             FETCH_LATENCY_MS.observe((time.monotonic() - start) * 1000)
 
