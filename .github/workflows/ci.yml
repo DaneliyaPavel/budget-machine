@@ -62,7 +62,7 @@ jobs:
           uvicorn services.bank_bridge.app:app --port 8080 --log-level warning &
           UVICORN_PID=$!
           sleep 5
-          schemathesis run http://localhost:8080/openapi.json --base-url=http://localhost:8080 --max-examples=10
+          schemathesis run http://localhost:8080/openapi.json --url=http://localhost:8080 --max-examples=10
           kill $UVICORN_PID
       - name: Stop test environment
         if: always()
