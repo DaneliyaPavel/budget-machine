@@ -5,6 +5,8 @@ omit =
     services/bank_bridge/kafka.py
     services/bank_bridge/connectors/gazprom.py
     services/bank_bridge/connectors/sber.py
+    services/bank_bridge/connectors/alfa.py
+    services/bank_bridge/connectors/vtb.py
     services/bank_bridge/vault.py
     services/bank_bridge/app.py
     services/bank_bridge/connectors/base.py
