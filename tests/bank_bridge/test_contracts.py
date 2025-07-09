@@ -38,6 +38,7 @@ def _patch_dependencies(monkeypatch):
     monkeypatch.setattr(kafka, "publish", fake_publish)
     monkeypatch.setattr(kafka, "close", fake_close)
     monkeypatch.setattr(vault, "get_vault_client", lambda: DummyVault())
+
     class DummyConnector:
         name = "dummy"
 
@@ -50,9 +51,14 @@ def _patch_dependencies(monkeypatch):
         async def fetch_accounts(self, token: TokenPair):
             return [1]
 
-    monkeypatch.setattr("services.bank_bridge.app.create_scheduler", create_dummy_scheduler)
-    monkeypatch.setattr("services.bank_bridge.app.get_connector", lambda name: DummyConnector)
+    monkeypatch.setattr(
+        "services.bank_bridge.app.create_scheduler", create_dummy_scheduler
+    )
+    monkeypatch.setattr(
+        "services.bank_bridge.app.get_connector", lambda name: DummyConnector
+    )
     return DummyConnector
+
 
 schema_dir = Path("schemas/bank-bridge")
 
