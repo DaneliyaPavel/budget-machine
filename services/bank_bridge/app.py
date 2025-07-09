@@ -8,6 +8,7 @@ from datetime import date, timedelta
 import asyncio
 
 from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi.responses import JSONResponse
 import re
 from fastapi.responses import Response
 from aiojobs import create_scheduler, Scheduler
@@ -167,7 +168,7 @@ async def shutdown() -> None:
 
 
 @app.get("/healthz")
-async def health() -> dict[str, str]:
+async def health() -> JSONResponse:
     """Return service health status."""
     degraded = False
     try:
@@ -180,7 +181,9 @@ async def health() -> dict[str, str]:
     except Exception:  # pragma: no cover - network operations
         degraded = True
 
-    return {"status": "ok" if not degraded else "degraded"}
+    status_code = 200 if not degraded else 503
+    payload = {"status": "ok" if not degraded else "degraded"}
+    return JSONResponse(payload, status_code=status_code)
 
 
 @app.post("/connect/{bank}")
