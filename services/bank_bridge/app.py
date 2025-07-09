@@ -7,7 +7,7 @@ import sys
 from datetime import date, timedelta
 import asyncio
 
-from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi import FastAPI, Request, HTTPException, Query, Path
 from fastapi.responses import JSONResponse
 import re
 from fastapi.responses import Response
@@ -31,7 +31,8 @@ scheduler: "Scheduler" | None = None
 RAW_TOPIC = os.getenv("BANK_RAW_TOPIC", "bank.raw")
 
 
-_USER_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+_USER_ID_PATTERN = r"^[a-zA-Z0-9_-]+$"
+_USER_ID_RE = re.compile(_USER_ID_PATTERN)
 
 
 def _validate_user_id(value: str) -> str:
@@ -189,7 +190,7 @@ async def health() -> JSONResponse:
 @app.post("/connect/{bank}")
 async def connect(
     bank: BankName,
-    user_id: str = Query("default", min_length=1),
+    user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
 ) -> dict[str, str]:
     """Return authorization URL for the requested bank."""
     user_id = _validate_user_id(user_id)
@@ -202,7 +203,7 @@ async def connect(
 @app.get("/status/{bank}")
 async def status(
     bank: BankName,
-    user_id: str = Query("default", min_length=1),
+    user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
 ) -> dict[str, str]:
     """Check connection status for the bank."""
     user_id = _validate_user_id(user_id)
@@ -225,7 +226,7 @@ async def status(
 @app.post("/sync/{bank}")
 async def sync(
     bank: BankName,
-    user_id: str = Query("default", min_length=1),
+    user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
 ) -> dict[str, str]:
     """Schedule full data synchronization with bank."""
     user_id = _validate_user_id(user_id)
@@ -235,12 +236,15 @@ async def sync(
 
 
 @app.post("/webhook/tinkoff/{user_id}")
-async def tinkoff_webhook(user_id: str, request: Request) -> dict[str, str]:
+async def tinkoff_webhook(
+    request: Request,
+    user_id: str = Path(..., pattern=_USER_ID_PATTERN),
+) -> dict[str, str]:
     """Handle Tinkoff sandbox operation webhook."""
     try:
         data = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="invalid json")
+        raise HTTPException(status_code=422, detail="invalid json")
     if data.get("event") != "operation":
         return {"status": "ignored"}
     payload = data.get("payload", {})
