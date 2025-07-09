@@ -7,13 +7,14 @@ import sys
 from datetime import date, timedelta
 import asyncio
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Query
 from fastapi.responses import Response
 from aiojobs import create_scheduler, Scheduler
 
 from . import kafka, vault, schema_registry
 import os
 from .connectors import get_connector, TokenPair, CONNECTORS
+from enum import Enum
 from prometheus_client import (
     Histogram,
     Counter,
@@ -28,7 +29,17 @@ scheduler: "Scheduler" | None = None
 RAW_TOPIC = os.getenv("BANK_RAW_TOPIC", "bank.raw")
 
 
-async def _load_token(bank: str, user_id: str) -> TokenPair | None:
+class BankName(str, Enum):
+    """Supported bank connectors."""
+
+    TINKOFF = "tinkoff"
+    SBER = "sber"
+    GAZPROM = "gazprom"
+    ALFA = "alfa"
+    VTB = "vtb"
+
+
+async def _load_token(bank: BankName, user_id: str) -> TokenPair | None:
     data = await vault.get_vault_client().read(f"bank_tokens/{bank}/{user_id}")
     if not data:
         return None
@@ -39,7 +50,7 @@ async def _load_token(bank: str, user_id: str) -> TokenPair | None:
     )
 
 
-async def _full_sync(bank: str, user_id: str) -> None:
+async def _full_sync(bank: BankName, user_id: str) -> None:
     token = await _load_token(bank, user_id)
     if token is None:
         logger.error("missing token", extra={"bank": bank})
@@ -156,7 +167,10 @@ async def health() -> dict[str, str]:
 
 
 @app.post("/connect/{bank}")
-async def connect(bank: str, user_id: str = "default") -> dict[str, str]:
+async def connect(
+    bank: BankName,
+    user_id: str = Query("default", min_length=1),
+) -> dict[str, str]:
     """Return authorization URL for the requested bank."""
     connector_cls = get_connector(bank)
     connector = connector_cls(user_id)
@@ -165,7 +179,10 @@ async def connect(bank: str, user_id: str = "default") -> dict[str, str]:
 
 
 @app.get("/status/{bank}")
-async def status(bank: str, user_id: str = "default") -> dict[str, str]:
+async def status(
+    bank: BankName,
+    user_id: str = Query("default", min_length=1),
+) -> dict[str, str]:
     """Check connection status for the bank."""
     token = await _load_token(bank, user_id)
     if token is None:
@@ -184,7 +201,10 @@ async def status(bank: str, user_id: str = "default") -> dict[str, str]:
 
 
 @app.post("/sync/{bank}")
-async def sync(bank: str, user_id: str = "default") -> dict[str, str]:
+async def sync(
+    bank: BankName,
+    user_id: str = Query("default", min_length=1),
+) -> dict[str, str]:
     """Schedule full data synchronization with bank."""
     assert scheduler
     await scheduler.spawn(_full_sync(bank, user_id))
@@ -204,7 +224,12 @@ async def tinkoff_webhook(user_id: str, request: Request) -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/metrics")
+@app.get(
+    "/metrics",
+    responses={
+        200: {"content": {"text/plain": {}}}
+    },
+)
 async def metrics() -> Response:
     """Expose Prometheus metrics."""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
