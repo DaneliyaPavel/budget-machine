@@ -35,7 +35,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r backend/requirements-dev.txt
-          pip install jsonschema respx
+          pip install jsonschema respx schemathesis
       - name: Validate schemas
         run: |
           python - <<'PY'
@@ -57,6 +57,13 @@ jobs:
         run: docker compose -f tests/bank_bridge/docker-compose.yml up -d
       - name: Run bankbridge tests
         run: make bankbridge-tests
+      - name: Run contract tests
+        run: |
+          uvicorn services.bank_bridge.app:app --port 8080 --log-level warning &
+          UVICORN_PID=$!
+          sleep 5
+          schemathesis run http://localhost:8080/openapi.json --base-url=http://localhost:8080 --max-examples=10
+          kill $UVICORN_PID
       - name: Stop test environment
         if: always()
         run: docker compose -f tests/bank_bridge/docker-compose.yml down -v
