@@ -5,6 +5,7 @@ import json
 import logging
 import sys
 from datetime import date, timedelta
+import asyncio
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import Response
@@ -12,7 +13,7 @@ from aiojobs import create_scheduler, Scheduler
 
 from . import kafka, vault, schema_registry
 import os
-from .connectors import get_connector, TokenPair
+from .connectors import get_connector, TokenPair, CONNECTORS
 from prometheus_client import (
     Histogram,
     Counter,
@@ -73,6 +74,26 @@ async def _full_sync(bank: str, user_id: str) -> None:
             logger.error("sync_error", extra={"bank": bank})
 
 
+async def _refresh_tokens_once(user_id: str = "default") -> None:
+    for bank in CONNECTORS:
+        token = await _load_token(bank, user_id)
+        if not token or not token.refresh_token:
+            continue
+        connector_cls = get_connector(bank)
+        connector = connector_cls(user_id, token)
+        try:
+            await connector.refresh(token)
+        except Exception:
+            ERROR_TOTAL.inc()
+            logger.error("refresh_error", extra={"bank": bank})
+
+
+async def _refresh_tokens_loop() -> None:
+    while True:
+        await _refresh_tokens_once()
+        await asyncio.sleep(24 * 60 * 60)
+
+
 FETCH_LATENCY_MS = Histogram(
     "bankbridge_fetch_latency_ms", "Latency of external bank requests in ms"
 )
@@ -107,6 +128,7 @@ logger.propagate = False
 async def startup() -> None:
     global scheduler
     scheduler = await create_scheduler()
+    await scheduler.spawn(_refresh_tokens_loop())
     await schema_registry.register_all()
 
 
