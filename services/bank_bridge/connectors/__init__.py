@@ -7,8 +7,21 @@ from .base import BaseConnector, TokenPair
 
 
 def _load_connectors() -> dict[str, Type[BaseConnector]]:
-    eps = entry_points(group="bank_bridge.connectors")
+    """Load available connectors.
+
+    When the package is installed, connectors are discovered via entry points.
+    However, in development and CI the project is often used without
+    installation and thus no entry points are registered.  In this case fall
+    back to importing built-in connectors directly.
+    """
+
     mapping: dict[str, Type[BaseConnector]] = {}
+
+    try:
+        eps = entry_points(group="bank_bridge.connectors")
+    except Exception:  # pragma: no cover - environment issues
+        eps = []
+
     for ep in eps:
         try:
             cls = ep.load()
@@ -17,6 +30,24 @@ def _load_connectors() -> dict[str, Type[BaseConnector]]:
         if not issubclass(cls, BaseConnector):
             continue
         mapping[ep.name] = cls
+
+    if not mapping:
+        from .tinkoff import TinkoffConnector
+        from .sber import SberConnector
+        from .gazprom import GazpromConnector
+        from .alfa import AlfaConnector
+        from .vtb import VTBConnector
+
+        mapping.update(
+            {
+                "tinkoff": TinkoffConnector,
+                "sber": SberConnector,
+                "gazprom": GazpromConnector,
+                "alfa": AlfaConnector,
+                "vtb": VTBConnector,
+            }
+        )
+
     return mapping
 
 
