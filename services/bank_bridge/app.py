@@ -226,9 +226,7 @@ async def tinkoff_webhook(user_id: str, request: Request) -> dict[str, str]:
 
 @app.get(
     "/metrics",
-    responses={
-        200: {"content": {"text/plain": {}}}
-    },
+    responses={200: {"content": {"text/plain": {}}}},
 )
 async def metrics() -> Response:
     """Expose Prometheus metrics."""
