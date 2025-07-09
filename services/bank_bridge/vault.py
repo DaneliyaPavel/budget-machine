@@ -14,9 +14,14 @@ class VaultClient:
 
     async def read(self, path: str) -> str | None:
         async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                f"{self.url}/v1/secret/{path}", headers=self.headers, timeout=5
-            )
+            try:
+                resp = await client.get(
+                    f"{self.url}/v1/secret/{path}",
+                    headers=self.headers,
+                    timeout=5,
+                )
+            except httpx.HTTPError:
+                return None
             if resp.status_code == 200:
                 data = resp.json()
                 return data.get("data", {}).get("value")
@@ -24,18 +29,26 @@ class VaultClient:
 
     async def write(self, path: str, value: str) -> None:
         async with httpx.AsyncClient() as client:
-            await client.post(
-                f"{self.url}/v1/secret/{path}",
-                headers=self.headers,
-                json={"value": value},
-                timeout=5,
-            )
+            try:
+                await client.post(
+                    f"{self.url}/v1/secret/{path}",
+                    headers=self.headers,
+                    json={"value": value},
+                    timeout=5,
+                )
+            except httpx.HTTPError:
+                return
 
     async def delete(self, path: str) -> None:
         async with httpx.AsyncClient() as client:
-            await client.delete(
-                f"{self.url}/v1/secret/{path}", headers=self.headers, timeout=5
-            )
+            try:
+                await client.delete(
+                    f"{self.url}/v1/secret/{path}",
+                    headers=self.headers,
+                    timeout=5,
+                )
+            except httpx.HTTPError:
+                return
 
 
 @lru_cache

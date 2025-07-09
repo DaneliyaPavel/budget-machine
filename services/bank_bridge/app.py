@@ -8,6 +8,7 @@ from datetime import date, timedelta
 import asyncio
 
 from fastapi import FastAPI, Request, HTTPException, Query
+import re
 from fastapi.responses import Response
 from aiojobs import create_scheduler, Scheduler
 
@@ -29,6 +30,15 @@ scheduler: "Scheduler" | None = None
 RAW_TOPIC = os.getenv("BANK_RAW_TOPIC", "bank.raw")
 
 
+_USER_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def _validate_user_id(value: str) -> str:
+    if not _USER_ID_RE.match(value):
+        raise HTTPException(status_code=422, detail="invalid user_id")
+    return value
+
+
 class BankName(str, Enum):
     """Supported bank connectors."""
 
@@ -40,7 +50,10 @@ class BankName(str, Enum):
 
 
 async def _load_token(bank: BankName, user_id: str) -> TokenPair | None:
-    data = await vault.get_vault_client().read(f"bank_tokens/{bank}/{user_id}")
+    try:
+        data = await vault.get_vault_client().read(f"bank_tokens/{bank}/{user_id}")
+    except Exception:  # pragma: no cover - network operations
+        return None
     if not data:
         return None
     obj = json.loads(data)
@@ -101,7 +114,10 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
 
 async def _refresh_tokens_loop() -> None:
     while True:
-        await _refresh_tokens_once()
+        try:
+            await _refresh_tokens_once()
+        except Exception:  # pragma: no cover - network operations
+            logger.warning("refresh_loop_error")
         await asyncio.sleep(24 * 60 * 60)
 
 
@@ -153,17 +169,18 @@ async def shutdown() -> None:
 @app.get("/healthz")
 async def health() -> dict[str, str]:
     """Return service health status."""
+    degraded = False
     try:
         await kafka.get_producer()
     except Exception:  # pragma: no cover - network operations
-        raise HTTPException(status_code=503, detail="kafka")
+        degraded = True
 
     try:
         await vault.get_vault_client().read("health-check")
     except Exception:  # pragma: no cover - network operations
-        raise HTTPException(status_code=503, detail="vault")
+        degraded = True
 
-    return {"status": "ok"}
+    return {"status": "ok" if not degraded else "degraded"}
 
 
 @app.post("/connect/{bank}")
@@ -172,6 +189,7 @@ async def connect(
     user_id: str = Query("default", min_length=1),
 ) -> dict[str, str]:
     """Return authorization URL for the requested bank."""
+    user_id = _validate_user_id(user_id)
     connector_cls = get_connector(bank)
     connector = connector_cls(user_id)
     pair = await connector.auth(None)
@@ -184,6 +202,7 @@ async def status(
     user_id: str = Query("default", min_length=1),
 ) -> dict[str, str]:
     """Check connection status for the bank."""
+    user_id = _validate_user_id(user_id)
     token = await _load_token(bank, user_id)
     if token is None:
         return {"status": "DISCONNECTED"}
@@ -206,6 +225,7 @@ async def sync(
     user_id: str = Query("default", min_length=1),
 ) -> dict[str, str]:
     """Schedule full data synchronization with bank."""
+    user_id = _validate_user_id(user_id)
     assert scheduler
     await scheduler.spawn(_full_sync(bank, user_id))
     return {"status": "scheduled"}
@@ -214,7 +234,10 @@ async def sync(
 @app.post("/webhook/tinkoff/{user_id}")
 async def tinkoff_webhook(user_id: str, request: Request) -> dict[str, str]:
     """Handle Tinkoff sandbox operation webhook."""
-    data = await request.json()
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid json")
     if data.get("event") != "operation":
         return {"status": "ignored"}
     payload = data.get("payload", {})
