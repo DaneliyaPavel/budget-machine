@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from jsonschema import Draft202012Validator
+from services.bank_bridge.app import app
 
 schema_dir = Path("schemas/bank-bridge")
 
@@ -32,9 +33,9 @@ def test_examples_match_schema():
 
 
 schemathesis = pytest.importorskip("schemathesis")
-from services.bank_bridge.app import app
 
 schema = schemathesis.openapi.from_asgi("/openapi.json", app)
+
 
 @schema.parametrize()
 def test_openapi_contract(case):
