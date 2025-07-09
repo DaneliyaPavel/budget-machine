@@ -31,7 +31,12 @@ def test_examples_match_schema():
         Draft202012Validator(schema).validate(example)
 
 
-@pytest.mark.asyncio
-async def test_openapi_contract():
-    pytest.importorskip("schemathesis")
-    pytest.skip("schemathesis execution is not available")
+schemathesis = pytest.importorskip("schemathesis")
+from services.bank_bridge.app import app
+
+schema = schemathesis.openapi.from_asgi("/openapi.json", app)
+
+@schema.parametrize()
+def test_openapi_contract(case):
+    response = case.call_asgi()
+    case.validate_response(response)
