@@ -68,10 +68,16 @@ def _get_user_id(request: Request, user_id: str) -> str:
     return _validate_user_id(user_id)
 
 
+class TinkoffEvent(str, Enum):
+    """Supported webhook events."""
+
+    OPERATION = "operation"
+
+
 class TinkoffWebhook(BaseModel):
     """Webhook payload for Tinkoff operations."""
 
-    event: str = Field(..., description="Event type")
+    event: TinkoffEvent = Field(..., description="Event type")
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -286,17 +292,6 @@ async def tinkoff_webhook(
     user_id: str = Path(..., pattern=_USER_ID_PATTERN),
 ) -> dict[str, str]:
     """Handle Tinkoff sandbox operation webhook."""
-    if body.event != "operation":
-        raise HTTPException(
-            status_code=422,
-            detail=[
-                {
-                    "loc": ["body", "event"],
-                    "msg": "invalid event",
-                    "type": "value_error",
-                }
-            ],
-        )
     payload = body.payload
     bank_txn_id = str(payload.get("id") or payload.get("bank_txn_id", ""))
     msg = {"user_id": user_id, "bank_txn_id": bank_txn_id, "payload": payload}
