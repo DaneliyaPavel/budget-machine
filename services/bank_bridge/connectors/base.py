@@ -113,6 +113,14 @@ class BaseConnector(ABC):
                     else:
                         if resp.status == 429:
                             RATE_LIMITED.inc()
+                            await resp.release()
+                            if attempt == 4:
+                                resp.raise_for_status()
+                            delay = min(512, 2**attempt)
+                            jitter = delay * 0.15
+                            delay = random.uniform(delay - jitter, delay + jitter)
+                            await asyncio.sleep(delay)
+                            continue
                         if (
                             resp.status == 401
                             and auth
