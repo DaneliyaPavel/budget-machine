@@ -36,6 +36,16 @@ async def test_tinkoff_webhook(monkeypatch):
     assert captured["data"]["payload"]["amount"] == 10
 
 
+@pytest.mark.asyncio
+async def test_tinkoff_webhook_invalid(monkeypatch):
+    async with LifespanManager(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as cl:
+            payload = {"event": ""}
+            resp = await cl.post("/webhook/tinkoff/u1", json=payload)
+            assert resp.status_code == 422
+
+
 class DummyConnector:
     name = "dummy"
 
@@ -140,4 +150,15 @@ async def test_healthz_error(monkeypatch):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
             resp = await cl.get("/healthz")
-            assert resp.status_code == 503
+            assert resp.status_code == 200
+            assert resp.json() == {"status": "degraded"}
+
+
+@pytest.mark.asyncio
+async def test_duplicate_user_id(monkeypatch):
+    async with LifespanManager(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as cl:
+            resp = await cl.get("/status/tinkoff?user_id=u1&user_id=u2")
+            assert resp.status_code == 422
+            assert isinstance(resp.json().get("detail"), list)
