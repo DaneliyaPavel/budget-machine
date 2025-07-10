@@ -4,9 +4,9 @@ from asgi_lifespan import LifespanManager
 
 from services.bank_bridge.app import app, RAW_TOPIC
 from services.bank_bridge import kafka, vault
+from services.bank_bridge.connectors import TokenPair
 
 USER_ID = "00000000-0000-0000-0000-000000000001"
-from services.bank_bridge.connectors import TokenPair
 
 
 @pytest.mark.asyncio
