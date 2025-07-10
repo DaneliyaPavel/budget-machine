@@ -1,5 +1,6 @@
 from datetime import datetime
 import asyncio
+import random
 import aiohttp
 from yarl import URL
 
@@ -7,13 +8,12 @@ import pytest
 from aioresponses import aioresponses
 import re
 
+from services.bank_bridge.app import FETCH_LATENCY_MS, RATE_LIMITED
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 from services.bank_bridge.connectors.base import TokenPair, Account
+from services.bank_bridge.limits import get_bucket
 
 USER_ID = "00000000-0000-0000-0000-000000000001"
-from services.bank_bridge.limits import get_bucket
-import random
-from services.bank_bridge.app import FETCH_LATENCY_MS, RATE_LIMITED
 
 
 @pytest.fixture(autouse=True)
