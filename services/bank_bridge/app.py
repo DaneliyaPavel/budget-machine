@@ -6,8 +6,10 @@ import logging
 import sys
 from datetime import date, timedelta
 import asyncio
+from typing import Any
 
-from fastapi import FastAPI, Request, HTTPException, Query, Path
+from fastapi import FastAPI, HTTPException, Query, Path
+from pydantic import BaseModel, Field
 from fastapi.responses import JSONResponse
 import re
 from fastapi.responses import Response
@@ -39,6 +41,13 @@ def _validate_user_id(value: str) -> str:
     if not _USER_ID_RE.match(value):
         raise HTTPException(status_code=422, detail="invalid user_id")
     return value
+
+
+class TinkoffWebhook(BaseModel):
+    """Webhook payload for Tinkoff operations."""
+
+    event: str = Field(..., description="Event type")
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class BankName(str, Enum):
@@ -237,17 +246,13 @@ async def sync(
 
 @app.post("/webhook/tinkoff/{user_id}")
 async def tinkoff_webhook(
-    request: Request,
+    body: "TinkoffWebhook",
     user_id: str = Path(..., pattern=_USER_ID_PATTERN),
 ) -> dict[str, str]:
     """Handle Tinkoff sandbox operation webhook."""
-    try:
-        data = await request.json()
-    except Exception:
-        raise HTTPException(status_code=422, detail="invalid json")
-    if data.get("event") != "operation":
+    if body.event != "operation":
         return {"status": "ignored"}
-    payload = data.get("payload", {})
+    payload = body.payload
     bank_txn_id = str(payload.get("id") or payload.get("bank_txn_id", ""))
     msg = {"user_id": user_id, "bank_txn_id": bank_txn_id, "payload": payload}
     await kafka.publish(RAW_TOPIC, user_id, bank_txn_id, msg)
