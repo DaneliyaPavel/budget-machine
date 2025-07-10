@@ -4,12 +4,14 @@ import socket
 import time
 from types import SimpleNamespace
 import shutil
+from pathlib import Path
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from asgi_lifespan import LifespanManager
 from aiokafka import AIOKafkaConsumer
+from jsonschema import Draft202012Validator
 
 from services.bank_bridge.app import app, RAW_TOPIC
 from services.bank_bridge import normalizer
@@ -136,7 +138,14 @@ async def test_sync_cycle(client):
         await normalizer.process(raw_data)
         msg = await norm_consumer.getone()
         data = json.loads(msg.value.decode())
-        assert data["postings"][0]["amount"] == 100
+        schema_path = (
+            Path(normalizer.BASE_DIR)
+            / "schemas/bank-bridge/bank.norm/1.0.0/schema.json"
+        )
+        with open(schema_path, "r", encoding="utf-8") as f:
+            schema = json.load(f)
+        Draft202012Validator(schema).validate(data)
+        assert float(data["amount"]["value"]) == 100
         assert data["external_id"] == "1"
     finally:
         await raw_consumer.stop()
