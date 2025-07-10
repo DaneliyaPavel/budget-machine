@@ -8,7 +8,7 @@ from datetime import date, timedelta
 import asyncio
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query, Path
+from fastapi import FastAPI, HTTPException, Query, Path, Request
 from pydantic import BaseModel, Field
 from fastapi.responses import JSONResponse
 import re
@@ -43,11 +43,24 @@ def _validate_user_id(value: str) -> str:
     return value
 
 
+def _get_user_id(request: Request, user_id: str) -> str:
+    """Validate that only a single user_id parameter is provided."""
+    if len(request.query_params.getlist("user_id")) > 1:
+        raise HTTPException(status_code=422, detail="duplicate user_id")
+    return _validate_user_id(user_id)
+
+
 class TinkoffWebhook(BaseModel):
     """Webhook payload for Tinkoff operations."""
 
     event: str = Field(..., description="Event type")
     payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class HealthStatus(BaseModel):
+    """Service health check response."""
+
+    status: str
 
 
 class BankName(str, Enum):
@@ -177,7 +190,11 @@ async def shutdown() -> None:
     await kafka.close()
 
 
-@app.get("/healthz")
+@app.get(
+    "/healthz",
+    response_model=HealthStatus,
+    responses={503: {"model": HealthStatus}},
+)
 async def health() -> JSONResponse:
     """Return service health status."""
     degraded = False
@@ -193,16 +210,17 @@ async def health() -> JSONResponse:
 
     status_code = 200 if not degraded else 503
     payload = {"status": "ok" if not degraded else "degraded"}
-    return JSONResponse(payload, status_code=status_code)
+    return JSONResponse(content=payload, status_code=status_code)
 
 
 @app.post("/connect/{bank}")
 async def connect(
+    request: Request,
     bank: BankName,
     user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
 ) -> dict[str, str]:
     """Return authorization URL for the requested bank."""
-    user_id = _validate_user_id(user_id)
+    user_id = _get_user_id(request, user_id)
     connector_cls = get_connector(bank)
     connector = connector_cls(user_id)
     pair = await connector.auth(None)
@@ -211,11 +229,12 @@ async def connect(
 
 @app.get("/status/{bank}")
 async def status(
+    request: Request,
     bank: BankName,
     user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
 ) -> dict[str, str]:
     """Check connection status for the bank."""
-    user_id = _validate_user_id(user_id)
+    user_id = _get_user_id(request, user_id)
     token = await _load_token(bank, user_id)
     if token is None:
         return {"status": "DISCONNECTED"}
@@ -234,11 +253,12 @@ async def status(
 
 @app.post("/sync/{bank}")
 async def sync(
+    request: Request,
     bank: BankName,
     user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
 ) -> dict[str, str]:
     """Schedule full data synchronization with bank."""
-    user_id = _validate_user_id(user_id)
+    user_id = _get_user_id(request, user_id)
     assert scheduler
     await scheduler.spawn(_full_sync(bank, user_id))
     return {"status": "scheduled"}
