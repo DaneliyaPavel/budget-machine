@@ -1,7 +1,6 @@
 from datetime import datetime
 import asyncio
 import random
-import aiohttp
 from yarl import URL
 
 import pytest
