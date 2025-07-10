@@ -39,14 +39,32 @@ _USER_ID_RE = re.compile(_USER_ID_PATTERN)
 
 def _validate_user_id(value: str) -> str:
     if not _USER_ID_RE.match(value):
-        raise HTTPException(status_code=422, detail="invalid user_id")
+        raise HTTPException(
+            status_code=422,
+            detail=[
+                {
+                    "loc": ["query", "user_id"],
+                    "msg": "invalid user_id",
+                    "type": "value_error",
+                }
+            ],
+        )
     return value
 
 
 def _get_user_id(request: Request, user_id: str) -> str:
     """Validate that only a single user_id parameter is provided."""
     if len(request.query_params.getlist("user_id")) > 1:
-        raise HTTPException(status_code=422, detail="duplicate user_id")
+        raise HTTPException(
+            status_code=422,
+            detail=[
+                {
+                    "loc": ["query", "user_id"],
+                    "msg": "duplicate user_id",
+                    "type": "value_error",
+                }
+            ],
+        )
     return _validate_user_id(user_id)
 
 
@@ -193,7 +211,6 @@ async def shutdown() -> None:
 @app.get(
     "/healthz",
     response_model=HealthStatus,
-    responses={503: {"model": HealthStatus}},
 )
 async def health() -> JSONResponse:
     """Return service health status."""
@@ -208,9 +225,8 @@ async def health() -> JSONResponse:
     except Exception:  # pragma: no cover - network operations
         degraded = True
 
-    status_code = 200 if not degraded else 503
     payload = {"status": "ok" if not degraded else "degraded"}
-    return JSONResponse(content=payload, status_code=status_code)
+    return JSONResponse(content=payload, status_code=200)
 
 
 @app.post("/connect/{bank}")
@@ -271,7 +287,16 @@ async def tinkoff_webhook(
 ) -> dict[str, str]:
     """Handle Tinkoff sandbox operation webhook."""
     if body.event != "operation":
-        return {"status": "ignored"}
+        raise HTTPException(
+            status_code=422,
+            detail=[
+                {
+                    "loc": ["body", "event"],
+                    "msg": "invalid event",
+                    "type": "value_error",
+                }
+            ],
+        )
     payload = body.payload
     bank_txn_id = str(payload.get("id") or payload.get("bank_txn_id", ""))
     msg = {"user_id": user_id, "bank_txn_id": bank_txn_id, "payload": payload}
