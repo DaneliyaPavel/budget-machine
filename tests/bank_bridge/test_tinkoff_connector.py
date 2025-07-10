@@ -211,8 +211,8 @@ async def test_request_metrics(monkeypatch):
     url = "https://example.com/r"  # any URL
     with aioresponses() as rsx:
         rsx.get(url, status=429)
-        with pytest.raises(aiohttp.ClientResponseError):
-            await c._request("GET", url, auth=False)
+        rsx.get(url, payload={}, status=200)
+        await c._request("GET", url, auth=False)
 
     assert calls == [1]
     assert len(observed) == 1
@@ -259,3 +259,35 @@ async def test_request_backoff(monkeypatch):
 
     assert sleeps == [pytest.approx(0.85)]
     assert args == [(0.85, 1.15)]
+
+
+@pytest.mark.asyncio
+async def test_request_backoff_rate_limit(monkeypatch):
+    c = make_connector("t1")
+    sleeps: list[float] = []
+
+    async def fake_sleep(d):
+        sleeps.append(d)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+    args: list[tuple[float, float]] = []
+
+    def fake_uniform(a, b):
+        args.append((a, b))
+        return a
+
+    monkeypatch.setattr(random, "uniform", fake_uniform)
+
+    calls: list[int] = []
+    monkeypatch.setattr(RATE_LIMITED, "inc", lambda: calls.append(1))
+
+    url = "https://example.com/backoff429"
+    with aioresponses() as rsx:
+        rsx.get(url, status=429)
+        rsx.get(url, payload={}, status=200)
+        await c._request("GET", url, auth=False)
+
+    assert sleeps == [pytest.approx(0.85)]
+    assert args == [(0.85, 1.15)]
+    assert calls == [1]
