@@ -16,6 +16,8 @@ from services.bank_bridge import normalizer
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 from services.bank_bridge.connectors.base import Account, RawTxn, TokenPair
 
+USER_ID = "00000000-0000-0000-0000-000000000001"
+
 COMPOSE_FILE = "tests/bank_bridge/docker-compose.yml"
 
 # Skip tests if Docker is not available or the daemon isn't running. This allows
@@ -127,7 +129,7 @@ async def test_sync_cycle(client):
     except Exception:
         pytest.skip("Kafka is not available")
     try:
-        resp = await client.post("/sync/tinkoff")
+        resp = await client.post(f"/sync/tinkoff?user_id={USER_ID}")
         assert resp.status_code == 200
         raw_msg = await raw_consumer.getone()
         raw_data = json.loads(raw_msg.value.decode())
