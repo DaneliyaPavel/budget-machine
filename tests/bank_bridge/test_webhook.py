@@ -71,7 +71,7 @@ async def test_status_disconnected(monkeypatch):
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
-            resp = await cl.get("/status/tinkoff")
+            resp = await cl.get(f"/status/tinkoff?user_id={USER_ID}")
             assert resp.status_code == 200
             assert resp.json() == {"status": "DISCONNECTED"}
 
@@ -91,7 +91,7 @@ async def test_status_connected(monkeypatch):
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
-            resp = await cl.get("/status/tinkoff")
+            resp = await cl.get(f"/status/tinkoff?user_id={USER_ID}")
             assert resp.status_code == 200
             assert resp.json() == {"status": "CONNECTED"}
 
@@ -111,7 +111,7 @@ async def test_status_error(monkeypatch):
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
-            resp = await cl.get("/status/tinkoff")
+            resp = await cl.get(f"/status/tinkoff?user_id={USER_ID}")
             assert resp.status_code == 200
             assert resp.json() == {"status": "ERROR"}
 
