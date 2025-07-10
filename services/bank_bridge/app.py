@@ -239,7 +239,11 @@ async def health() -> JSONResponse:
 async def connect(
     request: Request,
     bank: BankName,
-    user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
+    user_id: str = Query(
+        "00000000-0000-0000-0000-000000000001",
+        min_length=1,
+        pattern=_USER_ID_PATTERN,
+    ),
 ) -> dict[str, str]:
     """Return authorization URL for the requested bank."""
     user_id = _get_user_id(request, user_id)
@@ -253,7 +257,11 @@ async def connect(
 async def status(
     request: Request,
     bank: BankName,
-    user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
+    user_id: str = Query(
+        "00000000-0000-0000-0000-000000000001",
+        min_length=1,
+        pattern=_USER_ID_PATTERN,
+    ),
 ) -> dict[str, str]:
     """Check connection status for the bank."""
     user_id = _get_user_id(request, user_id)
@@ -277,7 +285,11 @@ async def status(
 async def sync(
     request: Request,
     bank: BankName,
-    user_id: str = Query("default", min_length=1, pattern=_USER_ID_PATTERN),
+    user_id: str = Query(
+        "00000000-0000-0000-0000-000000000001",
+        min_length=1,
+        pattern=_USER_ID_PATTERN,
+    ),
 ) -> dict[str, str]:
     """Schedule full data synchronization with bank."""
     user_id = _get_user_id(request, user_id)
