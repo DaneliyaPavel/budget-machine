@@ -295,7 +295,7 @@ async def tinkoff_webhook(
     payload = body.payload
     bank_txn_id = str(payload.get("id") or payload.get("bank_txn_id", ""))
     msg = {"user_id": user_id, "bank_txn_id": bank_txn_id, "payload": payload}
-    await kafka.publish(RAW_TOPIC, user_id, bank_txn_id, msg)
+    asyncio.create_task(kafka.publish(RAW_TOPIC, user_id, bank_txn_id, msg))
     return {"status": "ok"}
 
 
