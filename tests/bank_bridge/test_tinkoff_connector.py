@@ -9,6 +9,8 @@ import re
 
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 from services.bank_bridge.connectors.base import TokenPair, Account
+
+USER_ID = "00000000-0000-0000-0000-000000000001"
 from services.bank_bridge.limits import get_bucket
 import random
 from services.bank_bridge.app import FETCH_LATENCY_MS, RATE_LIMITED
@@ -23,7 +25,7 @@ def env_setup(monkeypatch):
 
 def make_connector(token=None, refresh=None):
     pair = TokenPair(token, refresh) if token or refresh else None
-    return TinkoffConnector(user_id="u1", token=pair)
+    return TinkoffConnector(user_id=USER_ID, token=pair)
 
 
 @pytest.mark.asyncio
@@ -218,9 +220,9 @@ async def test_request_metrics(monkeypatch):
 
 
 def test_leaky_bucket_store():
-    b1 = get_bucket("u1", "tinkoff")
-    b2 = get_bucket("u1", "tinkoff")
-    b3 = get_bucket("u2", "tinkoff")
+    b1 = get_bucket(USER_ID, "tinkoff")
+    b2 = get_bucket(USER_ID, "tinkoff")
+    b3 = get_bucket("00000000-0000-0000-0000-000000000002", "tinkoff")
     assert b1 is b2
     assert b1 is not b3
 

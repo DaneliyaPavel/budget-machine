@@ -4,6 +4,8 @@ from asgi_lifespan import LifespanManager
 
 from services.bank_bridge.app import app, RAW_TOPIC
 from services.bank_bridge import kafka, vault
+
+USER_ID = "00000000-0000-0000-0000-000000000001"
 from services.bank_bridge.connectors import TokenPair
 
 
@@ -27,11 +29,11 @@ async def test_tinkoff_webhook(monkeypatch):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
             payload = {"event": "operation", "payload": {"id": 1, "amount": 10}}
-            resp = await cl.post("/webhook/tinkoff/u1", json=payload)
+            resp = await cl.post(f"/webhook/tinkoff/{USER_ID}", json=payload)
             assert resp.status_code == 200
 
     assert captured["topic"] == RAW_TOPIC
-    assert captured["user_id"] == "u1"
+    assert captured["user_id"] == USER_ID
     assert captured["bank_txn_id"] == "1"
     assert captured["data"]["payload"]["amount"] == 10
 
@@ -42,7 +44,7 @@ async def test_tinkoff_webhook_invalid(monkeypatch):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
             payload = {"event": ""}
-            resp = await cl.post("/webhook/tinkoff/u1", json=payload)
+            resp = await cl.post(f"/webhook/tinkoff/{USER_ID}", json=payload)
             assert resp.status_code == 422
 
 
@@ -159,6 +161,8 @@ async def test_duplicate_user_id(monkeypatch):
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
-            resp = await cl.get("/status/tinkoff?user_id=u1&user_id=u2")
+            resp = await cl.get(
+                f"/status/tinkoff?user_id={USER_ID}&user_id=00000000-0000-0000-0000-000000000002"
+            )
             assert resp.status_code == 422
             assert isinstance(resp.json().get("detail"), list)

@@ -33,7 +33,7 @@ scheduler: "Scheduler" | None = None
 RAW_TOPIC = os.getenv("BANK_RAW_TOPIC", "bank.raw")
 
 
-_USER_ID_PATTERN = r"^[a-zA-Z0-9_-]+$"
+_USER_ID_PATTERN = r"^[0-9a-fA-F-]{36}$"
 _USER_ID_RE = re.compile(_USER_ID_PATTERN)
 
 
