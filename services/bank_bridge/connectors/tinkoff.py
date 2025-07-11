@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from urllib.parse import urlencode
 from typing import Any, AsyncGenerator
 
@@ -60,9 +60,16 @@ class TinkoffConnector(BaseConnector):
             headers=headers,
             auth=False,
         )
+        expiry = None
+        if "expires_in" in data:
+            try:
+                expiry = datetime.utcnow() + timedelta(seconds=int(data["expires_in"]))
+            except Exception:
+                expiry = None
         pair = TokenPair(
             access_token=data.get("access_token", ""),
             refresh_token=data.get("refresh_token"),
+            expiry=expiry,
         )
         await self._save_token(pair)
         return pair
@@ -83,9 +90,16 @@ class TinkoffConnector(BaseConnector):
             headers=headers,
             auth=False,
         )
+        expiry = None
+        if "expires_in" in data:
+            try:
+                expiry = datetime.utcnow() + timedelta(seconds=int(data["expires_in"]))
+            except Exception:
+                expiry = None
         pair = TokenPair(
             access_token=data.get("access_token", ""),
             refresh_token=data.get("refresh_token", token.refresh_token),
+            expiry=expiry,
         )
         if not pair.access_token:
             raise RuntimeError("no access token")

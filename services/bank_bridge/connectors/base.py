@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Any, AsyncGenerator
 
 import asyncio
@@ -22,6 +22,7 @@ class TokenPair:
 
     access_token: str
     refresh_token: str | None = None
+    expiry: datetime | None = None
 
 
 @dataclass
@@ -66,6 +67,8 @@ class BaseConnector(ABC):
         data = {"access_token": token.access_token}
         if token.refresh_token:
             data["refresh_token"] = token.refresh_token
+        if token.expiry:
+            data["expiry"] = token.expiry.isoformat()
         await self.vault.write(
             f"bank_tokens/{self.name}/{self.user_id}", json.dumps(data)
         )

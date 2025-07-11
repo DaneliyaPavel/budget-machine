@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import asyncio
 from typing import Any
 
@@ -105,9 +105,12 @@ async def _load_token(bank: BankName, user_id: str) -> TokenPair | None:
     if not data:
         return None
     obj = json.loads(data)
+    expiry_val = obj.get("expiry")
+    expiry = datetime.fromisoformat(expiry_val) if expiry_val else None
     return TokenPair(
         access_token=obj.get("access_token", ""),
         refresh_token=obj.get("refresh_token"),
+        expiry=expiry,
     )
 
 

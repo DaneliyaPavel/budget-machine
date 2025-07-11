@@ -33,13 +33,14 @@ async def test_auth(monkeypatch):
 
     async def fake_save(self, token):
         saved["token"] = token.access_token
+        saved["expiry"] = token.expiry
 
     monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
     c = make_connector()
     with aioresponses() as rsx:
         rsx.post(
             c.TOKEN_URL,
-            payload={"access_token": "at", "refresh_token": "rt"},
+            payload={"access_token": "at", "refresh_token": "rt", "expires_in": 3600},
             status=200,
         )
         pair = await c.auth("code")
@@ -47,6 +48,7 @@ async def test_auth(monkeypatch):
     assert pair.access_token == "at"
     assert pair.refresh_token == "rt"
     assert saved["token"] == "at"
+    assert saved["expiry"] is not None
     assert req.kwargs["headers"]["Authorization"].startswith("Basic")
 
 
@@ -69,13 +71,14 @@ async def test_refresh_success(monkeypatch):
     with aioresponses() as rsx:
         rsx.post(
             c.TOKEN_URL,
-            payload={"access_token": "at", "refresh_token": "r2"},
+            payload={"access_token": "at", "refresh_token": "r2", "expires_in": 7200},
             status=200,
         )
         pair = await c.refresh(TokenPair("", "r1"))
         req = rsx.requests[("POST", URL(c.TOKEN_URL))][0]
     assert pair.access_token == "at"
     assert pair.refresh_token == "r2"
+    assert pair.expiry is not None
     assert called.get("save")
     assert req.kwargs["headers"]["Authorization"].startswith("Basic")
 
