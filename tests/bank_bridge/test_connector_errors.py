@@ -100,3 +100,34 @@ async def test_full_sync_txns_error(monkeypatch):
     assert captured["data"]["error_code"] == "CONNECTOR_ERROR"
     assert captured["data"]["stage"] == "connector"
     assert captured["data"]["bank_id"] == "tinkoff"
+
+
+@pytest.mark.asyncio
+async def test_error_metric_increment(monkeypatch):
+    async def fake_publish(*args, **kwargs):
+        pass
+
+    async def fake_load(bank, user):
+        return TokenPair("t")
+
+    monkeypatch.setattr(service_app, "_load_token", fake_load)
+    monkeypatch.setattr(service_app, "get_connector", lambda b: DummyAccountsError)
+    monkeypatch.setattr(kafka, "publish", fake_publish)
+
+    labels: list[tuple[str, str]] = []
+    inc_calls: list[int] = []
+
+    class DummyCounter:
+        def inc(self):
+            inc_calls.append(1)
+
+    def fake_labels(bank, stage):
+        labels.append((bank, stage))
+        return DummyCounter()
+
+    monkeypatch.setattr(service_app.ERROR_TOTAL, "labels", fake_labels)
+
+    await _full_sync(BankName.TINKOFF, str(uuid4()))
+
+    assert labels == [(str(BankName.TINKOFF), "connector")]
+    assert inc_calls == [1]
