@@ -1,5 +1,6 @@
 import asyncio
 import os
+import uuid
 import redis.asyncio as redis
 
 from .. import notifications, crud, database
@@ -24,7 +25,7 @@ async def main() -> None:
             await notifications.send_telegram(text)
             if account_id:
                 async with database.async_session() as session:
-                    subs = await crud.get_push_subscriptions(session, int(account_id))
+                    subs = await crud.get_push_subscriptions(session, uuid.UUID(account_id))
                 for s in subs:
                     notifications.send_push(s.endpoint, s.p256dh, s.auth, text)
 
