@@ -115,7 +115,7 @@ class BaseConnector(ABC):
         auth: bool = True,
     ) -> dict[str, Any]:
         """Perform HTTP request with retry, refresh and circuit breaker."""
-        from ..app import FETCH_LATENCY_MS, RATE_LIMITED
+        from ..app import FETCH_LATENCY_MS, RATE_LIMITED, logger
 
         start = time.monotonic()
         await self.rate_limiter.acquire()
@@ -147,6 +147,7 @@ class BaseConnector(ABC):
                         raise
                 else:
                     if resp.status == 429:
+                        logger.warning("http 429", extra={"bank": self.name})
                         RATE_LIMITED.labels(self.name).inc()
                         await resp.release()
                         if attempt == 4:
