@@ -35,7 +35,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r backend/requirements-dev.txt
-          pip install jsonschema respx schemathesis
+          pip install jsonschema respx schemathesis playwright
+      - name: Install Playwright browsers
+        run: playwright install chromium
       - name: Validate schemas
         run: |
           python - <<'PY'
@@ -57,6 +59,12 @@ jobs:
         run: docker compose -f tests/bank_bridge/docker-compose.yml up -d
       - name: Run bankbridge tests
         run: make bankbridge-tests
+      - name: Run sandbox auth test
+        run: python tests/bank_bridge/tinkoff_sandbox.py
+        env:
+          TINKOFF_SANDBOX_LOGIN: ${{ secrets.TINKOFF_SANDBOX_LOGIN }}
+          TINKOFF_SANDBOX_PASSWORD: ${{ secrets.TINKOFF_SANDBOX_PASSWORD }}
+        continue-on-error: true
       - name: Run contract tests
         run: |
           uvicorn services.bank_bridge.app:app --port 8080 --log-level warning &
