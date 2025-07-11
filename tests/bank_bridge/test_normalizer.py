@@ -1,5 +1,6 @@
 from uuid import uuid4, UUID
 import json
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import pytest
@@ -128,6 +129,21 @@ def test_normalize_record_payee_and_note():
     }
     tx = normalizer.normalize_record(raw)
     assert tx["description"] in {"note", "Shop"}
+
+
+def test_normalize_record_timezone_and_bad_mcc():
+    aid = uuid4()
+    tz_date = datetime(2024, 1, 4, 12, tzinfo=timezone(timedelta(hours=3)))
+    raw = {
+        "amount": 20,
+        "date": tz_date.isoformat(),
+        "account_id": aid,
+        "bank_txn_id": 12,
+        "mcc": "bad",
+    }
+    tx = normalizer.normalize_record(raw)
+    assert tx["posted_at"].endswith("+00:00")
+    assert "mcc" not in tx
 
 
 @pytest.mark.asyncio

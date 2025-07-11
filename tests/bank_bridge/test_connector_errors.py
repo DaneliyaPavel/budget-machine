@@ -51,6 +51,8 @@ class DummyTxnsError(DummyAccountsError):
     async def fetch_txns(
         self, token: TokenPair, account: Account, date_from, date_to
     ) -> AsyncGenerator[RawTxn, None]:
+        if False:  # pragma: no cover - to satisfy AsyncGenerator type
+            yield
         raise RuntimeError("fail")
 
 
