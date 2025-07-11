@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlencode
 from typing import Any, AsyncGenerator
 
@@ -63,7 +63,7 @@ class TinkoffConnector(BaseConnector):
         expiry = None
         if "expires_in" in data:
             try:
-                expiry = datetime.utcnow() + timedelta(seconds=int(data["expires_in"]))
+                expiry = datetime.now(timezone.utc) + timedelta(seconds=int(data["expires_in"]))
             except Exception:
                 expiry = None
         pair = TokenPair(
@@ -93,7 +93,7 @@ class TinkoffConnector(BaseConnector):
         expiry = None
         if "expires_in" in data:
             try:
-                expiry = datetime.utcnow() + timedelta(seconds=int(data["expires_in"]))
+                expiry = datetime.now(timezone.utc) + timedelta(seconds=int(data["expires_in"]))
             except Exception:
                 expiry = None
         pair = TokenPair(
