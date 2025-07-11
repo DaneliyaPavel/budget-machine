@@ -84,6 +84,50 @@ async def test_refresh_success(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_auth_redirect(monkeypatch):
+    c = make_connector()
+    pair = await c.auth(None)
+    assert pair.access_token.startswith(c.AUTH_URL)
+
+
+@pytest.mark.asyncio
+async def test_auth_bad_expiry(monkeypatch):
+    c = make_connector()
+
+    async def fake_save(self, token):
+        pass
+
+    monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
+
+    with aioresponses() as rsx:
+        rsx.post(
+            c.TOKEN_URL,
+            payload={"access_token": "at", "refresh_token": "rt", "expires_in": "x"},
+            status=200,
+        )
+        pair = await c.auth("code")
+    assert pair.expiry is None
+
+
+@pytest.mark.asyncio
+async def test_refresh_missing_access(monkeypatch):
+    c = make_connector()
+
+    async def fake_save(self, token):
+        pass
+
+    monkeypatch.setattr(TinkoffConnector, "_save_token", fake_save, raising=False)
+    with aioresponses() as rsx:
+        rsx.post(
+            c.TOKEN_URL,
+            payload={"refresh_token": "r2"},
+            status=200,
+        )
+        with pytest.raises(RuntimeError):
+            await c.refresh(TokenPair("t", "r1"))
+
+
+@pytest.mark.asyncio
 async def test_fetch_accounts(monkeypatch):
     c = make_connector()
     accounts = [{"id": 1}]
