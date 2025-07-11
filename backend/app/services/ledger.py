@@ -59,9 +59,9 @@ async def post_entry(
                 )
             )
     if started:
+        await db.commit()
         await db.refresh(tx_obj)
     else:
-        await db.commit()
         await db.refresh(tx_obj)
     if tx_obj.posted_at.tzinfo is None:
         tx_obj.posted_at = tx_obj.posted_at.replace(tzinfo=timezone.utc)
