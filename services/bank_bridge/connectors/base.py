@@ -159,7 +159,9 @@ class BaseConnector(ABC):
                     await asyncio.sleep(delay)
 
         finally:
-            FETCH_LATENCY_MS.labels(self.name).observe((time.monotonic() - start) * 1000)
+            FETCH_LATENCY_MS.labels(self.name).observe(
+                (time.monotonic() - start) * 1000
+            )
 
     @abstractmethod
     async def auth(self, code: str | None, **kwargs: Any) -> TokenPair:
