@@ -240,7 +240,7 @@ class JsonFormatter(logging.Formatter):
         data = {
             "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
             "level": record.levelname.lower(),
-            "message": record.getMessage(),
+            "msg": record.getMessage(),
         }
         if hasattr(record, "bank"):
             data["bank"] = record.bank
