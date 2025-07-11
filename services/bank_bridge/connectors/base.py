@@ -13,7 +13,7 @@ import random
 import aiohttp
 
 from .. import vault
-from ..limits import LeakyBucket, CircuitBreaker, get_bucket
+from ..limits import LeakyBucket, CircuitBreaker, get_bucket, get_limits
 
 
 @dataclass
@@ -56,7 +56,8 @@ class BaseConnector(ABC):
         self.token = token.access_token if token else None
         self.refresh_token = token.refresh_token if token else None
         self.vault = vault.get_vault_client()
-        self.rate_limiter = get_bucket(user_id, self.name)
+        rate, capacity = get_limits(self.name)
+        self.rate_limiter = get_bucket(user_id, self.name, rate=rate, capacity=capacity)
         self.circuit_breaker = CircuitBreaker(failures=10, reset_timeout=900)
 
     async def _save_token(self, token: TokenPair) -> None:

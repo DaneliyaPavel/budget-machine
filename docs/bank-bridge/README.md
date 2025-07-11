@@ -34,6 +34,8 @@ Apicurio Schema Registry, что позволяет воспроизвести �
 - `SCHEMA_REGISTRY_URL` – адрес Schema Registry;
 - `BANK_BRIDGE_VAULT_URL` – URL Vault, например `https://vault.example.com`;
 - `BANK_BRIDGE_VAULT_TOKEN` – токен доступа к Vault.
+- `BANK_BRIDGE_<BANK>_RATE` – максимальная частота запросов к API банка;
+- `BANK_BRIDGE_<BANK>_CAPACITY` – ёмкость окна для лимитера.
 
 Токены банков хранятся в Vault по пути `bank_tokens/<bank>/<user_id>`.
 Пример полного пути: `bank_tokens/tinkoff/42`.
