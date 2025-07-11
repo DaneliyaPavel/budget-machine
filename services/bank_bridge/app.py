@@ -123,7 +123,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
     try:
         accounts = await connector.fetch_accounts(token)
     except Exception:
-        ERROR_TOTAL.inc()
+        ERROR_TOTAL.labels(str(bank)).inc()
         logger.error("accounts_error", extra={"bank": bank})
         await kafka.publish(
             "bank.err",
@@ -153,9 +153,9 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
                     "payload": dict(raw.data),
                 }
                 await kafka.publish(RAW_TOPIC, user_id, msg["bank_txn_id"], msg)
-                TXN_COUNT.inc()
+                TXN_COUNT.labels(str(bank)).inc()
         except Exception:
-            ERROR_TOTAL.inc()
+            ERROR_TOTAL.labels(str(bank)).inc()
             logger.error("sync_error", extra={"bank": bank})
             await kafka.publish(
                 "bank.err",
@@ -182,7 +182,7 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
         try:
             await connector.refresh(token)
         except Exception:
-            ERROR_TOTAL.inc()
+            ERROR_TOTAL.labels(str(bank)).inc()
             logger.error("refresh_error", extra={"bank": bank})
             await kafka.publish(
                 "bank.err",
@@ -209,11 +209,25 @@ async def _refresh_tokens_loop() -> None:
 
 
 FETCH_LATENCY_MS = Histogram(
-    "bankbridge_fetch_latency_ms", "Latency of external bank requests in ms"
+    "bankbridge_fetch_latency_ms",
+    "Latency of external bank requests in ms",
+    labelnames=["bank"],
 )
-TXN_COUNT = Counter("bankbridge_txn_count", "Number of bank transactions processed")
-ERROR_TOTAL = Counter("bankbridge_error_total", "Total errors when calling bank APIs")
-RATE_LIMITED = Counter("bankbridge_rate_limited", "Count of rate limited responses")
+TXN_COUNT = Counter(
+    "bankbridge_txn_count",
+    "Number of bank transactions processed",
+    labelnames=["bank"],
+)
+ERROR_TOTAL = Counter(
+    "bankbridge_error_total",
+    "Total errors when calling bank APIs",
+    labelnames=["bank"],
+)
+RATE_LIMITED = Counter(
+    "bankbridge_rate_limited",
+    "Count of rate limited responses",
+    labelnames=["bank"],
+)
 
 
 class JsonFormatter(logging.Formatter):
@@ -313,7 +327,7 @@ async def status(
     try:
         await connector.fetch_accounts(token)
     except Exception:
-        ERROR_TOTAL.inc()
+        ERROR_TOTAL.labels(str(bank)).inc()
         logger.error("status_error", extra={"bank": bank})
         return {"status": "ERROR"}
 
