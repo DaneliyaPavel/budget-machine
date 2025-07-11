@@ -15,7 +15,7 @@ async def get_rate(code: str) -> float:
     """Вернуть курс валюты к рублю."""
     global _rates, _last_update
     now = datetime.now(timezone.utc)
-    if not _last_update or (now - _last_update).seconds > 3600:
+    if not _last_update or (now - _last_update).total_seconds() > 3600:
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(_CBR_URL, timeout=10)
