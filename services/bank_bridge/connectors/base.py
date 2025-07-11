@@ -41,6 +41,10 @@ class RawTxn:
     data: dict[str, Any]
 
 
+class AuthError(RuntimeError):
+    """Authentication failed after token refresh."""
+
+
 class BaseConnector(ABC):
     """Abstract base class for bank connectors."""
 
@@ -143,6 +147,10 @@ class BaseConnector(ABC):
                             refreshed = True
                             await resp.release()
                             continue
+
+                        if resp.status == 401 and auth and refreshed:
+                            await resp.release()
+                            raise AuthError("unauthorized")
 
                         if resp.status >= 500:
                             await self.circuit_breaker.failure()
