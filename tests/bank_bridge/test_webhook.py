@@ -157,6 +157,26 @@ async def test_healthz_error(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_healthz_vault_error(monkeypatch):
+    async def fake_get_producer():
+        return object()
+
+    class BadVault:
+        async def read(self, path):
+            raise RuntimeError("vault")
+
+    monkeypatch.setattr(kafka, "get_producer", fake_get_producer)
+    monkeypatch.setattr(vault, "get_vault_client", lambda: BadVault())
+
+    async with LifespanManager(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as cl:
+            resp = await cl.get("/healthz")
+            assert resp.status_code == 200
+            assert resp.json() == {"status": "degraded"}
+
+
+@pytest.mark.asyncio
 async def test_duplicate_user_id(monkeypatch):
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
