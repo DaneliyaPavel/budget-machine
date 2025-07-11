@@ -7,7 +7,9 @@ from jsonschema import Draft202012Validator
 
 from services.bank_bridge import normalizer
 
-SCHEMA_PATH = Path(normalizer.BASE_DIR) / "schemas/bank-bridge/bank.norm/1.0.0/schema.json"
+SCHEMA_PATH = (
+    Path(normalizer.BASE_DIR) / "schemas/bank-bridge/bank.norm/1.0.0/schema.json"
+)
 with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
     NORM_SCHEMA = json.load(f)
 VALIDATOR = Draft202012Validator(NORM_SCHEMA)
