@@ -197,10 +197,30 @@ async def test_request_metrics(monkeypatch):
     c = make_connector("t1")
 
     observed: list[float] = []
-    monkeypatch.setattr(FETCH_LATENCY_MS, "observe", lambda v: observed.append(v))
+    hist_labels: list[str] = []
+
+    class DummyHist:
+        def observe(self, v):
+            observed.append(v)
+
+    def hist_label(bank):
+        hist_labels.append(bank)
+        return DummyHist()
+
+    monkeypatch.setattr(FETCH_LATENCY_MS, "labels", hist_label)
 
     calls: list[int] = []
-    monkeypatch.setattr(RATE_LIMITED, "inc", lambda: calls.append(1))
+    counter_labels: list[str] = []
+
+    class DummyCounter:
+        def inc(self):
+            calls.append(1)
+
+    def rate_label(bank):
+        counter_labels.append(bank)
+        return DummyCounter()
+
+    monkeypatch.setattr(RATE_LIMITED, "labels", rate_label)
 
     async def fake_sleep(_):
         pass
@@ -214,6 +234,8 @@ async def test_request_metrics(monkeypatch):
         await c._request("GET", url, auth=False)
 
     assert calls == [1]
+    assert hist_labels == ["tinkoff"]
+    assert counter_labels == ["tinkoff"]
     assert len(observed) == 1
     assert observed[0] >= 0
 
@@ -279,7 +301,17 @@ async def test_request_backoff_rate_limit(monkeypatch):
     monkeypatch.setattr(random, "uniform", fake_uniform)
 
     calls: list[int] = []
-    monkeypatch.setattr(RATE_LIMITED, "inc", lambda: calls.append(1))
+    labels: list[str] = []
+
+    class DummyCounter:
+        def inc(self):
+            calls.append(1)
+
+    def label(bank):
+        labels.append(bank)
+        return DummyCounter()
+
+    monkeypatch.setattr(RATE_LIMITED, "labels", label)
 
     url = "https://example.com/backoff429"
     with aioresponses() as rsx:
@@ -289,4 +321,5 @@ async def test_request_backoff_rate_limit(monkeypatch):
 
     assert sleeps == [pytest.approx(0.85)]
     assert args == [(0.85, 1.15)]
+    assert labels == ["tinkoff"]
     assert calls == [1]

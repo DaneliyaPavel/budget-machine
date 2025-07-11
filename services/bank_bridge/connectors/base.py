@@ -112,7 +112,7 @@ class BaseConnector(ABC):
                             raise
                     else:
                         if resp.status == 429:
-                            RATE_LIMITED.inc()
+                            RATE_LIMITED.labels(self.name).inc()
                             await resp.release()
                             if attempt == 4:
                                 resp.raise_for_status()
@@ -159,7 +159,7 @@ class BaseConnector(ABC):
                     await asyncio.sleep(delay)
 
         finally:
-            FETCH_LATENCY_MS.observe((time.monotonic() - start) * 1000)
+            FETCH_LATENCY_MS.labels(self.name).observe((time.monotonic() - start) * 1000)
 
     @abstractmethod
     async def auth(self, code: str | None, **kwargs: Any) -> TokenPair:
