@@ -97,13 +97,16 @@ scrape_configs:
 
 ## Тестовый контур
 
-Для локального тестирования используется `tests/bank_bridge/docker-compose.yml`. Он поднимает только Kafka. Запуск:
+Для локального тестирования используется `tests/bank_bridge/docker-compose.yml`. Он поднимает Kafka и несколько заглушек. Запуск:
 
 ```bash
 docker compose -f tests/bank_bridge/docker-compose.yml up -d
 ```
 
-После старта доступен порт 9092 для подключения тестов.
+После старта доступны следующие сервисы:
+- Kafka на порту 9092;
+- mock bank-api на порту 8081;
+- mock Core API на порту 8200.
 
 Интеграционные тесты запускаются командой:
 

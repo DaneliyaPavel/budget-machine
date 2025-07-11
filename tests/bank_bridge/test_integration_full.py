@@ -16,7 +16,6 @@ from jsonschema import Draft202012Validator
 from services.bank_bridge.app import app, RAW_TOPIC
 from services.bank_bridge import normalizer
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
-from services.bank_bridge.connectors.base import Account, RawTxn, TokenPair
 
 USER_ID = "00000000-0000-0000-0000-000000000001"
 
@@ -55,20 +54,21 @@ def compose_env():
     if result.returncode != 0:
         pytest.skip("Failed to start docker compose services")
 
-    for _ in range(30):
-        sock = socket.socket()
-        try:
-            sock.settimeout(1)
-            sock.connect(("localhost", 9092))
-            sock.close()
-            break
-        except OSError:
-            time.sleep(1)
-    else:
-        subprocess.run(
-            ["docker", "compose", "-f", COMPOSE_FILE, "down", "-v"], check=False
-        )
-        pytest.skip("Kafka did not become available")
+    for port in (9092, 8081, 8200):
+        for _ in range(30):
+            sock = socket.socket()
+            try:
+                sock.settimeout(1)
+                sock.connect(("localhost", port))
+                sock.close()
+                break
+            except OSError:
+                time.sleep(1)
+        else:
+            subprocess.run(
+                ["docker", "compose", "-f", COMPOSE_FILE, "down", "-v"], check=False
+            )
+            pytest.skip(f"Service on port {port} did not become available")
 
     yield
 
@@ -78,27 +78,9 @@ def compose_env():
 @pytest_asyncio.fixture()
 async def client(monkeypatch):
     monkeypatch.setenv("KAFKA_BROKER_URL", "localhost:9092")
-
-    async def fake_load(bank: str, user_id: str) -> TokenPair:
-        return TokenPair(access_token="x")
-
-    monkeypatch.setattr("services.bank_bridge.app._load_token", fake_load)
-
-    async def fetch_accounts(self, token):
-        return [Account(id="acc1")]
-
-    async def fetch_txns(self, token, account, start, end):
-        yield RawTxn(
-            {
-                "id": 1,
-                "amount": 100,
-                "date": "2024-01-01T00:00:00",
-                "account_id": account.id,
-            }
-        )
-
-    monkeypatch.setattr(TinkoffConnector, "fetch_accounts", fetch_accounts)
-    monkeypatch.setattr(TinkoffConnector, "fetch_txns", fetch_txns)
+    monkeypatch.setenv("BANK_BRIDGE_VAULT_URL", "http://localhost:8200")
+    monkeypatch.setenv("BANK_BRIDGE_VAULT_TOKEN", "root")
+    monkeypatch.setattr(TinkoffConnector, "BASE_URL", "http://localhost:8081/")
 
     async def spawn(coro):
         await coro

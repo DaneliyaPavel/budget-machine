@@ -6,3 +6,13 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     ports:
       - "9092:9092"
+  bank-api:
+    build: ./mock_services/bank_api
+    volumes:
+      - ./stubs:/data:ro
+    ports:
+      - "8081:80"
+  core-api:
+    build: ./mock_services/core_api
+    ports:
+      - "8200:8200"
