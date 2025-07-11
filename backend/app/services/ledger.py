@@ -58,11 +58,9 @@ async def post_entry(
                     transaction_id=tx_obj.id,
                 )
             )
-    if started:
-        await db.refresh(tx_obj)
-    else:
-        await db.commit()
-        await db.refresh(tx_obj)
+    if not started:
+        await db.flush()
+    await db.refresh(tx_obj)
     if tx_obj.posted_at.tzinfo is None:
         tx_obj.posted_at = tx_obj.posted_at.replace(tzinfo=timezone.utc)
     else:

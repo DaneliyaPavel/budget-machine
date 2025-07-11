@@ -155,3 +155,27 @@ async def test_post_entry_atomicity():
         )
         assert count_tx == 0
         assert count_post == 0
+
+
+@pytest.mark.asyncio
+async def test_post_entry_nested_transaction():
+    async with database.async_session() as session:
+        acc1, acc2, user, cat = await _prepare_entities(session)
+        tx = schemas.TransactionCreate(category_id=cat.id)
+        postings = [
+            schemas.PostingCreate(amount=100, side="debit", account_id=acc1.id),
+            schemas.PostingCreate(amount=100, side="credit", account_id=acc2.id),
+        ]
+        with pytest.raises(RuntimeError):
+            async with session.begin():
+                await ledger.post_entry(session, tx, postings, acc1.id, user.id)
+                raise RuntimeError()
+
+        count_tx = await session.scalar(
+            select(func.count()).select_from(models.Transaction)
+        )
+        count_post = await session.scalar(
+            select(func.count()).select_from(models.Posting)
+        )
+        assert count_tx == 0
+        assert count_post == 0

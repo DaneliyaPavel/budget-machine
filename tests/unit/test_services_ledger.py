@@ -2,9 +2,10 @@ import pytest
 from datetime import timezone
 from fastapi import HTTPException
 
-from backend.app import schemas, crud
+from backend.app import schemas, crud, models
 from backend.app.database import async_session
 from backend.app.services import ledger
+from sqlalchemy import select, func, text
 
 
 @pytest.mark.asyncio
@@ -107,3 +108,42 @@ async def test_post_entry_mismatched_totals(session):
     async with async_session() as db:
         with pytest.raises(Exception):
             await ledger.post_entry(db, txn, postings, user.account_id, user.id)
+
+
+@pytest.mark.asyncio
+async def test_post_entry_nested_transaction(session):
+    user = await crud.create_user(
+        session, schemas.UserCreate(email="d@b.c", password="ComplexPass123$")
+    )
+    category = await crud.create_category(
+        session, schemas.CategoryCreate(name="Nested"), user.account_id, user.id
+    )
+    account2 = await crud.create_account(
+        session,
+        schemas.AccountCreate(name="Income", currency_code="RUB", user_id=user.id),
+    )
+
+    txn = schemas.TransactionCreate(category_id=category.id)
+    postings = [
+        schemas.PostingCreate(
+            amount=100, side="debit", account_id=user.account_id, currency_code="RUB"
+        ),
+        schemas.PostingCreate(
+            amount=100, side="credit", account_id=account2.id, currency_code="RUB"
+        ),
+    ]
+    async with async_session() as db:
+        await db.execute(text("DROP TRIGGER IF EXISTS postings_balance_check"))
+        await db.commit()
+        count_tx_before = await db.scalar(select(func.count()).select_from(models.Transaction))
+        count_post_before = await db.scalar(select(func.count()).select_from(models.Posting))
+        await db.commit()
+        with pytest.raises(RuntimeError):
+            async with db.begin():
+                await ledger.post_entry(db, txn, postings, user.account_id, user.id)
+                raise RuntimeError()
+
+        count_tx_after = await db.scalar(select(func.count()).select_from(models.Transaction))
+        count_post_after = await db.scalar(select(func.count()).select_from(models.Posting))
+        assert count_tx_after == count_tx_before
+        assert count_post_after == count_post_before
