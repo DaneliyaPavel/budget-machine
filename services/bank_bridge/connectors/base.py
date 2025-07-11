@@ -66,18 +66,18 @@ class BaseConnector(ABC):
         rate, capacity = get_limits(self.name)
         self.rate_limiter = get_bucket(user_id, self.name, rate=rate, capacity=capacity)
         self.circuit_breaker = CircuitBreaker(failures=10, reset_timeout=900)
-        self._session = aiohttp.ClientSession()
+        self._session: aiohttp.ClientSession | None = None
         BaseConnector._instances.add(self)
 
     async def close(self) -> None:
-        if not self._session.closed:
+        if self._session is not None and not self._session.closed:
             await self._session.close()
         BaseConnector._instances.discard(self)
 
     def __del__(self) -> None:
         if not getattr(self, "_session", None):
             return
-        if not self._session.closed:
+        if self._session is not None and not self._session.closed:
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
@@ -127,6 +127,8 @@ class BaseConnector(ABC):
 
         refreshed = False
         try:
+            if self._session is None or self._session.closed:
+                self._session = aiohttp.ClientSession()
             session = self._session
             for attempt in range(5):
                 try:
