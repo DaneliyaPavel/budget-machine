@@ -71,7 +71,12 @@ async def test_process_success(monkeypatch):
         "date": "2024-01-03T00:00:00",
         "account_id": uuid4(),
     }
-    raw = {"user_id": str(uuid4()), "bank_txn_id": "5", "payload": payload}
+    raw = {
+        "user_id": str(uuid4()),
+        "bank_txn_id": "5",
+        "bank_id": "tinkoff",
+        "payload": payload,
+    }
     await normalizer.process(raw)
     assert sent["topic"] == "bank.norm"
     assert sent["uid"] == str(raw["user_id"])
@@ -95,7 +100,12 @@ async def test_process_error(monkeypatch):
 
     monkeypatch.setattr(normalizer, "normalize_record", bad_norm)
     monkeypatch.setattr(normalizer.kafka, "publish", fake_publish)
-    raw = {"user_id": str(uuid4()), "bank_txn_id": "9", "payload": {}}
+    raw = {
+        "user_id": str(uuid4()),
+        "bank_txn_id": "9",
+        "bank_id": "tinkoff",
+        "payload": {},
+    }
     await normalizer.process(raw)
     assert sent["topic"] == "bank.err"
     ERR_VALIDATOR.validate(sent["data"])
@@ -111,7 +121,11 @@ async def test_process_invalid_schema(monkeypatch):
         sent.update({"topic": topic, "data": data})
 
     monkeypatch.setattr(normalizer.kafka, "publish", fake_publish)
-    raw = {"user_id": str(uuid4()), "bank_txn_id": "1"}
+    raw = {
+        "user_id": str(uuid4()),
+        "bank_txn_id": "1",
+        "bank_id": "tinkoff",
+    }
     await normalizer.process(raw)
     assert sent["topic"] == "bank.err"
     ERR_VALIDATOR.validate(sent["data"])
@@ -159,7 +173,12 @@ async def test_process_external_id(monkeypatch):
         "date": "2024-01-05T00:00:00",
         "account_id": uuid4(),
     }
-    raw = {"user_id": str(uuid4()), "bank_txn_id": "7", "payload": payload}
+    raw = {
+        "user_id": str(uuid4()),
+        "bank_txn_id": "7",
+        "bank_id": "tinkoff",
+        "payload": payload,
+    }
     await normalizer.process(raw)
     assert sent["external_id"] == "7"
 
@@ -176,7 +195,12 @@ async def test_process_error_contains_raw(monkeypatch):
 
     monkeypatch.setattr(normalizer, "normalize_record", bad_norm)
     monkeypatch.setattr(normalizer.kafka, "publish", fake_publish)
-    raw = {"user_id": str(uuid4()), "bank_txn_id": "8", "payload": {"foo": "bar"}}
+    raw = {
+        "user_id": str(uuid4()),
+        "bank_txn_id": "8",
+        "bank_id": "tinkoff",
+        "payload": {"foo": "bar"},
+    }
     await normalizer.process(raw)
     assert captured["payload"]["foo"] == "bar"
     assert captured["payload"]["bank_txn_id"] == "8"
@@ -196,7 +220,12 @@ async def test_process_called_once(monkeypatch):
         "date": "2024-01-06T00:00:00",
         "account_id": uuid4(),
     }
-    raw = {"user_id": str(uuid4()), "bank_txn_id": "10", "payload": payload}
+    raw = {
+        "user_id": str(uuid4()),
+        "bank_txn_id": "10",
+        "bank_id": "tinkoff",
+        "payload": payload,
+    }
     await normalizer.process(raw)
     assert count == 1
 
@@ -223,6 +252,11 @@ async def test_process_calls_normalize(monkeypatch):
     monkeypatch.setattr(normalizer, "normalize_record", fake_norm)
     monkeypatch.setattr(normalizer.kafka, "publish", fake_publish)
     await normalizer.process(
-        {"user_id": str(uuid4()), "bank_txn_id": "11", "payload": {}}
+        {
+            "user_id": str(uuid4()),
+            "bank_txn_id": "11",
+            "bank_id": "tinkoff",
+            "payload": {},
+        }
     )
     assert called

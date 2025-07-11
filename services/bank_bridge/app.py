@@ -202,6 +202,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
                             raw.data.get("id") or raw.data.get("bank_txn_id", "")
                         ),
                         "payload": dict(raw.data),
+                        "bank_id": bank,
                     }
                     await kafka.publish(RAW_TOPIC, user_id, msg["bank_txn_id"], msg)
                     TXN_COUNT.labels(str(bank)).inc()
@@ -448,7 +449,12 @@ async def tinkoff_webhook(
     """Handle Tinkoff sandbox operation webhook."""
     payload = body.payload
     bank_txn_id = str(payload.get("id") or payload.get("bank_txn_id", ""))
-    msg = {"user_id": user_id, "bank_txn_id": bank_txn_id, "payload": payload}
+    msg = {
+        "user_id": user_id,
+        "bank_txn_id": bank_txn_id,
+        "payload": payload,
+        "bank_id": BankName.TINKOFF,
+    }
     asyncio.create_task(kafka.publish(RAW_TOPIC, user_id, bank_txn_id, msg))
     return {"status": "ok"}
 

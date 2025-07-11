@@ -36,6 +36,7 @@ async def test_tinkoff_webhook(monkeypatch):
     assert captured["user_id"] == USER_ID
     assert captured["bank_txn_id"] == "1"
     assert captured["data"]["payload"]["amount"] == 10
+    assert captured["data"]["bank_id"] == "tinkoff"
 
 
 @pytest.mark.asyncio

@@ -74,7 +74,7 @@ async def process(raw: dict[str, Any]) -> None:
             {
                 "txn_id": str(uuid4()),
                 "user_id": user_id,
-                "bank_id": payload.get("bank_id", "unknown"),
+                "bank_id": raw.get("bank_id"),
                 "raw": raw_copy,
             }
         )
@@ -83,7 +83,7 @@ async def process(raw: dict[str, Any]) -> None:
         err = {
             "user_id": user_id,
             "external_id": bank_txn_id,
-            "bank_id": payload.get("bank_id", "unknown"),
+            "bank_id": raw.get("bank_id"),
             "error_code": "INVALID_DATA",
             "stage": "normalize",
             "payload": payload,

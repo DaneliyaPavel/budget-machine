@@ -117,6 +117,7 @@ async def test_sync_cycle(client):
         assert resp.status_code == 200
         raw_msg = await raw_consumer.getone()
         raw_data = json.loads(raw_msg.value.decode())
+        assert raw_data["bank_id"] == "tinkoff"
         await normalizer.process(raw_data)
         msg = await norm_consumer.getone()
         data = json.loads(msg.value.decode())
@@ -127,6 +128,7 @@ async def test_sync_cycle(client):
         with open(schema_path, "r", encoding="utf-8") as f:
             schema = json.load(f)
         Draft202012Validator(schema).validate(data)
+        assert data["bank_id"] == "tinkoff"
         assert float(data["amount"]["value"]) == 100
         assert data["external_id"] == "1"
     finally:
