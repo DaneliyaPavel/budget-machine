@@ -174,9 +174,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
                 await kafka.publish(RAW_TOPIC, user_id, msg["bank_txn_id"], msg)
                 TXN_COUNT.labels(str(bank)).inc()
         except AuthError:
-            await vault.get_vault_client().delete(
-                f"bank_tokens/{bank}/{user_id}"
-            )
+            await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
             await kafka.publish(
                 "bank.err",
                 user_id,
@@ -219,9 +217,7 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
         try:
             await connector.refresh(token)
         except AuthError:
-            await vault.get_vault_client().delete(
-                f"bank_tokens/{bank}/{user_id}"
-            )
+            await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
             await kafka.publish(
                 "bank.err",
                 user_id,
