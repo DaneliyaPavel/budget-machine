@@ -18,7 +18,7 @@ from aiojobs import create_scheduler, Scheduler
 from . import kafka, vault, schema_registry
 import os
 import httpx
-from .connectors import get_connector, TokenPair, CONNECTORS, AuthError
+from .connectors import get_connector, TokenPair, CONNECTORS, AuthError, BaseConnector
 from enum import Enum
 from prometheus_client import (
     Histogram,
@@ -155,55 +155,8 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
     connector = connector_cls(user_id, token)
 
     try:
-        accounts = await connector.fetch_accounts(token)
-    except AuthError:
-        await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
-        await kafka.publish(
-            "bank.err",
-            user_id,
-            "",
-            {
-                "user_id": user_id,
-                "external_id": "",
-                "bank_id": bank,
-                "error_code": "AUTH_ERROR",
-                "stage": "auth",
-                "payload": {},
-            },
-        )
-        return
-    except Exception:
-        ERROR_TOTAL.labels(str(bank), "connector").inc()
-        logger.error("accounts_error", extra={"bank": bank})
-        await kafka.publish(
-            "bank.err",
-            user_id,
-            "",
-            {
-                "user_id": user_id,
-                "external_id": "",
-                "bank_id": bank,
-                "error_code": "CONNECTOR_ERROR",
-                "stage": "connector",
-                "payload": {"operation": "fetch_accounts"},
-            },
-        )
-        return
-
-    end = date.today()
-    start = end - timedelta(days=SYNC_DAYS)
-    for account in accounts:
         try:
-            async for raw in connector.fetch_txns(token, account, start, end):
-                msg = {
-                    "user_id": user_id,
-                    "bank_txn_id": str(
-                        raw.data.get("id") or raw.data.get("bank_txn_id", "")
-                    ),
-                    "payload": dict(raw.data),
-                }
-                await kafka.publish(RAW_TOPIC, user_id, msg["bank_txn_id"], msg)
-                TXN_COUNT.labels(str(bank)).inc()
+            accounts = await connector.fetch_accounts(token)
         except AuthError:
             await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
             await kafka.publish(
@@ -222,7 +175,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
             return
         except Exception:
             ERROR_TOTAL.labels(str(bank), "connector").inc()
-            logger.error("sync_error", extra={"bank": bank})
+            logger.error("accounts_error", extra={"bank": bank})
             await kafka.publish(
                 "bank.err",
                 user_id,
@@ -233,9 +186,59 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
                     "bank_id": bank,
                     "error_code": "CONNECTOR_ERROR",
                     "stage": "connector",
-                    "payload": {"operation": "fetch_txns", "account": account.id},
+                    "payload": {"operation": "fetch_accounts"},
                 },
             )
+            return
+
+        end = date.today()
+        start = end - timedelta(days=SYNC_DAYS)
+        for account in accounts:
+            try:
+                async for raw in connector.fetch_txns(token, account, start, end):
+                    msg = {
+                        "user_id": user_id,
+                        "bank_txn_id": str(
+                            raw.data.get("id") or raw.data.get("bank_txn_id", "")
+                        ),
+                        "payload": dict(raw.data),
+                    }
+                    await kafka.publish(RAW_TOPIC, user_id, msg["bank_txn_id"], msg)
+                    TXN_COUNT.labels(str(bank)).inc()
+            except AuthError:
+                await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
+                await kafka.publish(
+                    "bank.err",
+                    user_id,
+                    "",
+                    {
+                        "user_id": user_id,
+                        "external_id": "",
+                        "bank_id": bank,
+                        "error_code": "AUTH_ERROR",
+                        "stage": "auth",
+                        "payload": {},
+                    },
+                )
+                return
+            except Exception:
+                ERROR_TOTAL.labels(str(bank), "connector").inc()
+                logger.error("sync_error", extra={"bank": bank})
+                await kafka.publish(
+                    "bank.err",
+                    user_id,
+                    "",
+                    {
+                        "user_id": user_id,
+                        "external_id": "",
+                        "bank_id": bank,
+                        "error_code": "CONNECTOR_ERROR",
+                        "stage": "connector",
+                        "payload": {"operation": "fetch_txns", "account": account.id},
+                    },
+                )
+    finally:
+        await connector.close()
 
 
 async def _refresh_tokens_once(user_id: str = "default") -> None:
@@ -278,6 +281,8 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
                     "payload": {},
                 },
             )
+        finally:
+            await connector.close()
 
 
 async def _refresh_tokens_loop() -> None:
@@ -348,6 +353,7 @@ async def shutdown() -> None:
     if scheduler:
         await scheduler.close()
     await kafka.close()
+    await BaseConnector.close_all()
 
 
 @app.get(

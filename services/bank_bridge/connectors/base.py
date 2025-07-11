@@ -56,6 +56,8 @@ class BaseConnector(ABC):
     #: human friendly title
     display: str
 
+    _instances: set["BaseConnector"] = set()
+
     def __init__(self, user_id: str, token: TokenPair | None = None) -> None:
         self.user_id = user_id
         self.token = token.access_token if token else None
@@ -64,6 +66,29 @@ class BaseConnector(ABC):
         rate, capacity = get_limits(self.name)
         self.rate_limiter = get_bucket(user_id, self.name, rate=rate, capacity=capacity)
         self.circuit_breaker = CircuitBreaker(failures=10, reset_timeout=900)
+        self._session = aiohttp.ClientSession()
+        BaseConnector._instances.add(self)
+
+    async def close(self) -> None:
+        if not self._session.closed:
+            await self._session.close()
+        BaseConnector._instances.discard(self)
+
+    def __del__(self) -> None:
+        if not getattr(self, "_session", None):
+            return
+        if not self._session.closed:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(self._session.close())
+            except Exception:
+                pass
+
+    @classmethod
+    async def close_all(cls) -> None:
+        for inst in list(cls._instances):
+            await inst.close()
 
     async def _save_token(self, token: TokenPair) -> None:
         self.token = token.access_token
@@ -102,73 +127,73 @@ class BaseConnector(ABC):
 
         refreshed = False
         try:
-            async with aiohttp.ClientSession() as session:
-                for attempt in range(5):
-                    try:
-                        resp = await session.request(
-                            method,
-                            url,
-                            headers=hdrs,
-                            params=params,
-                            json=json,
-                            data=data,
-                            timeout=timeout,
-                        )
-                    except Exception:  # pragma: no cover - network errors
+            session = self._session
+            for attempt in range(5):
+                try:
+                    resp = await session.request(
+                        method,
+                        url,
+                        headers=hdrs,
+                        params=params,
+                        json=json,
+                        data=data,
+                        timeout=timeout,
+                    )
+                except Exception:  # pragma: no cover - network errors
+                    await self.circuit_breaker.failure()
+                    if attempt == 4:
+                        raise
+                else:
+                    if resp.status == 429:
+                        RATE_LIMITED.labels(self.name).inc()
+                        await resp.release()
+                        if attempt == 4:
+                            resp.raise_for_status()
+                        delay = min(512, 4 * 2**attempt)
+                        jitter = delay * 0.15
+                        delay = random.uniform(delay - jitter, delay + jitter)
+                        await asyncio.sleep(delay)
+                        continue
+                    if (
+                        resp.status == 401
+                        and auth
+                        and self.refresh_token
+                        and not refreshed
+                    ):
+                        try:
+                            pair = await self.refresh(
+                                TokenPair(self.token or "", self.refresh_token)
+                            )
+                        except Exception:
+                            await self.circuit_breaker.failure()
+                            raise
+                        await self._save_token(pair)
+                        hdrs["Authorization"] = f"Bearer {pair.access_token}"
+                        refreshed = True
+                        await resp.release()
+                        continue
+
+                    if resp.status == 401 and auth and refreshed:
+                        await resp.release()
+                        raise AuthError("unauthorized")
+
+                    if resp.status >= 500:
                         await self.circuit_breaker.failure()
                         if attempt == 4:
-                            raise
-                    else:
-                        if resp.status == 429:
-                            RATE_LIMITED.labels(self.name).inc()
                             await resp.release()
-                            if attempt == 4:
-                                resp.raise_for_status()
-                            delay = min(512, 4 * 2**attempt)
-                            jitter = delay * 0.15
-                            delay = random.uniform(delay - jitter, delay + jitter)
-                            await asyncio.sleep(delay)
-                            continue
-                        if (
-                            resp.status == 401
-                            and auth
-                            and self.refresh_token
-                            and not refreshed
-                        ):
-                            try:
-                                pair = await self.refresh(
-                                    TokenPair(self.token or "", self.refresh_token)
-                                )
-                            except Exception:
-                                await self.circuit_breaker.failure()
-                                raise
-                            await self._save_token(pair)
-                            hdrs["Authorization"] = f"Bearer {pair.access_token}"
-                            refreshed = True
-                            await resp.release()
-                            continue
-
-                        if resp.status == 401 and auth and refreshed:
-                            await resp.release()
-                            raise AuthError("unauthorized")
-
-                        if resp.status >= 500:
-                            await self.circuit_breaker.failure()
-                            if attempt == 4:
-                                await resp.release()
-                                resp.raise_for_status()
-                        else:
                             resp.raise_for_status()
-                            await self.circuit_breaker.success()
-                            data_resp = await resp.json()
-                            return data_resp
+                    else:
+                        resp.raise_for_status()
+                        await self.circuit_breaker.success()
+                        data_resp = await resp.json()
+                        return data_resp
 
-                    if attempt == 4:
-                        raise RuntimeError("max retries exceeded")
-                    delay = min(512, 4 * 2**attempt)
-                    jitter = delay * 0.15
-                    delay = random.uniform(delay - jitter, delay + jitter)
-                    await asyncio.sleep(delay)
+                if attempt == 4:
+                    raise RuntimeError("max retries exceeded")
+                delay = min(512, 4 * 2**attempt)
+                jitter = delay * 0.15
+                delay = random.uniform(delay - jitter, delay + jitter)
+                await asyncio.sleep(delay)
 
         finally:
             FETCH_LATENCY_MS.labels(self.name).observe(
