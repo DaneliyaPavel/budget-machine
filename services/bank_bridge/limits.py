@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import asyncio
 import time
 
@@ -33,6 +35,29 @@ class LeakyBucket:
 #
 
 _BUCKETS: dict[tuple[str, str], "LeakyBucket"] = {}
+
+
+def _load_limits(bank: str, rate: float, capacity: int) -> tuple[float, int]:
+    """Return rate limiter parameters from environment."""
+    prefix = f"BANK_BRIDGE_{bank.upper()}_"
+    env_rate = os.getenv(prefix + "RATE")
+    env_capacity = os.getenv(prefix + "CAPACITY")
+    if env_rate is not None:
+        try:
+            rate = float(env_rate)
+        except ValueError:
+            pass
+    if env_capacity is not None:
+        try:
+            capacity = int(env_capacity)
+        except ValueError:
+            pass
+    return rate, capacity
+
+
+def get_limits(bank: str, *, rate: float = 1.0, capacity: int = 5) -> tuple[float, int]:
+    """Return rate limiter params for the connector."""
+    return _load_limits(bank, rate, capacity)
 
 
 def get_bucket(
@@ -77,4 +102,4 @@ class CircuitBreaker:
                 self._opened = time.monotonic()
 
 
-__all__ = ["LeakyBucket", "CircuitBreaker", "get_bucket"]
+__all__ = ["LeakyBucket", "CircuitBreaker", "get_bucket", "get_limits"]

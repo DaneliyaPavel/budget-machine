@@ -10,7 +10,7 @@ import re
 from services.bank_bridge.app import FETCH_LATENCY_MS, RATE_LIMITED
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 from services.bank_bridge.connectors.base import TokenPair, Account
-from services.bank_bridge.limits import get_bucket
+from services.bank_bridge.limits import get_bucket, get_limits
 
 USER_ID = "00000000-0000-0000-0000-000000000001"
 
@@ -252,6 +252,23 @@ def test_circuit_breaker_params():
     c = make_connector()
     assert c.circuit_breaker.failures == 10
     assert c.circuit_breaker.reset_timeout == 900
+
+
+def test_limits_from_env(monkeypatch):
+    monkeypatch.setenv("BANK_BRIDGE_TINKOFF_RATE", "2")
+    monkeypatch.setenv("BANK_BRIDGE_TINKOFF_CAPACITY", "9")
+    rate, capacity = get_limits("tinkoff")
+    assert rate == 2.0
+    assert capacity == 9
+
+
+def test_connector_uses_env_limits(monkeypatch):
+    uid = "00000000-0000-0000-0000-000000000099"
+    monkeypatch.setenv("BANK_BRIDGE_TINKOFF_RATE", "3")
+    monkeypatch.setenv("BANK_BRIDGE_TINKOFF_CAPACITY", "7")
+    c = TinkoffConnector(user_id=uid, token=None)
+    assert c.rate_limiter.rate == 3.0
+    assert c.rate_limiter.capacity == 7
 
 
 @pytest.mark.asyncio
