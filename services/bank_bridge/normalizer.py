@@ -64,9 +64,9 @@ async def process(raw: dict[str, Any]) -> None:
     """Normalize raw data and publish to Kafka."""
     user_id = str(raw.get("user_id"))
     bank_txn_id = str(raw.get("bank_txn_id"))
+    payload = dict(raw.get("payload", {}))
     try:
         RAW_VALIDATOR.validate(raw)
-        payload = dict(raw.get("payload", {}))
         raw_copy = dict(payload)
         payload.setdefault("bank_txn_id", bank_txn_id)
         msg = normalize_record(payload)
@@ -79,13 +79,16 @@ async def process(raw: dict[str, Any]) -> None:
             }
         )
         NORM_VALIDATOR.validate(msg)
-    except Exception as exc:  # pragma: no cover - simple error path
-        await kafka.publish(
-            "bank.err",
-            user_id,
-            bank_txn_id,
-            {"error": str(exc), "data": raw},
-        )
+    except Exception:  # pragma: no cover - simple error path
+        err = {
+            "user_id": user_id,
+            "external_id": bank_txn_id,
+            "bank_id": payload.get("bank_id", "unknown"),
+            "error_code": "INVALID_DATA",
+            "stage": "normalize",
+            "payload": payload,
+        }
+        await kafka.publish("bank.err", user_id, bank_txn_id, err)
         return
 
     await kafka.publish(
