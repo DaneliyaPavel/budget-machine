@@ -1,6 +1,7 @@
 from datetime import datetime
 import asyncio
 import random
+import logging
 from yarl import URL
 
 import pytest
@@ -387,3 +388,33 @@ async def test_request_backoff_rate_limit(monkeypatch):
     assert args == [(3.4, 4.6)]
     assert labels == ["tinkoff"]
     assert calls == [1]
+
+
+@pytest.mark.asyncio
+async def test_request_logs_rate_limit(monkeypatch, caplog):
+    c = make_connector("t1")
+
+    class DummyCounter:
+        def inc(self):
+            pass
+
+    monkeypatch.setattr(RATE_LIMITED, "labels", lambda bank: DummyCounter())
+
+    async def fake_sleep(_):
+        pass
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+    caplog.set_level(logging.WARNING, logger="bank_bridge")
+    logger = logging.getLogger("bank_bridge")
+    logger.addHandler(caplog.handler)
+    url = "https://example.com/log429"
+    with aioresponses() as rsx:
+        rsx.get(url, status=429)
+        rsx.get(url, payload={}, status=200)
+        await c._request("GET", url, auth=False)
+    logger.removeHandler(caplog.handler)
+
+    assert ("http 429", "tinkoff") in [
+        (r.message, getattr(r, "bank", None)) for r in caplog.records
+    ]
