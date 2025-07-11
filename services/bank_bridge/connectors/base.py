@@ -120,7 +120,7 @@ class BaseConnector(ABC):
                             await resp.release()
                             if attempt == 4:
                                 resp.raise_for_status()
-                            delay = min(512, 2**attempt)
+                            delay = min(512, 4 * 2**attempt)
                             jitter = delay * 0.15
                             delay = random.uniform(delay - jitter, delay + jitter)
                             await asyncio.sleep(delay)
@@ -157,7 +157,7 @@ class BaseConnector(ABC):
 
                     if attempt == 4:
                         raise RuntimeError("max retries exceeded")
-                    delay = min(512, 2**attempt)
+                    delay = min(512, 4 * 2**attempt)
                     jitter = delay * 0.15
                     delay = random.uniform(delay - jitter, delay + jitter)
                     await asyncio.sleep(delay)

@@ -342,8 +342,8 @@ async def test_request_backoff(monkeypatch):
         rsx.get(url, status=200)
         await c._request("GET", url, auth=False)
 
-    assert sleeps == [pytest.approx(0.85)]
-    assert args == [(0.85, 1.15)]
+    assert sleeps == [pytest.approx(3.4)]
+    assert args == [(3.4, 4.6)]
 
 
 @pytest.mark.asyncio
@@ -383,7 +383,7 @@ async def test_request_backoff_rate_limit(monkeypatch):
         rsx.get(url, payload={}, status=200)
         await c._request("GET", url, auth=False)
 
-    assert sleeps == [pytest.approx(0.85)]
-    assert args == [(0.85, 1.15)]
+    assert sleeps == [pytest.approx(3.4)]
+    assert args == [(3.4, 4.6)]
     assert labels == ["tinkoff"]
     assert calls == [1]
