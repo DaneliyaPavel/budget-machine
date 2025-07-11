@@ -12,10 +12,14 @@ from jsonschema import Draft202012Validator
 from . import kafka
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-with open(BASE_DIR / "schemas/bank-bridge/bank.raw/1.0.0/schema.json", "r", encoding="utf-8") as f:
+with open(
+    BASE_DIR / "schemas/bank-bridge/bank.raw/1.0.0/schema.json", "r", encoding="utf-8"
+) as f:
     _raw_schema = json.load(f)
 
-with open(BASE_DIR / "schemas/bank-bridge/bank.norm/1.0.0/schema.json", "r", encoding="utf-8") as f:
+with open(
+    BASE_DIR / "schemas/bank-bridge/bank.norm/1.0.0/schema.json", "r", encoding="utf-8"
+) as f:
     _norm_schema = json.load(f)
 
 RAW_VALIDATOR = Draft202012Validator(_raw_schema)
