@@ -7,7 +7,8 @@ from jsonschema import Draft202012Validator
 
 from services.bank_bridge import app as service_app, kafka
 from services.bank_bridge.app import _full_sync, BankName
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Any
+from datetime import date, timedelta
 from services.bank_bridge.connectors.base import (
     BaseConnector,
     TokenPair,
@@ -131,3 +132,48 @@ async def test_error_metric_increment(monkeypatch):
 
     assert labels == [(str(BankName.TINKOFF), "connector")]
     assert inc_calls == [1]
+
+
+@pytest.mark.asyncio
+async def test_full_sync_respects_sync_days(monkeypatch):
+    captured: dict[str, Any] = {}
+
+    class FakeDate(date):
+        @classmethod
+        def today(cls) -> "date":
+            return date(2022, 1, 31)
+
+    async def fake_load(bank, user):
+        return TokenPair("t")
+
+    class DummyConnector(BaseConnector):
+        name = "dummy"
+        display = "Dummy"
+
+        async def auth(self, code: str | None, **kwargs):
+            return TokenPair("t")
+
+        async def refresh(self, token: TokenPair) -> TokenPair:
+            return token
+
+        async def fetch_accounts(self, token: TokenPair):
+            return [Account(id="acc1")]
+
+        async def fetch_txns(
+            self, token: TokenPair, account: Account, date_from, date_to
+        ) -> AsyncGenerator[RawTxn, None]:
+            captured["date_from"] = date_from
+            captured["date_to"] = date_to
+            if False:  # pragma: no cover - to satisfy AsyncGenerator type
+                yield
+
+    monkeypatch.setattr(service_app, "_load_token", fake_load)
+    monkeypatch.setattr(service_app, "get_connector", lambda b: DummyConnector)
+    monkeypatch.setattr(kafka, "publish", lambda *a, **k: None)
+    monkeypatch.setattr(service_app, "date", FakeDate)
+    monkeypatch.setattr(service_app, "SYNC_DAYS", 10)
+
+    await _full_sync(BankName.TINKOFF, str(uuid4()))
+
+    assert captured["date_to"] == date(2022, 1, 31)
+    assert captured["date_from"] == date(2022, 1, 31) - timedelta(days=10)

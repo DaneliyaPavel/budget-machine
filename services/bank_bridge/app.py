@@ -32,6 +32,7 @@ app = FastAPI(title="Bank Bridge")
 scheduler: "Scheduler" | None = None
 
 RAW_TOPIC = os.getenv("BANK_RAW_TOPIC", "bank.raw")
+SYNC_DAYS = int(os.getenv("BANK_BRIDGE_SYNC_DAYS", "30"))
 
 
 _USER_ID_PATTERN = r"^[0-9a-fA-F-]{36}$"
@@ -190,7 +191,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
         return
 
     end = date.today()
-    start = end - timedelta(days=30)
+    start = end - timedelta(days=SYNC_DAYS)
     for account in accounts:
         try:
             async for raw in connector.fetch_txns(token, account, start, end):
