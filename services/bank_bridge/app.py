@@ -17,7 +17,7 @@ from aiojobs import create_scheduler, Scheduler
 
 from . import kafka, vault, schema_registry
 import os
-from .connectors import get_connector, TokenPair, CONNECTORS
+from .connectors import get_connector, TokenPair, CONNECTORS, AuthError
 from enum import Enum
 from prometheus_client import (
     Histogram,
@@ -125,6 +125,22 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
 
     try:
         accounts = await connector.fetch_accounts(token)
+    except AuthError:
+        await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
+        await kafka.publish(
+            "bank.err",
+            user_id,
+            "",
+            {
+                "user_id": user_id,
+                "external_id": "",
+                "bank_id": bank,
+                "error_code": "AUTH_ERROR",
+                "stage": "auth",
+                "payload": {},
+            },
+        )
+        return
     except Exception:
         ERROR_TOTAL.labels(str(bank), "connector").inc()
         logger.error("accounts_error", extra={"bank": bank})
@@ -157,6 +173,24 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
                 }
                 await kafka.publish(RAW_TOPIC, user_id, msg["bank_txn_id"], msg)
                 TXN_COUNT.labels(str(bank)).inc()
+        except AuthError:
+            await vault.get_vault_client().delete(
+                f"bank_tokens/{bank}/{user_id}"
+            )
+            await kafka.publish(
+                "bank.err",
+                user_id,
+                "",
+                {
+                    "user_id": user_id,
+                    "external_id": "",
+                    "bank_id": bank,
+                    "error_code": "AUTH_ERROR",
+                    "stage": "auth",
+                    "payload": {},
+                },
+            )
+            return
         except Exception:
             ERROR_TOTAL.labels(str(bank), "connector").inc()
             logger.error("sync_error", extra={"bank": bank})
@@ -184,6 +218,23 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
         connector = connector_cls(user_id, token)
         try:
             await connector.refresh(token)
+        except AuthError:
+            await vault.get_vault_client().delete(
+                f"bank_tokens/{bank}/{user_id}"
+            )
+            await kafka.publish(
+                "bank.err",
+                user_id,
+                "",
+                {
+                    "user_id": user_id,
+                    "external_id": "",
+                    "bank_id": bank,
+                    "error_code": "AUTH_ERROR",
+                    "stage": "auth",
+                    "payload": {},
+                },
+            )
         except Exception:
             ERROR_TOTAL.labels(str(bank), "refresh").inc()
             logger.error("refresh_error", extra={"bank": bank})
