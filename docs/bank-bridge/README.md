@@ -116,6 +116,29 @@ pytest tests/bank_bridge
 
 или через `make bankbridge-tests`.
 
+### Проверка авторизации в песочнице
+
+Для тестирования OAuth‑процесса с песочницей Тинькофф используется
+скрипт `tests/bank_bridge/tinkoff_sandbox.py` на базе Playwright. Он
+выполняет вход под тестовой учётной записью и ожидает редирект на
+указанный в переменных окружения URL.
+
+Перед запуском необходимо установить Playwright и загрузить браузер:
+
+```bash
+pip install playwright
+playwright install chromium
+```
+
+После этого скрипт запускается командой:
+
+```bash
+python tests/bank_bridge/tinkoff_sandbox.py
+```
+
+Требуются переменные `TINKOFF_SANDBOX_LOGIN` и
+`TINKOFF_SANDBOX_PASSWORD`.
+
 ## Локальное развёртывание
 
 1. Скопируйте `env/.env.example` в `.env` и заполните переменные для доступа к банкам.
