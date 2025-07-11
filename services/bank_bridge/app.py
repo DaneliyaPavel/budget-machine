@@ -17,6 +17,7 @@ from aiojobs import create_scheduler, Scheduler
 
 from . import kafka, vault, schema_registry
 import os
+import httpx
 from .connectors import get_connector, TokenPair, CONNECTORS, AuthError
 from enum import Enum
 from prometheus_client import (
@@ -112,6 +113,35 @@ async def _load_token(bank: BankName, user_id: str) -> TokenPair | None:
         refresh_token=obj.get("refresh_token"),
         expiry=expiry,
     )
+
+
+async def _get_user_ids() -> list[str]:
+    """Return list of users with stored bank tokens."""
+    client = vault.get_vault_client()
+    ids: set[str] = set()
+    for bank in CONNECTORS:
+        try:
+            keys = await client.list(f"bank_tokens/{bank}")
+        except Exception:  # pragma: no cover - network operations
+            keys = None
+        if keys:
+            ids.update(k.strip("/") for k in keys)
+    if ids:
+        return list(ids)
+
+    url = os.getenv("BANK_BRIDGE_CORE_URL")
+    if not url:
+        return []
+    try:
+        async with httpx.AsyncClient() as http:
+            resp = await http.get(f"{url.rstrip('/')}/bank-bridge/users", timeout=5)
+    except httpx.HTTPError:
+        return []
+    if resp.status_code == 200:
+        data = resp.json()
+        if isinstance(data, list):
+            return [str(u) for u in data]
+    return []
 
 
 async def _full_sync(bank: BankName, user_id: str) -> None:
@@ -252,7 +282,9 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
 async def _refresh_tokens_loop() -> None:
     while True:
         try:
-            await _refresh_tokens_once()
+            user_ids = await _get_user_ids()
+            for uid in user_ids:
+                await _refresh_tokens_once(uid)
         except Exception:  # pragma: no cover - network operations
             logger.warning("refresh_loop_error")
         await asyncio.sleep(24 * 60 * 60)

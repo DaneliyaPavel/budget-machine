@@ -27,6 +27,22 @@ class VaultClient:
                 return data.get("data", {}).get("value")
             return None
 
+    async def list(self, path: str) -> list[str] | None:
+        """Return keys stored under the given path."""
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.get(
+                    f"{self.url}/v1/secret/{path}?list=true",
+                    headers=self.headers,
+                    timeout=5,
+                )
+            except httpx.HTTPError:
+                return None
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get("data", {}).get("keys", [])
+            return None
+
     async def write(self, path: str, value: str) -> None:
         async with httpx.AsyncClient() as client:
             try:

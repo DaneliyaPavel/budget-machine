@@ -72,3 +72,39 @@ async def test_refresh_tokens_auth_error(monkeypatch):
     assert captured["data"]["error_code"] == "AUTH_ERROR"
     assert captured["data"]["stage"] == "auth"
     assert captured["data"]["bank_id"] == "tinkoff"
+
+
+@pytest.mark.asyncio
+async def test_get_user_ids(monkeypatch):
+    class FakeVault:
+        async def list(self, path: str):
+            if path == "bank_tokens/tinkoff":
+                return ["u1", "u2"]
+            return []
+
+    monkeypatch.setattr(vault, "get_vault_client", lambda: FakeVault())
+    ids = await service_app._get_user_ids()
+    assert set(ids) == {"u1", "u2"}
+
+
+@pytest.mark.asyncio
+async def test_refresh_tokens_loop(monkeypatch):
+    calls: list[str] = []
+
+    async def fake_get_user_ids():
+        return ["u1", "u2"]
+
+    async def fake_refresh(uid="default"):
+        calls.append(uid)
+
+    async def fake_sleep(seconds):
+        raise RuntimeError("stop")
+
+    monkeypatch.setattr(service_app, "_get_user_ids", fake_get_user_ids)
+    monkeypatch.setattr(service_app, "_refresh_tokens_once", fake_refresh)
+    monkeypatch.setattr(service_app.asyncio, "sleep", fake_sleep)
+
+    with pytest.raises(RuntimeError):
+        await service_app._refresh_tokens_loop()
+
+    assert calls == ["u1", "u2"]
