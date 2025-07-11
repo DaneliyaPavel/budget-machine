@@ -24,4 +24,3 @@ async def test_circuit_breaker_before_request():
     await cb.before_request()
     assert cb._count == 0
     assert cb._opened == 0.0
-
