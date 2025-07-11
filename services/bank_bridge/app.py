@@ -125,6 +125,19 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
     except Exception:
         ERROR_TOTAL.inc()
         logger.error("accounts_error", extra={"bank": bank})
+        await kafka.publish(
+            "bank.err",
+            user_id,
+            "",
+            {
+                "user_id": user_id,
+                "external_id": "",
+                "bank_id": bank,
+                "error_code": "CONNECTOR_ERROR",
+                "stage": "connector",
+                "payload": {"operation": "fetch_accounts"},
+            },
+        )
         return
 
     end = date.today()
@@ -144,6 +157,19 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
         except Exception:
             ERROR_TOTAL.inc()
             logger.error("sync_error", extra={"bank": bank})
+            await kafka.publish(
+                "bank.err",
+                user_id,
+                "",
+                {
+                    "user_id": user_id,
+                    "external_id": "",
+                    "bank_id": bank,
+                    "error_code": "CONNECTOR_ERROR",
+                    "stage": "connector",
+                    "payload": {"operation": "fetch_txns", "account": account.id},
+                },
+            )
 
 
 async def _refresh_tokens_once(user_id: str = "default") -> None:
@@ -158,6 +184,19 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
         except Exception:
             ERROR_TOTAL.inc()
             logger.error("refresh_error", extra={"bank": bank})
+            await kafka.publish(
+                "bank.err",
+                user_id,
+                "",
+                {
+                    "user_id": user_id,
+                    "external_id": "",
+                    "bank_id": bank,
+                    "error_code": "CONNECTOR_ERROR",
+                    "stage": "refresh",
+                    "payload": {},
+                },
+            )
 
 
 async def _refresh_tokens_loop() -> None:

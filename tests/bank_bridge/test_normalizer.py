@@ -14,6 +14,13 @@ with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
     NORM_SCHEMA = json.load(f)
 VALIDATOR = Draft202012Validator(NORM_SCHEMA)
 
+ERR_SCHEMA_PATH = (
+    Path(normalizer.BASE_DIR) / "schemas/bank-bridge/bank.err/1.0.0/schema.json"
+)
+with open(ERR_SCHEMA_PATH, "r", encoding="utf-8") as f:
+    ERR_SCHEMA = json.load(f)
+ERR_VALIDATOR = Draft202012Validator(ERR_SCHEMA)
+
 
 def test_normalize_record_credit():
     aid = uuid4()
@@ -90,7 +97,9 @@ async def test_process_error(monkeypatch):
     raw = {"user_id": str(uuid4()), "bank_txn_id": "9", "payload": {}}
     await normalizer.process(raw)
     assert sent["topic"] == "bank.err"
-    assert sent["data"]["error"] == "boom"
+    ERR_VALIDATOR.validate(sent["data"])
+    assert sent["data"]["error_code"] == "INVALID_DATA"
+    assert sent["data"]["stage"] == "normalize"
 
 
 @pytest.mark.asyncio
@@ -104,6 +113,7 @@ async def test_process_invalid_schema(monkeypatch):
     raw = {"user_id": str(uuid4()), "bank_txn_id": "1"}
     await normalizer.process(raw)
     assert sent["topic"] == "bank.err"
+    ERR_VALIDATOR.validate(sent["data"])
 
 
 def test_normalize_record_payee_and_note():
@@ -150,9 +160,10 @@ async def test_process_error_contains_raw(monkeypatch):
 
     monkeypatch.setattr(normalizer, "normalize_record", bad_norm)
     monkeypatch.setattr(normalizer.kafka, "publish", fake_publish)
-    raw = {"user_id": str(uuid4()), "bank_txn_id": "8", "payload": {}, "foo": "bar"}
+    raw = {"user_id": str(uuid4()), "bank_txn_id": "8", "payload": {"foo": "bar"}}
     await normalizer.process(raw)
-    assert captured["data"]["foo"] == "bar"
+    assert captured["payload"]["foo"] == "bar"
+    assert captured["payload"]["bank_txn_id"] == "8"
 
 
 @pytest.mark.asyncio
