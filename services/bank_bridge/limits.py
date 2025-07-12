@@ -37,6 +37,17 @@ class LeakyBucket:
 
 _BUCKETS: dict[tuple[str, str], "LeakyBucket"] = {}
 
+# Default rate limits for built-in connectors.
+# Values are expressed as ``(rate, capacity)`` where ``rate`` is requests per
+# second and ``capacity`` is the bucket size.
+DEFAULT_LIMITS: dict[str, tuple[float, int]] = {
+    "tinkoff": (20.0, 20),
+    "sber": (20.0, 20),
+    "gazprom": (20.0, 20),
+    "alfa": (20.0, 20),
+    "vtb": (20.0, 20),
+}
+
 
 def _load_limits(bank: str, rate: float, capacity: int) -> tuple[float, int]:
     """Return rate limiter parameters from environment."""
@@ -58,7 +69,8 @@ def _load_limits(bank: str, rate: float, capacity: int) -> tuple[float, int]:
 
 def get_limits(bank: str, *, rate: float = 1.0, capacity: int = 5) -> tuple[float, int]:
     """Return rate limiter params for the connector."""
-    return _load_limits(bank, rate, capacity)
+    default_rate, default_capacity = DEFAULT_LIMITS.get(bank, (rate, capacity))
+    return _load_limits(bank, default_rate, default_capacity)
 
 
 def get_bucket(
@@ -117,4 +129,10 @@ class CircuitBreaker:
                     self._metric.set(1)
 
 
-__all__ = ["LeakyBucket", "CircuitBreaker", "get_bucket", "get_limits"]
+__all__ = [
+    "LeakyBucket",
+    "CircuitBreaker",
+    "get_bucket",
+    "get_limits",
+    "DEFAULT_LIMITS",
+]

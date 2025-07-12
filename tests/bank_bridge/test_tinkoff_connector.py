@@ -310,6 +310,14 @@ def test_limits_from_env(monkeypatch):
     assert capacity == 9
 
 
+def test_limits_defaults(monkeypatch):
+    monkeypatch.delenv("BANK_BRIDGE_TINKOFF_RATE", raising=False)
+    monkeypatch.delenv("BANK_BRIDGE_TINKOFF_CAPACITY", raising=False)
+    rate, capacity = get_limits("tinkoff")
+    assert rate == 20.0
+    assert capacity == 20
+
+
 def test_connector_uses_env_limits(monkeypatch):
     uid = "00000000-0000-0000-0000-000000000099"
     monkeypatch.setenv("BANK_BRIDGE_TINKOFF_RATE", "3")
@@ -317,6 +325,15 @@ def test_connector_uses_env_limits(monkeypatch):
     c = TinkoffConnector(user_id=uid, token=None)
     assert c.rate_limiter.rate == 3.0
     assert c.rate_limiter.capacity == 7
+
+
+def test_connector_uses_default_limits(monkeypatch):
+    uid = "00000000-0000-0000-0000-000000000099"
+    monkeypatch.delenv("BANK_BRIDGE_TINKOFF_RATE", raising=False)
+    monkeypatch.delenv("BANK_BRIDGE_TINKOFF_CAPACITY", raising=False)
+    c = TinkoffConnector(user_id=uid, token=None)
+    assert c.rate_limiter.rate == 20.0
+    assert c.rate_limiter.capacity == 20
 
 
 @pytest.mark.asyncio
