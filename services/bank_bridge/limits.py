@@ -82,6 +82,15 @@ def get_bucket(
     if bucket is None:
         bucket = LeakyBucket(rate=rate, capacity=capacity)
         _BUCKETS[key] = bucket
+    else:
+        # Bucket for this ``user_id``/``bank`` already exists. Environment
+        # variables may have changed between calls, so update rate and
+        # capacity to ensure new settings take effect.  Tokens are capped by
+        # the new capacity to avoid unlimited bursts.
+        if bucket.rate != rate or bucket.capacity != capacity:
+            bucket.rate = rate
+            bucket.capacity = capacity
+            bucket._tokens = min(bucket._tokens, float(capacity))
     return bucket
 
 
