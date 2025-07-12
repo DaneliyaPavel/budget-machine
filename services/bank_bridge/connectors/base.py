@@ -66,6 +66,7 @@ class BaseConnector(ABC):
         rate, capacity = get_limits(self.name)
         self.rate_limiter = get_bucket(user_id, self.name, rate=rate, capacity=capacity)
         from ..app import CIRCUIT_OPEN
+
         self.circuit_breaker = CircuitBreaker(
             failures=10,
             reset_timeout=900,
