@@ -33,6 +33,8 @@ app = FastAPI(title="Bank Bridge")
 scheduler: "Scheduler" | None = None
 
 RAW_TOPIC = os.getenv("BANK_RAW_TOPIC", "bank.raw")
+NORM_TOPIC = os.getenv("BANK_NORM_TOPIC", "bank.norm")
+ERR_TOPIC = os.getenv("BANK_ERR_TOPIC", "bank.err")
 SYNC_DAYS = int(os.getenv("BANK_BRIDGE_SYNC_DAYS", "30"))
 
 
@@ -161,7 +163,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
         except AuthError:
             await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
             await kafka.publish(
-                "bank.err",
+                ERR_TOPIC,
                 user_id,
                 "",
                 {
@@ -178,7 +180,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
             ERROR_TOTAL.labels(str(bank), "connector").inc()
             logger.error("accounts_error", extra={"bank": bank})
             await kafka.publish(
-                "bank.err",
+                ERR_TOPIC,
                 user_id,
                 "",
                 {
@@ -210,7 +212,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
             except AuthError:
                 await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
                 await kafka.publish(
-                    "bank.err",
+                    ERR_TOPIC,
                     user_id,
                     "",
                     {
@@ -227,7 +229,7 @@ async def _full_sync(bank: BankName, user_id: str) -> None:
                 ERROR_TOTAL.labels(str(bank), "connector").inc()
                 logger.error("sync_error", extra={"bank": bank})
                 await kafka.publish(
-                    "bank.err",
+                    ERR_TOPIC,
                     user_id,
                     "",
                     {
@@ -255,7 +257,7 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
         except AuthError:
             await vault.get_vault_client().delete(f"bank_tokens/{bank}/{user_id}")
             await kafka.publish(
-                "bank.err",
+                ERR_TOPIC,
                 user_id,
                 "",
                 {
@@ -271,7 +273,7 @@ async def _refresh_tokens_once(user_id: str = "default") -> None:
             ERROR_TOTAL.labels(str(bank), "refresh").inc()
             logger.error("refresh_error", extra={"bank": bank})
             await kafka.publish(
-                "bank.err",
+                ERR_TOPIC,
                 user_id,
                 "",
                 {
