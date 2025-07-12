@@ -92,7 +92,6 @@ schemathesis = pytest.importorskip("schemathesis")
 schema = schemathesis.openapi.from_asgi("/openapi.json", app)
 
 
-@pytest.mark.skip("schemathesis compatibility issues")
 @schema.parametrize()
 def test_openapi_contract(case):
     response = case.call()
