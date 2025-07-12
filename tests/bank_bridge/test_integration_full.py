@@ -1,3 +1,10 @@
+"""Integration tests for Bank Bridge.
+
+The tests spin up Kafka and mock services using Docker Compose. To run them
+manually start ``tests/bank_bridge/docker-compose.yml`` or follow the
+instructions in ``docs/bank-bridge/README.md#kafka-consumer``.
+"""
+
 import json
 import subprocess
 import socket

@@ -196,3 +196,41 @@ docker run --env-file .env bank-bridge-consumer
 ```bash
 uvicorn services.bank_bridge.app:app --reload --port 8080
 ```
+
+### Kafka consumer
+
+Отдельный образ `bank-bridge-consumer` читает сообщения из топика `bank.raw`,
+вызывает `normalizer.process` и публикует результат в `bank.norm` или
+`bank.err`. Его удобно запускать через `docker-compose` вместе с брокером Kafka.
+
+Пример minimal compose-файла:
+
+```yaml
+version: '3.9'
+services:
+  kafka:
+    image: bitnami/kafka:3
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports:
+      - "9092:9092"
+
+  bank-bridge-consumer:
+    image: bank-bridge-consumer
+    build:
+      context: ../..
+      dockerfile: services/bank_bridge/consumer.Dockerfile
+    environment:
+      - KAFKA_BROKER_URL=kafka:9092
+    depends_on:
+      - kafka
+```
+
+Запуск consumer осуществляется командой:
+
+```bash
+docker compose up bank-bridge-consumer
+```
+
+После старта контейнер будет следить за топиком `bank.raw` и отправлять
+обработанные данные в `bank.norm` или `bank.err`.
