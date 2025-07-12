@@ -391,6 +391,38 @@ async def test_request_backoff_rate_limit(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_request_backoff_max(monkeypatch):
+    c = make_connector("t1")
+    sleeps: list[float] = []
+
+    async def fake_sleep(d):
+        sleeps.append(d)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+    args: list[tuple[float, float]] = []
+
+    def fake_uniform(a, b):
+        args.append((a, b))
+        return a
+
+    monkeypatch.setattr(random, "uniform", fake_uniform)
+
+    url = "https://example.com/backoff-max"
+    with aioresponses() as rsx:
+        for _ in range(8):
+            rsx.get(url, status=500)
+        rsx.get(url, payload={}, status=200)
+        await c._request("GET", url, auth=False)
+
+    steps = [4, 8, 16, 32, 64, 128, 256, 512]
+    expected_sleeps = [s * 0.85 for s in steps]
+    assert sleeps == [pytest.approx(v) for v in expected_sleeps]
+    expected_args = [(s * 0.85, s * 1.15) for s in steps]
+    assert args == expected_args
+
+
+@pytest.mark.asyncio
 async def test_request_logs_rate_limit(monkeypatch, caplog):
     c = make_connector("t1")
 
