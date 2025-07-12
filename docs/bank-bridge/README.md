@@ -174,11 +174,18 @@ python tests/bank_bridge/tinkoff_sandbox.py
 ## Локальное развёртывание
 
 1. Скопируйте `env/.env.example` в `.env` и заполните переменные для доступа к банкам.
-2. Соберите Docker‑образ и запустите контейнер:
+2. Соберите Docker‑образ и запустите контейнер API:
 
 ```bash
 docker build -t bank-bridge -f services/bank_bridge/Dockerfile .
 docker run --env-file .env -p 8080:8080 bank-bridge
+```
+
+3. В отдельном контейнере запустите consumer Kafka:
+
+```bash
+docker build -t bank-bridge-consumer -f services/bank_bridge/consumer.Dockerfile .
+docker run --env-file .env bank-bridge-consumer
 ```
 
 Сервис будет доступен на `http://localhost:8080`. Для разработки можно запустить его напрямую:

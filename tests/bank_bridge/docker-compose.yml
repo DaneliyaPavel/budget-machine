@@ -16,3 +16,12 @@ services:
     build: ./mock_services/core_api
     ports:
       - "8200:8200"
+
+  bank-bridge-consumer:
+    build:
+      context: ../..
+      dockerfile: services/bank_bridge/consumer.Dockerfile
+    environment:
+      - KAFKA_BROKER_URL=kafka:9092
+    depends_on:
+      - kafka
