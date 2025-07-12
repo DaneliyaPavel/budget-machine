@@ -65,7 +65,13 @@ class BaseConnector(ABC):
         self.vault = vault.get_vault_client()
         rate, capacity = get_limits(self.name)
         self.rate_limiter = get_bucket(user_id, self.name, rate=rate, capacity=capacity)
-        self.circuit_breaker = CircuitBreaker(failures=10, reset_timeout=900)
+        from ..app import CIRCUIT_OPEN
+        self.circuit_breaker = CircuitBreaker(
+            failures=10,
+            reset_timeout=900,
+            bank=self.name,
+            gauge=CIRCUIT_OPEN,
+        )
         self._session: aiohttp.ClientSession | None = None
         BaseConnector._instances.add(self)
 

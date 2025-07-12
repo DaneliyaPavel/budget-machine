@@ -4,6 +4,7 @@ import os
 
 import asyncio
 import time
+from prometheus_client import Gauge
 
 
 class LeakyBucket:
@@ -75,12 +76,20 @@ def get_bucket(
 class CircuitBreaker:
     """Minimal circuit breaker implementation."""
 
-    def __init__(self, failures: int = 3, reset_timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        failures: int = 3,
+        reset_timeout: float = 30.0,
+        *,
+        bank: str | None = None,
+        gauge: "Gauge" | None = None,
+    ) -> None:
         self.failures = failures
         self.reset_timeout = reset_timeout
         self._count = 0
         self._opened = 0.0
         self._lock = asyncio.Lock()
+        self._metric = gauge.labels(bank) if gauge and bank else None
 
     async def before_request(self) -> None:
         async with self._lock:
@@ -89,17 +98,23 @@ class CircuitBreaker:
                     raise RuntimeError("circuit open")
                 self._opened = 0.0
                 self._count = 0
+                if self._metric:
+                    self._metric.set(0)
 
     async def success(self) -> None:
         async with self._lock:
             self._count = 0
             self._opened = 0.0
+            if self._metric:
+                self._metric.set(0)
 
     async def failure(self) -> None:
         async with self._lock:
             self._count += 1
             if self._count >= self.failures:
                 self._opened = time.monotonic()
+                if self._metric:
+                    self._metric.set(1)
 
 
 __all__ = ["LeakyBucket", "CircuitBreaker", "get_bucket", "get_limits"]
