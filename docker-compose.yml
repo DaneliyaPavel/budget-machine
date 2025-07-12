@@ -77,5 +77,18 @@ services:
         limits:
           cpus: "1.0"
           memory: 512m
+
+  bank-bridge-consumer:
+    build:
+      context: .
+      dockerfile: services/bank_bridge/consumer.Dockerfile
+    env_file: .env
+    depends_on:
+      - kafka
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512m
 volumes:
   db_data:
