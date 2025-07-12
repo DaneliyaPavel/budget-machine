@@ -13,7 +13,7 @@ from asgi_lifespan import LifespanManager
 from aiokafka import AIOKafkaConsumer
 from jsonschema import Draft202012Validator
 
-from services.bank_bridge.app import app, RAW_TOPIC
+from services.bank_bridge.app import app, RAW_TOPIC, NORM_TOPIC, ERR_TOPIC
 from services.bank_bridge import normalizer
 from services.bank_bridge.connectors.tinkoff import TinkoffConnector
 
@@ -80,6 +80,8 @@ async def client(monkeypatch):
     monkeypatch.setenv("KAFKA_BROKER_URL", "localhost:9092")
     monkeypatch.setenv("BANK_BRIDGE_VAULT_URL", "http://localhost:8200")
     monkeypatch.setenv("BANK_BRIDGE_VAULT_TOKEN", "root")
+    monkeypatch.setenv("BANK_NORM_TOPIC", NORM_TOPIC)
+    monkeypatch.setenv("BANK_ERR_TOPIC", ERR_TOPIC)
     monkeypatch.setattr(TinkoffConnector, "BASE_URL", "http://localhost:8081/")
 
     async def spawn(coro):
@@ -102,7 +104,7 @@ async def test_sync_cycle(client):
         enable_auto_commit=True,
     )
     norm_consumer = AIOKafkaConsumer(
-        "bank.norm",
+        NORM_TOPIC,
         bootstrap_servers="localhost:9092",
         group_id="test-group-norm",
         enable_auto_commit=True,

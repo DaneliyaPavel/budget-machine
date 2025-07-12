@@ -7,9 +7,13 @@ from uuid import uuid4
 
 import json
 from jsonschema import Draft202012Validator
+import os
 
 
 from . import kafka
+
+NORM_TOPIC = os.getenv("BANK_NORM_TOPIC", "bank.norm")
+ERR_TOPIC = os.getenv("BANK_ERR_TOPIC", "bank.err")
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 with open(
@@ -88,11 +92,11 @@ async def process(raw: dict[str, Any]) -> None:
             "stage": "normalize",
             "payload": payload,
         }
-        await kafka.publish("bank.err", user_id, bank_txn_id, err)
+        await kafka.publish(ERR_TOPIC, user_id, bank_txn_id, err)
         return
 
     await kafka.publish(
-        "bank.norm",
+        NORM_TOPIC,
         user_id,
         bank_txn_id,
         msg,

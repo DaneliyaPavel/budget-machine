@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from asgi_lifespan import LifespanManager
 
-from services.bank_bridge.app import app, RAW_TOPIC
+from services.bank_bridge.app import app, RAW_TOPIC, NORM_TOPIC, ERR_TOPIC
 from services.bank_bridge import kafka, vault
 from services.bank_bridge.connectors import TokenPair
 
@@ -12,6 +12,9 @@ USER_ID = "00000000-0000-0000-0000-000000000001"
 @pytest.mark.asyncio
 async def test_tinkoff_webhook(monkeypatch):
     captured = {}
+
+    monkeypatch.setenv("BANK_NORM_TOPIC", NORM_TOPIC)
+    monkeypatch.setenv("BANK_ERR_TOPIC", ERR_TOPIC)
 
     async def fake_publish(topic, user_id, bank_txn_id, data):
         captured.update(
@@ -41,6 +44,8 @@ async def test_tinkoff_webhook(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_tinkoff_webhook_invalid(monkeypatch):
+    monkeypatch.setenv("BANK_NORM_TOPIC", NORM_TOPIC)
+    monkeypatch.setenv("BANK_ERR_TOPIC", ERR_TOPIC)
     async with LifespanManager(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as cl:
