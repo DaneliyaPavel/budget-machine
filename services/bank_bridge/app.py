@@ -23,6 +23,7 @@ from enum import Enum
 from prometheus_client import (
     Histogram,
     Counter,
+    Gauge,
     CONTENT_TYPE_LATEST,
     generate_latest,
 )
@@ -315,6 +316,11 @@ ERROR_TOTAL = Counter(
 RATE_LIMITED = Counter(
     "bankbridge_rate_limited",
     "Count of rate limited responses",
+    labelnames=["bank"],
+)
+CIRCUIT_OPEN = Gauge(
+    "bankbridge_circuit_open",
+    "State of circuit breaker (1=open, 0=closed)",
     labelnames=["bank"],
 )
 
