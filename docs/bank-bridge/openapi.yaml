@@ -1,0 +1,244 @@
+openapi: 3.1.0
+info:
+  title: Bank Bridge
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      summary: Health
+      description: Return service health status.
+      operationId: health_healthz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+  /connect/{bank}:
+    post:
+      summary: Connect
+      description: Return authorization URL for the requested bank.
+      operationId: connect_connect__bank__post
+      parameters:
+      - name: bank
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/BankName'
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9a-fA-F-]{36}$
+          default: 00000000-0000-0000-0000-000000000001
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Connect Connect  Bank  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /status/{bank}:
+    get:
+      summary: Status
+      description: Check connection status for the bank.
+      operationId: status_status__bank__get
+      parameters:
+      - name: bank
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/BankName'
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9a-fA-F-]{36}$
+          default: 00000000-0000-0000-0000-000000000001
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Status Status  Bank  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /sync/{bank}:
+    post:
+      summary: Sync
+      description: Schedule full data synchronization with bank.
+      operationId: sync_sync__bank__post
+      parameters:
+      - name: bank
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/BankName'
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9a-fA-F-]{36}$
+          default: 00000000-0000-0000-0000-000000000001
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Sync Sync  Bank  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /webhook/tinkoff/{user_id}:
+    post:
+      summary: Tinkoff Webhook
+      description: Handle Tinkoff sandbox operation webhook.
+      operationId: tinkoff_webhook_webhook_tinkoff__user_id__post
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F-]{36}$
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TinkoffWebhook'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Tinkoff Webhook Webhook Tinkoff  User Id  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /metrics:
+    get:
+      summary: Metrics
+      description: Expose Prometheus metrics.
+      operationId: metrics_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+            text/plain: {}
+components:
+  schemas:
+    BankName:
+      type: string
+      enum:
+      - tinkoff
+      - sber
+      - gazprom
+      - alfa
+      - vtb
+      title: BankName
+      description: Supported bank connectors.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthStatus:
+      properties:
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - status
+      title: HealthStatus
+      description: Service health check response.
+    TinkoffEvent:
+      type: string
+      enum:
+      - operation
+      title: TinkoffEvent
+      description: Supported webhook events.
+    TinkoffWebhook:
+      properties:
+        event:
+          $ref: '#/components/schemas/TinkoffEvent'
+          description: Event type
+        payload:
+          additionalProperties: true
+          type: object
+          title: Payload
+      type: object
+      required:
+      - event
+      title: TinkoffWebhook
+      description: Webhook payload for Tinkoff operations.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

@@ -1,4 +1,4 @@
-.PHONY: dev ci lint test devcontainer proto openapi demo_user bankbridge-tests
+.PHONY: dev ci lint test devcontainer proto openapi openapi-bankbridge demo_user bankbridge-tests
 
 
 dev:
@@ -23,6 +23,9 @@ proto:
 
 openapi:
 	python -m backend.scripts.generate_openapi
+
+openapi-bankbridge:
+	python -m services.bank_bridge.scripts.generate_openapi
 
 demo_user:
 	python -m backend.scripts.create_demo_user
