@@ -137,7 +137,9 @@ class BaseConnector(ABC):
             if self._session is None or self._session.closed:
                 self._session = aiohttp.ClientSession()
             session = self._session
-            for attempt in range(5):
+            backoff_steps = [4, 8, 16, 32, 64, 128, 256, 512]
+            max_attempt = len(backoff_steps)
+            for attempt in range(max_attempt + 1):
                 try:
                     resp = await session.request(
                         method,
@@ -150,16 +152,16 @@ class BaseConnector(ABC):
                     )
                 except Exception:  # pragma: no cover - network errors
                     await self.circuit_breaker.failure()
-                    if attempt == 4:
+                    if attempt == max_attempt:
                         raise
                 else:
                     if resp.status == 429:
                         logger.warning("http 429", extra={"bank": self.name})
                         RATE_LIMITED.labels(self.name).inc()
                         await resp.release()
-                        if attempt == 4:
+                        if attempt == max_attempt:
                             resp.raise_for_status()
-                        delay = min(512, 4 * 2**attempt)
+                        delay = backoff_steps[attempt]
                         jitter = delay * 0.15
                         delay = random.uniform(delay - jitter, delay + jitter)
                         await asyncio.sleep(delay)
@@ -189,7 +191,7 @@ class BaseConnector(ABC):
 
                     if resp.status >= 500:
                         await self.circuit_breaker.failure()
-                        if attempt == 4:
+                        if attempt == max_attempt:
                             await resp.release()
                             resp.raise_for_status()
                     else:
@@ -198,9 +200,9 @@ class BaseConnector(ABC):
                         data_resp = await resp.json()
                         return data_resp
 
-                if attempt == 4:
+                if attempt == max_attempt:
                     raise RuntimeError("max retries exceeded")
-                delay = min(512, 4 * 2**attempt)
+                delay = backoff_steps[attempt]
                 jitter = delay * 0.15
                 delay = random.uniform(delay - jitter, delay + jitter)
                 await asyncio.sleep(delay)
