@@ -204,6 +204,31 @@ async def test_fetch_txns_refresh(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_fetch_txns_pagination(monkeypatch):
+    c = make_connector()
+
+    start = datetime(2023, 1, 1)
+    end = datetime(2023, 1, 2)
+
+    with aioresponses() as rsx:
+        url_re = re.compile(r"https://api\.tinkoff\.ru/v1/transactions.*")
+        rsx.get(url_re, payload={"payload": [{"id": 1}], "next": "c1"}, status=200)
+        rsx.get(url_re, payload={"payload": [{"id": 2}]}, status=200)
+
+        result = [
+            t
+            async for t in c.fetch_txns(
+                TokenPair("t1"), Account(id="acc"), start.date(), end.date()
+            )
+        ]
+        urls = [str(u[1]) for u in rsx.requests.keys()]
+
+    assert [tx.data for tx in result] == [{"id": 1}, {"id": 2}]
+    assert len(rsx.requests) == 2
+    assert any("cursor=c1" in url for url in urls)
+
+
+@pytest.mark.asyncio
 async def test_refresh_error(monkeypatch):
     c = make_connector()
     with aioresponses() as rsx:
