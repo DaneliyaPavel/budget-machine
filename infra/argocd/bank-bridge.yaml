@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bank-bridge
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/example/budget-machine
+    targetRevision: HEAD
+    path: infra/helm/bank-bridge
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: bank-bridge
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
