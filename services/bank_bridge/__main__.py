@@ -12,12 +12,17 @@ if __name__ == "__main__":
     host = os.getenv("BANK_BRIDGE_HOST", "0.0.0.0")
     port = int(os.getenv("BANK_BRIDGE_PORT", "8080"))
 
-    config = uvicorn.Config(app, host=host, port=port)
     if certfile and keyfile and cafile:
-        ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ctx.load_cert_chain(certfile, keyfile)
-        ctx.load_verify_locations(cafile)
-        ctx.verify_mode = ssl.CERT_REQUIRED
-        config.ssl = ctx
+        config = uvicorn.Config(
+            app,
+            host=host,
+            port=port,
+            ssl_keyfile=keyfile,
+            ssl_certfile=certfile,
+            ssl_ca_certs=cafile,
+            ssl_cert_reqs=ssl.CERT_REQUIRED,
+        )
+    else:
+        config = uvicorn.Config(app, host=host, port=port)
     server = uvicorn.Server(config)
     server.run()
