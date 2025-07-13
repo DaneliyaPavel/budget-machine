@@ -15,13 +15,15 @@ async def test_client_cert_required(tmp_path):
     keyfile = cert_dir / "server.key"
     cafile = cert_dir / "ca.crt"
 
-    ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ctx.load_cert_chain(certfile, keyfile=str(keyfile))
-    ctx.load_verify_locations(cafile)
-    ctx.verify_mode = ssl.CERT_REQUIRED
-
-    config = Config(app=app, host="127.0.0.1", port=0)
-    config.ssl = ctx
+    config = Config(
+        app=app,
+        host="127.0.0.1",
+        port=0,
+        ssl_keyfile=str(keyfile),
+        ssl_certfile=str(certfile),
+        ssl_ca_certs=str(cafile),
+        ssl_cert_reqs=ssl.CERT_REQUIRED,
+    )
     server = Server(config)
     task = asyncio.create_task(server.serve())
     # wait for the server to start
