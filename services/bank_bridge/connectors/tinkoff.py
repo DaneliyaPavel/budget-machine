@@ -143,11 +143,18 @@ class TinkoffConnector(BaseConnector):
                 datetime.combine(date_to, datetime.min.time()).timestamp() * 1000
             ),
         }
-        data = await self._request(
-            "GET",
-            self.BASE_URL + "transactions",
-            headers=headers,
-            params=params,
-        )
-        for item in data.get("payload", []):
-            yield RawTxn(data=item)
+        cursor: str | int | None = None
+        while True:
+            if cursor is not None:
+                params["cursor"] = cursor
+            data = await self._request(
+                "GET",
+                self.BASE_URL + "transactions",
+                headers=headers,
+                params=params,
+            )
+            for item in data.get("payload", []):
+                yield RawTxn(data=item)
+            cursor = data.get("next")
+            if cursor is None:
+                break
