@@ -181,11 +181,24 @@ python tests/bank_bridge/tinkoff_sandbox.py
 ## Локальное развёртывание
 
 1. Скопируйте `env/.env.example` в `.env` и заполните переменные для доступа к банкам.
-2. Соберите Docker‑образ и запустите контейнер API:
+   Для работы по HTTPS понадобятся три файла:
+   - `server.crt` — сертификат сервера,
+   - `server.key` — закрытый ключ сервера,
+   - `ca.crt` — корневой сертификат для проверки клиентов.
+2. Соберите Docker‑образ и запустите контейнер API. Сервер ожидает путь к TLS
+   сертификатам в переменных `BANK_BRIDGE_CERTFILE`, `BANK_BRIDGE_KEYFILE` и
+   `BANK_BRIDGE_CA`:
 
 ```bash
 docker build -t bank-bridge -f services/bank_bridge/Dockerfile .
-docker run --env-file .env -p 8080:8080 bank-bridge
+docker run \
+  --env-file .env \
+  -e BANK_BRIDGE_CERTFILE=/certs/server.crt \
+  -e BANK_BRIDGE_KEYFILE=/certs/server.key \
+  -e BANK_BRIDGE_CA=/certs/ca.crt \
+  -p 8080:8080 \
+  -v /path/to/certs:/certs:ro \
+  bank-bridge
 ```
 
 3. В отдельном контейнере запустите consumer Kafka:
@@ -195,10 +208,13 @@ docker build -t bank-bridge-consumer -f services/bank_bridge/consumer.Dockerfile
 docker run --env-file .env bank-bridge-consumer
 ```
 
-Сервис будет доступен на `http://localhost:8080`. Для разработки можно запустить его напрямую:
+Сервис будет доступен на `http://localhost:8080`. Для разработки можно запустить его напрямую (предполагается наличие TLS-сертификатов):
 
 ```bash
-uvicorn services.bank_bridge.app:app --reload --port 8080
+BANK_BRIDGE_CERTFILE=./certs/server.crt \
+BANK_BRIDGE_KEYFILE=./certs/server.key \
+BANK_BRIDGE_CA=./certs/ca.crt \
+python -m services.bank_bridge
 ```
 
 ### Kafka consumer
