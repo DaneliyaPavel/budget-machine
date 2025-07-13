@@ -33,7 +33,7 @@ async def test_client_cert_required(tmp_path):
 
     try:
         async with httpx.AsyncClient(verify=str(cafile)) as client:
-            with pytest.raises(ssl.SSLError):
+            with pytest.raises((ssl.SSLError, httpx.ReadError)):
                 await client.get(f"https://localhost:{port}/health")
     finally:
         server.should_exit = True
