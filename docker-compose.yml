@@ -76,7 +76,7 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 512m
+          memory: 512Mi
 
   bank-bridge-consumer:
     build:
@@ -89,6 +89,6 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 512m
+          memory: 512Mi
 volumes:
   db_data:
