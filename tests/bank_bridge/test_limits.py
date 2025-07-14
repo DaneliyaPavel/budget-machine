@@ -26,6 +26,14 @@ def test_get_limits_invalid_env(monkeypatch):
     assert capacity == 4
 
 
+def test_get_limits_default_sber(monkeypatch):
+    monkeypatch.delenv("BANK_BRIDGE_SBER_RATE", raising=False)
+    monkeypatch.delenv("BANK_BRIDGE_SBER_CAPACITY", raising=False)
+    rate, capacity = get_limits("sber")
+    assert rate == 10.0
+    assert capacity == 10
+
+
 @pytest.mark.asyncio
 async def test_circuit_breaker_before_request():
     gauge = DummyGauge()

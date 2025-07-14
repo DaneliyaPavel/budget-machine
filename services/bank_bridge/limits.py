@@ -42,7 +42,7 @@ _BUCKETS: dict[tuple[str, str], "LeakyBucket"] = {}
 # second and ``capacity`` is the bucket size.
 DEFAULT_LIMITS: dict[str, tuple[float, int]] = {
     "tinkoff": (20.0, 20),
-    "sber": (20.0, 20),
+    "sber": (10.0, 10),
     "gazprom": (20.0, 20),
     "alfa": (20.0, 20),
     "vtb": (20.0, 20),
