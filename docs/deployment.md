@@ -18,12 +18,19 @@ terraform apply
 
 ## Развёртывание приложения с Helm
 
-В каталоге `infra/helm` находится Helm-чарт. Получив kubeconfig для кластера, установите чарт:
+В каталоге `infra/helm` находится Helm-чарт для основного приложения, а в `infra/helm/bank-bridge` — отдельный чарт сервиса Bank Bridge. Получив kubeconfig для кластера, установите основной чарт:
 
 ```bash
 helm install budget-machine ./infra/helm \
   --set env.DATABASE_URL=postgresql://user:pass@db:5432/budget \
   --set env.SECRET_KEY=change_me
+```
+
+Отдельный сервис Bank Bridge устанавливается своим чартом:
+
+```bash
+helm install bank-bridge ./infra/helm/bank-bridge \
+  --set image.tag=<sha>
 ```
 
 Чарт создаст Deployment, Service и ресурс Rollout для канареечных релизов.
@@ -34,6 +41,7 @@ helm install budget-machine ./infra/helm \
 
 - `applicationset.yaml` создаёт предварительные окружения для pull request'ов с помощью `ApplicationSet`.
 - `rollout-example.yaml` демонстрирует синхронизацию чарта с автоматизированными канареечными rollout'ами.
+- `bank-bridge.yaml` развёртывает сервис Bank Bridge и применяет стратегию Argo Rollouts.
 
 Примените их к запущенному экземпляру Argo CD:
 
