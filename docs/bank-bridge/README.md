@@ -158,6 +158,12 @@ docker compose -f tests/bank_bridge/docker-compose.yml up -d
 pytest tests/bank_bridge
 ```
 
+Перед запуском установите зависимости разработки:
+
+```bash
+pip install -r backend/requirements-dev.txt
+```
+
 или через `make bankbridge-tests`.
 
 ### Проверка авторизации в песочнице
