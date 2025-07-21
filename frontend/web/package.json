@@ -18,7 +18,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@storybook/addon-essentials": "^8.6.14",
-    "@storybook/nextjs": "^9.0.16",
+    "@storybook/nextjs": "^9.0.17",
     "@storybook/react": "^9.0.16",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
