@@ -21,13 +21,23 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # read database url from environment and convert async drivers to sync
+# >>> Alembic URL fix >>>
 database_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
 url = make_url(database_url)
+
+# Приложение async (asyncpg) → миграции sync (psycopg)
 if url.drivername.endswith("+asyncpg"):
-    url = url.set(drivername=url.drivername.replace("+asyncpg", "+psycopg"))
+    url = url.set(drivername="postgresql+psycopg")
 elif url.drivername.endswith("+aiosqlite"):
     url = url.set(drivername="sqlite")
-config.set_main_option("sqlalchemy.url", str(url))
+
+print(f"[alembic] RAW_URL={database_url}")
+print(f"[alembic] FINAL_URL={url}")  # пароль будет скрыт в выводе — это нормально
+
+# ВАЖНО: не str(url)! иначе пароль станет ***
+config.set_main_option("sqlalchemy.url", url.render_as_string(hide_password=False))
+# <<< Alembic URL fix <<<
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

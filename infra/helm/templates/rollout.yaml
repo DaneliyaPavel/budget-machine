@@ -16,14 +16,13 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "budget-machine.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/{{ include "budget-machine.name" . }}: runtime/default
+        seccomp.security.alpha.kubernetes.io/pod: runtime/default
     spec:
-      securityContext:
-        runAsNonRoot: true
       containers:
         - name: {{ include "budget-machine.name" . }}
-          securityContext:
-            allowPrivilegeEscalation: false
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}@{{ .Values.image.digest }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: DATABASE_URL
@@ -32,6 +31,26 @@ spec:
               value: {{ .Values.env.SECRET_KEY | quote }}
           ports:
             - containerPort: 8000
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
   strategy:
     canary:
       steps:

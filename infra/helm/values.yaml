@@ -4,11 +4,21 @@ image:
   repository: ghcr.io/example/budget-machine
   tag: latest
   pullPolicy: IfNotPresent
+  digest: "sha256:yourimagedigest" # Укажите digest, если используете
 
 service:
   type: ClusterIP
   port: 80
+  targetPort: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
 
 env:
-  DATABASE_URL: ""
-  SECRET_KEY: ""
+  DATABASE_URL: "DATABASE_URL"
+  SECRET_KEY: "SECRET_KEY"
