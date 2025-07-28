@@ -16,19 +16,39 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "budget-machine.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
-  spec:
-    securityContext:
-      runAsNonRoot: true
-    containers:
-      - name: {{ include "budget-machine.name" . }}
-        securityContext:
-          allowPrivilegeEscalation: false
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        env:
-          - name: DATABASE_URL
-            value: {{ .Values.env.DATABASE_URL | quote }}
-          - name: SECRET_KEY
-            value: {{ .Values.env.SECRET_KEY | quote }}
-        ports:
-          - containerPort: 8000
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/{{ include "budget-machine.name" . }}: runtime/default
+        seccomp.security.alpha.kubernetes.io/pod: runtime/default
+    spec:
+      containers:
+        - name: {{ include "budget-machine.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}{{- if .Values.image.digest }}@{{ .Values.image.digest }}{{- end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: DATABASE_URL
+              value: {{ .Values.env.DATABASE_URL | quote }}
+            - name: SECRET_KEY
+              value: {{ .Values.env.SECRET_KEY | quote }}
+          ports:
+            - containerPort: 8000
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources: {{- toYaml .Values.resources | nindent 12 }}

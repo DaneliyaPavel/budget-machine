@@ -1,35 +1,35 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 24.3.0
+    rev: 25.1.0
     hooks:
       - id: black
         language_version: python3.12
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.1
+    rev: v0.12.5
     hooks:
       - id: ruff
         args: [--fix]
         language_version: python3.12
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+    rev: v1.17.0
     hooks:
       - id: mypy
         additional_dependencies: [sqlalchemy]
         language_version: python3.12
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.10.1
+    rev: v4.8.3
     hooks:
       - id: commitizen
         language_version: python3.12
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
+    rev: v2.13.1-beta
     hooks:
       - id: hadolint
         files: ^backend/Dockerfile$
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.1
+    rev: v8.28.0
     hooks:
       - id: gitleaks
 
@@ -46,6 +46,7 @@ repos:
       - id: terraform-pre-commit
         args: [--, infra/terraform]
         pass_filenames: false
+        files: ^infra/terraform/
   - repo: local
     hooks:
       - id: generate-openapi

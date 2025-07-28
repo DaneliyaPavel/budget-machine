@@ -5,6 +5,9 @@ metadata:
   labels:
     app.kubernetes.io/name: {{ include "bank-bridge.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    container.apparmor.security.beta.kubernetes.io/{{ include "bank-bridge.name" . }}: runtime/default
+    seccomp.security.alpha.kubernetes.io/pod: runtime/default
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -19,7 +22,7 @@ spec:
     spec:
       containers:
         - name: {{ include "bank-bridge.name" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}@{{ .Values.image.digest }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources: {{- toYaml .Values.resources | nindent 12 }}
           env:
@@ -29,6 +32,26 @@ spec:
 {{- end }}
           ports:
             - containerPort: 8080
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
   strategy:
     canary:
       steps:

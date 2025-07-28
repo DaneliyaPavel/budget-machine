@@ -3,15 +3,13 @@ kind: Service
 metadata:
   name: {{ include "bank-bridge.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ include "bank-bridge.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "bank-bridge.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: 8080
+      targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
       name: http
   selector:
-    app.kubernetes.io/name: {{ include "bank-bridge.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "bank-bridge.selectorLabels" . | nindent 4 }}

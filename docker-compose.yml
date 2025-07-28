@@ -1,53 +1,67 @@
-version: '3.9'
 services:
   db:
-    image: timescale/timescaledb:2-postgis-16
+    image: timescale/timescaledb:latest-pg16
     env_file: .env
     volumes:
       - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"        # удобно для psql с хоста; можно убрать
     security_opt:
       - no-new-privileges:true
-    read_only: true
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
       interval: 10s
       timeout: 5s
       retries: 5
+
   redis:
     image: redis:7-alpine
     env_file: .env
     security_opt:
       - no-new-privileges:true
-    read_only: true
+    # read_only: false  # убираем
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
   zookeeper:
     image: bitnami/zookeeper:3.8
     env_file: .env
+    # environment:
+    #   - ALLOW_ANONYMOUS_LOGIN=yes  # dev-режим при необходимости
     security_opt:
       - no-new-privileges:true
-    read_only: true
+    # read_only: false
     healthcheck:
       test: ["CMD-SHELL", "echo ruok | nc localhost $$ZOOKEEPER_CLIENT_PORT | grep imok"]
       interval: 10s
       timeout: 5s
       retries: 5
+
   kafka:
     image: bitnami/kafka:3
     depends_on:
       - zookeeper
     env_file: .env
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=1
+    ports:
+      - "9092:9092"        # чтобы подключаться клиентами с хоста; опционально
     security_opt:
       - no-new-privileges:true
-    read_only: true
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 5
+
   backend:
     build:
       context: .
@@ -59,6 +73,8 @@ services:
       - db
       - redis
       - kafka
+    ports:
+      - "8000:8000"        # нужно, чтобы открыть docs в браузере
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
       interval: 10s
@@ -76,7 +92,7 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 512Mi
+          memory: 512M
 
   bank-bridge-consumer:
     build:
@@ -89,6 +105,7 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 512Mi
+          memory: 512M
+
 volumes:
   db_data:

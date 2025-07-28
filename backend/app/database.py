@@ -12,8 +12,14 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
 DB_ECHO = os.getenv("DB_ECHO", "0").lower() in {"1", "true", "yes"}
 
 # создаём движок и фабрику сессий
-engine = create_async_engine(DATABASE_URL, echo=DB_ECHO)
-async_session = async_sessionmaker(engine, expire_on_commit=False)
+RUNNING_ALEMBIC = os.getenv("RUNNING_ALEMBIC") == "1"
+
+if not RUNNING_ALEMBIC:
+    engine = create_async_engine(DATABASE_URL, echo=DB_ECHO)
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+else:
+    engine = None
+    async_session = None
 
 
 class Base(DeclarativeBase):
