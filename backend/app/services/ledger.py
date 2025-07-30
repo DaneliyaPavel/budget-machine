@@ -56,6 +56,7 @@ async def post_entry(
                     currency_code=item.currency_code,
                     account_id=item.account_id,
                     transaction_id=tx_obj.id,
+                    transaction_posted_at=tx_obj.posted_at,
                 )
             )
     await db.commit()
