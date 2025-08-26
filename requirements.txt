@@ -1,5 +1,5 @@
 fastapi==0.116.1
-starlette==0.47.2
+starlette==0.47.3
 uvicorn[standard]
 SQLAlchemy>=2.0
 email-validator>=2.0
